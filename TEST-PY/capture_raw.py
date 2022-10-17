@@ -54,6 +54,7 @@ def newest_folder(A,B):
                 if not os.path.exists(newest_path):
                     os.makedirs(newest_path)
                     return newest_path
+            return newest_path
                 
                 
 
