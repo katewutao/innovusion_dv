@@ -49,6 +49,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
                 try:
                     pow=power.Power()
                     pow.power_on()
+                    df=pd.DataFrame([pow.PowerStatus()])
                     break
                 except:   
                     continue

@@ -41,7 +41,21 @@ def ping(ip,time_interval):
 
 def newest_folder(A,B):
     newest_path=os.path.join(A,str(B))
-    return newest_path
+    if not os.path.exists(newest_path):
+        os.makedirs(newest_path)
+        return newest_path
+    else:
+        if len(os.listdir(newest_path))==0:
+            return newest_path
+        else:
+            while len(os.listdir(newest_path))>0:
+                B+=1
+                newest_path=os.path.join(A,str(B))
+                if not os.path.exists(newest_path):
+                    os.makedirs(newest_path)
+                    return newest_path
+                
+                
 
 def check_raw(file_list):
     key="sn\d+-\d+-incomplete.inno_raw"
@@ -67,7 +81,6 @@ if __name__=="__main__":
         os.makedirs(args.savepath)
     i=0
     newest_path=newest_folder(args.savepath,i)
-    
     command1=f"exec lidar_util/inno_pc_client --lidar-ip {args.ip} --lidar-port 8010 --lidar-udp-port 8010 --tcp-port {args.lidarport} --udp-port {args.lidarport}"
     command2=f"curl localhost:{args.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
     command3=f"curl {args.ip}:8010/command/?set_faults_save_raw=ffffffffffffffff"
