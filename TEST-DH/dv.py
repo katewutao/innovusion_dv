@@ -11,6 +11,7 @@ import pandas as pd
 import os
 import subprocess
 import time
+import datetime
 from oneclient import record_header,record_keys,csv_write
 
 
@@ -31,9 +32,9 @@ def ping(ip,interval_time):
 def ping_sure(ip,interval_time):
     flag=ping(ip,interval_time)
     while flag==0:
-        print('please connect lidar %s'%(ip))
+        print(f'[{datetime.datetime.now()}]please connect lidar {ip}')
         flag=ping(ip,interval_time)
-    print('lidar %s has connected'%(ip))
+    print(f'[{datetime.datetime.now()}]lidar {ip} has connected')
 
 def test(times,num_e,interval_time,ip_extract,data_num_power_off):
     times=times*num_e
@@ -45,6 +46,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
                 df=pd.DataFrame([pow.PowerStatus()])
                 break
             except:
+                print(f"[{datetime.datetime.now()}]get power permission")
                 os.system('sshpass -p demo sudo python3 ./power.py')
                 try:
                     pow=power.Power()
@@ -53,6 +55,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
                     break
                 except:   
                     continue
+        print(f"[{datetime.datetime.now()}]power on")
         df.to_csv('result/pow_status.csv',header=None,index=None)
         if item[0]>20:
             command='exec python3 power_client.py'
@@ -65,11 +68,11 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
                 command_raw=f'exec python3 capture_raw.py -i {ip_extract[i]} -s "result/raw/{ip_extract[i].replace(".","_")}" -l {9100+i} -ls {8100+i}'
                 cmd=subprocess.Popen(command_raw,shell=True,stdout=subprocess.PIPE)
                 cmds.append(cmd)
-                print(ip_extract[i]+' is record!!')
+                print(f'[{datetime.datetime.now()}]{ip_extract[i]} is record!!')
             time.sleep(item[0])
             for cmd in cmds:
                 cmd.kill()
-            print("record has been terminated")
+            print(f"[{datetime.datetime.now()}]record has been terminated")
             cmd_pow.kill()
             cmd_pow.wait()
         else:
@@ -100,6 +103,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
                 pow.power_off()
                 break
             except:
+                print(f"[{datetime.datetime.now()}]get power permission")
                 os.system('sshpass -p demo sudo python3 ./power.py')
                 try:
                     pow=power.Power()
@@ -107,6 +111,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
                     break
                 except:   
                     continue
+        print(f"[{datetime.datetime.now()}]power off")
         for i in range(data_num_power_off):
             for ip in ip_extract:
                 # print(os.getcwd()+'/result/record_'+ip.replace('.','_')+'.csv')
@@ -116,13 +121,14 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
             t0=(item[0]+item[1]-time.time()+t)/(data_num_power_off-i)
             if t0>0:
                 time.sleep(t0)
-        print('current time is %.2f s'%((time.time()-t)))
+        print(f'[{datetime.datetime.now()}]current time is {time.time()-t} s')
 
 
 
 def dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time=5,data_num_power_off=10,timeout_time=5):
     if not os.path.exists(os.getcwd()+'/result'):
         os.mkdir(os.getcwd()+'/result')
+    print(f"[{datetime.datetime.now()}]get power permission")
     os.system('sshpass -p demo sudo python3 ./power.py')
     pow=power.Power()
     pow.power_on()
@@ -143,7 +149,7 @@ def dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time=5,data_num
 
     for i in range(len(ip_extract)):
         cmd='ssh root@'+ip_extract[i]
-        print(f'get lidar promission: {cmd}')
+        print(f'[{datetime.datetime.now()}]get lidar promission: {cmd}')
         child=pexpect.spawn(cmd)
         try:
             child.expect('yes',timeout=timeout_time)
@@ -171,7 +177,7 @@ def dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time=5,data_num
         for j in range(len(time_2[i])):
             time_2[i][j]=float(time_2[i][j].strip())*60
     test(time_2,num_e,interval_time,ip_extract,data_num_power_off)
-    print('summary time is %.2f min'%((time.time()-get_current_time)/60))
+    print(f'[{datetime.datetime.now()}]summary time is {(time.time()-get_current_time)/60} min')
     
 if __name__=="__main__":
     ####first
