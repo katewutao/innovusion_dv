@@ -130,6 +130,7 @@ def dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time=5,data_num
         os.mkdir(os.getcwd()+'/result')
     print(f"[{datetime.datetime.now()}]get power permission")
     os.system('sshpass -p demo sudo python3 ./power.py')
+    os.system("sshpass -p demo sudo chmod 777 lidar_util/inno_pc_client")
     pow=power.Power()
     pow.power_on()
     time.sleep(15)
