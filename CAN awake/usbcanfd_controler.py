@@ -32,21 +32,24 @@ class asetConfig(Structure):
         ('sjw', c_uint8),
         ('smp', c_uint8),
         ('brp', c_uint16)
-    ]
+        ]
 
 
 class bsetConfig(Structure):
-    _field_ = [
+    _fields_ = [
         ('tseg1', c_uint8),
         ('tseg2', c_uint8),
         ('sjw', c_uint8),
         ('smp', c_uint8),
         ('brp', c_uint16)
-    ]
+        ]
 
 
 class ZCANInit(Structure):
-    _fields_ = [('clk', c_uint32), ('mode', c_uint32), ('aset', asetConfig), ('bset', bsetConfig)]
+    _fields_ = [('clk', c_uint32),
+                ('mode', c_uint32),
+                ('aset', asetConfig),
+                ('bset', bsetConfig)]
 
 
 class ZCAN_DEV_INF(Structure):
@@ -104,7 +107,6 @@ class Resistance(Structure):
 
 
 
-
 ZCAN_DEVICE_TYPE  = c_uint32
 ZCAN_DEVICE_INDEX = c_uint32
 ZCAN_CHANNEL      = c_uint32
@@ -118,7 +120,7 @@ class USBCANFD(object):
     Reserved      =   ZCAN_Reserved(0)
 
     def __init__(self, *args, **kwargs):
-        self.can_index = 0
+        self.can_index = USBCANFD.CHANNEL_INDEX
         self.device_info = {}
         self.ch_init_config = {}
         self.ch_err_info = {}
@@ -126,12 +128,12 @@ class USBCANFD(object):
         self.recv_data = {}
         self.recv_data_FD = {}
         self.len = None
-        self.count = 2
+        self.count = 1
         self.attribute_path = ''
         self.attribute_value = None
         self.wait_time = 100
         self.id = int(str(kwargs['id']['frame_ID']), 16)
-        self.data = (0x00, 0x40, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
+        self.data_mazu = (0x00, 0x40, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
         self.data_lidar = (0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77)
         self.multi_id = kwargs['id']['multiFrame_ID']
 
@@ -139,13 +141,15 @@ class USBCANFD(object):
     def open_device(self):
         self.device_handle = usbcanfd_lib.VCI_OpenDevice(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.Reserved)
         if self.device_handle == 0:
-            log.error('{}: open device fail!'.format(self.device_handle))
+            log.error('sts:{}: open device fail!'.format(self.device_handle))
+            return False
         else:
-            log.info('{}: open device({}) success!'.format(self.device_handle, USBCANFD.USBCANFD_200U.value))
+            log.info('sts:{}: open device({}) success!'.format(self.device_handle, USBCANFD.USBCANFD_200U.value))
+            return True
     
     def get_deviceInfo(self):
         """
-        typedef struct {
+        typedef struct {g
             U16 hwv; /**< hardware version */
             U16 fwv; /**< firmware version */
             U16 drv; /**< driver version */
@@ -173,38 +177,42 @@ class USBCANFD(object):
     def init_CAN(self):
         """
         """
-        CH_init = ZCANInit()
+        # CH_init = ZCANInit()
         # CH_init.clk = 60000000  # USBCANFD-200U clock is 60MHz
         # CH_init.mode = 0  # 工作模式，0 表示正常模式（相当于正常节点），1 表示只听模式（只接收，不影响总线）
         # CH_init.aset.tseg1 = 1
         # CH_init.aset.tseg2 = 0
-        # CH_init.aset.sjw = 0
+        # CH_init.aset.sjw = 2
         # CH_init.aset.smp = 75  # smp is sample point, not involved in baudrate calculation
         # CH_init.aset.brp = 29
-        # CH_init.bset.tseg1 = 2
+        # CH_init.bset.tseg1 = 1
         # CH_init.bset.tseg2 = 0
-        # CH_init.bset.sjw = 0
-        # CH_init.bset.smp = 80
-        # CH_init.bset.brp = 5
+        # CH_init.bset.sjw = 2
+        # CH_init.bset.smp = 75
+        # CH_init.bset.brp = 2
 
+        CH_init = ZCANInit()
         CH_init.clk = 60000000  # USBCANFD-200U clock is 60MHz
         CH_init.mode = 0  # 工作模式，0 表示正常模式（相当于正常节点），1 表示只听模式（只接收，不影响总线）
-        CH_init.aset.tseg1 = 1
-        CH_init.aset.tseg2 = 0
+        CH_init.aset.tseg1 = 10
+        CH_init.aset.tseg2 = 2
         CH_init.aset.sjw = 2
-        CH_init.aset.smp = 75  # smp is sample point, not involved in baudrate calculation
-        CH_init.aset.brp = 29
-        CH_init.bset.tseg1 = 1
-        CH_init.bset.tseg2 = 0
+        CH_init.aset.smp = 0  # smp is sample point, not involved in baudrate calculation
+        CH_init.aset.brp = 7
+        CH_init.bset.tseg1 = 10
+        CH_init.bset.tseg2 = 2
         CH_init.bset.sjw = 2
-        CH_init.bset.smp = 75
-        CH_init.bset.brp = 2
+        CH_init.bset.smp = 0
+        CH_init.bset.brp = 1
 
         self.ch_handle = usbcanfd_lib.VCI_InitCAN(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX, byref(CH_init))
         if self.ch_handle == 0:
-            log.error(f'Channel-{self.can_index} init fail!')
+            log.error(f'Channel-{self.can_index.value} init fail!')
+            return False
         else:
-            log.info(f'Channel-{self.can_index} init success!')
+            log.info(f'Channel-{self.can_index.value} init success!')
+            return True
+        
 
     def set_reference(self):
         Res = Resistance()
@@ -212,22 +220,28 @@ class USBCANFD(object):
         set_ret = usbcanfd_lib.VCI_SetReference(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX, CAN_TRES, byref(Res))
         if set_ret == 0:
             log.error(f'set reference fail!')
+            return False
         else:
             log.info(f'set reference success!')
+            return True
     
     def start_CAN(self):
         start_ret = usbcanfd_lib.VCI_StartCAN(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX)
         if start_ret == 0:
-            log.error(f'Open Channel-{self.can_index} fail!')
+            log.error(f'sts:{start_ret}, Open Channel-{self.can_index.value} fail!')
+            return False
         else:
-            log.info(f'Open Channel-{self.can_index} success!')
+            log.info(f'sts:{start_ret},Open Channel-{self.can_index.value} success!')
+            return True
 
     def reset_CAN(self):
         reset_ret = usbcanfd_lib.VCI_ResetCAN(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX)
         if reset_ret == 0:
-            log.error(f'Reset Channel-{self.can_index} fail!')
+            log.error(f'Reset Channel-{self.can_index.value} fail!')
+            return False
         else:
-            log.info(f'Reset Channel-{self.can_index} success!')
+            log.info(f'Reset Channel-{self.can_index.value} success!')
+            return True
 
     def get_recv_num_from_buffer(self):
         return usbcanfd_lib.VCI_ClearBuffer(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX)
@@ -235,9 +249,9 @@ class USBCANFD(object):
     def clear_buffer(self):
         clear_ret = usbcanfd_lib.VCI_ClearBuffer(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX)
         if clear_ret == 0:
-            log.error(f'Clear Channel-{self.can_index} buffer fail!')
+            log.error(f'Clear Channel-{self.can_index.value} buffer fail!')
         else:
-            log.info(f'Clear Channel-{self.can_index} buffer success!')
+            log.info(f'Clear Channel-{self.can_index.value} buffer success!')
 
     def read_CH_Err(self):
         errInfo_ret = usbcanfd_lib.VCI_ReadChannelErrInfo(self.ch_handle, self.ch_err_info)
@@ -261,15 +275,15 @@ class USBCANFD(object):
             can_20_data[i].msg_header.chn      = 0
             can_20_data[i].msg_header.len      = 8 
             for j in range (can_20_data[i].msg_header.len):
-                can_20_data[i].dat[j]=self.data[j]
+                can_20_data[i].dat[j]=self.data_mazu[j]
 
         send_CAN_number = usbcanfd_lib.VCI_Transmit(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX, byref(can_20_data), self.count)
-        log.info(f"Total Send {send_CAN_number} CAN frames to channel-{self.can_index}!")
+        log.info(f"Total Send {send_CAN_number} CAN frames to channel-{self.can_index.value}!")
 
     def receive_frame(self):  # CAN2.0
         recv_can_20 = ZCAN_20_MSG()
         recv_CAN_number = usbcanfd_lib.VCI_Receive(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX, byref(recv_can_20), self.count, self.wait_time)
-        log.info(f"Total received {recv_CAN_number} CAN frames from channel-{self.can_index}!")
+        log.info(f"Total received {recv_CAN_number} CAN frames from channel-{self.can_index.value}!")
 
     def transmit_frame_FD(self):  # CANFD
         canfd_data = (ZCAN_FD_MSG*self.count)()
@@ -285,16 +299,16 @@ class USBCANFD(object):
             canfd_data[i].msg_header.info.est = 0
             canfd_data[i].msg_header.pad      = 0
             canfd_data[i].msg_header.chn      = 0
-            canfd_data[i].msg_header.len      = 32
-            for j in range (canfd_data[i].msg_header.len - 24):
+            canfd_data[i].msg_header.len      = 0
+            for j in range (canfd_data[i].msg_header.len):
                 canfd_data[i].dat[j]=self.data_lidar[j]
         send_CANFD_number = usbcanfd_lib.VCI_TransmitFD(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX, byref(canfd_data), self.count)
-        log.info(f"Total Send {send_CANFD_number} CANFD frames to channel-{self.can_index}!")
+        log.info(f"Total Send {send_CANFD_number} CANFD frames to channel-{self.can_index.value}!")
 
     def receive_frame_FD(self):  #CANFD
         recv_canfd = ZCAN_FD_MSG()
         recv_CANFD_number = usbcanfd_lib.VCI_ReceiveFD(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX, byref(recv_canfd), self.count, self.wait_time)
-        log.info(f"Total received {recv_CANFD_number} CANFD frames from channel-{self.can_index}!")
+        log.info(f"Total received {recv_CANFD_number} CANFD frames from channel-{self.can_index.value}!")
 
     def close_device(self):
         ret = usbcanfd_lib.VCI_CloseDevice(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX)
@@ -309,6 +323,7 @@ class USBCANFD_Controler(object):
         import json
         json_obj = open('./config/CANFD_Config.json', 'r', encoding='utf-8')
         self.js_cfg = json.load(json_obj)
+        self.on = True
         logger = logFrame()
         global log
         log = logger.getlogger('./CANFD_MSG.log')
@@ -321,14 +336,22 @@ class USBCANFD_Controler(object):
         USBCANFD.CHANNEL_INDEX = c_uint32(self.js_cfg['device']['channel'])
         USBCANFD.Reserved = c_uint32(self.js_cfg['device']['reserved'])
         self.usbcanfd = USBCANFD(**self.js_cfg)
-        self.usbcanfd.open_device()
+        if not self.usbcanfd.open_device():
+            self.on = False
+            return
         # self.usbcanfd.reset_CAN()
         self.usbcanfd.set_reference()
         self.usbcanfd.init_CAN()
-        self.usbcanfd.start_CAN()
+        time.sleep(1)
+        if not self.usbcanfd.start_CAN():
+            self.on = False
+            return
         
         
     def start(self):
+        if not self.on:
+            log.error('open CAN device fail!!!')
+            return False
         if self.js_cfg['can_type']['canfd']:
             if self.js_cfg['loop']['loop_count'] == -1:
                 while True:
