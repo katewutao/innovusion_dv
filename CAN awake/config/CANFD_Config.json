@@ -17,8 +17,8 @@
     },
 
     "can_type": {
-        "can_20": true,
-        "canfd": false
+        "can_20": false,
+        "canfd": true
     }
 
 }
