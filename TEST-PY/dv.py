@@ -12,7 +12,7 @@ import os
 import subprocess
 import time
 import datetime
-from oneclient import record_header,record_keys,csv_write
+from oneclient import record_header,csv_write
 
 
 def ping(ip,interval_time):
@@ -78,8 +78,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
         else:
             for ip in ip_extract:
                 for _ in range(data_num_power_off):
-                    temp=[time.strftime('%Y.%m.%d %H:%M:%S ',time.localtime(time.time()))]+[-100]*(len(record_keys)-1)
-                    #print(temp)
+                    temp=[str(datetime.datetime.now())]+[-100]*(record_header.count(","))
                     csv_write(os.getcwd()+'/result/record_'+ip.replace('.','_')+'.csv',temp)
         if not os.path.exists(os.getcwd()+'/result/log'):
             os.mkdir(os.getcwd()+'/result/log')
@@ -114,9 +113,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
         print(f"[{datetime.datetime.now()}]power off")
         for i in range(data_num_power_off):
             for ip in ip_extract:
-                # print(os.getcwd()+'/result/record_'+ip.replace('.','_')+'.csv')
-                temp=[time.strftime('%Y.%m.%d %H:%M:%S ',time.localtime(time.time()))]+[-100]*(len(record_keys)-1)
-                #print(temp)
+                temp=[str(datetime.datetime.now())]+[-100]*(record_header.count(","))
                 csv_write(os.getcwd()+'/result/record_'+ip.replace('.','_')+'.csv',temp)
             t0=(item[0]+item[1]-time.time()+t)/(data_num_power_off-i)
             if t0>0:

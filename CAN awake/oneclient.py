@@ -4,7 +4,7 @@
 #  * @author katewutao
 #  * @email kate.wu@cn.innovusion.com
 #  * @create date 2022-03-22 16:48:51
-#  * @modify date 2022-05-05 11:29:29
+#  * @modify date 2022-11-15 13:36:53
 #  * @desc [description]
 #  */
 
@@ -14,95 +14,107 @@ import time
 import os
 import pandas as pd
 import subprocess
-import datetime
 
 # polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
-save_path = os.path.join(os.getcwd(),'result')
+save_path = os.getcwd()+'/result/'
+record_keys = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'Txadc', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
+               'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'LASER current', 'temperature', 'pump_st', 'alarm','get-ref-intensity','vol', 'curr']
+record_header = "time,temp_board,temp_adc1,temp_adc2,Temp_laser,Temp_fpga,temp_A,temp_B,temp_C,temp_D,motor speed,polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,LASER current,laser temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,vol,curr"
 
-
-
-parse = argparse.ArgumentParser()
-parse.add_argument('--ip', type=str, required=True, help='lidar ip address')
-parse.add_argument('--interval','-i', type=float, required=True,
-                   help='record time interval')
-arg = parse.parse_args()
-record_head = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'Txadc', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
-               'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'LASER current', 'temperature']
-
-
-def extract(key, st):
+def extract(keys, st):
     import re
-    key=f'{key}.*?([-+]?\d+\.?\d*)'
-    ret=re.search(key,st)
-    if ret:
-        if '.' in ret.group(1):
-            return float(ret.group(1))
+    res=[]
+    for i in range(len(keys)):
+        if "intensity" not in keys[i]:
+            ret=re.search(keys[i]+".*?(-?\d+\.?\d*)",st)
+            if ret and "." in ret.group(1):
+                res.append(float(ret.group(1)))
+            elif ret and "." not in ret.group(1):
+                res.append(int(ret.group(1)))
+            else:
+                res.append(-100)
         else:
-            return int(ret.group(1))
-    return -100
-    
-def get_sn():
-    print(f'now start get {arg.ip} SN')
-    command=f'curl {arg.ip}:8010/command/?get_sn'
-    res=get_command_result(command)
-    while res=='':
-        res=get_command_result(command)
-    print(f'ip {arg.ip} SN is {res}')
+            ret=re.search(keys[i]+".*?(\d+).*?(\d+).*?(\d+).*?(\d+)",st)
+            if ret:
+                for j in range(4):
+                    res.append(int(ret.group(j+1)))
+            else:
+                for j in range(4):
+                    res.append(-100)
     return res
 
 
 def get_command_result(command):
+    command = 'curl http://'+arg.ip+':8088/get-all-status'
     cmd = subprocess.Popen(command, shell=True,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    time.sleep(0.08)
+    time.sleep(0.5)
     if cmd.poll() is not None:
         res = str(cmd.stdout.read())
+        res1 = 'success'
     else:
         res = ''
+        res1 = 'failed'
     cmd.kill()
-    if res[:2]=="b'" and res[-1]=="'":
-        res=res[2:-1]
+    write_log(save_path+'testlog' +
+              arg.ip.replace('.', '_')+'.txt', command, res1)
     return res
+
+
+def write_log(txt_path, command, res):
+    file_txt = open(txt_path, 'a', encoding='utf-8', newline='\n')
+    file_txt.write(time.strftime('%Y.%m.%d %H:%M:%S ',
+                   time.localtime(time.time()))+'  '+command+'  '+res+'\n')
+    file_txt.close()
 
 
 def csv_write(file, lis):
     if not os.path.exists(file):
-        record = "time,temp_T0,temp_T1,temp_T2,Tlaser,Txadc,temp_A,temp_B,temp_C,temp_D,motor speed,polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,LASER current,laser temp"
-        with open(file, 'w', newline='\n') as f:
-            f.write(record)
-    flag=0
-    for i in range(1,len(lis)):
-        if lis[i]!=-100:
-           flag=1
-           break
-    if flag: 
-        with open(file, 'a', newline='\n') as f:
-            str1 = ''
-            for i in range(len(lis)):
-                if i != len(lis)-1:
-                    str1 = str1+str(lis[i])+','
-                else:
-                    str1 = str1+str(lis[i])
-            f.write('\n'+str1)
+        flag=0
+    else:
+        flag=1
+    file_read = open(file, 'a', newline='\n')
+    str1 = ''
+    for i in range(len(lis)):
+        if i != len(lis)-1:
+            str1 = str1+str(lis[i])+','
+        else:
+            str1 = str1+str(lis[i])
+    if flag:
+        file_read.write('\n'+str1)
+    else:
+        file_read.write(str1)
+    file_read.close()
 
-def dv_one(ip,save_path):
-    command = f'curl http://{ip}:8088/get-all-status'
-    res = get_command_result(command)
-    temp = [str(datetime.datetime.now())]
-    for i in range(1, len(record_head)):
-        temp.append(extract(record_head[i], res))
-    csv_write(save_path, temp)
+if __name__=="__main__":
+    parse = argparse.ArgumentParser()
+    parse.add_argument('--ip', type=str, required=True, help='lidar ip address')
+    parse.add_argument('--interval', type=float, required=True,
+                    help='record time interval')
+    arg = parse.parse_args()
+    if not os.path.exists(save_path+'record_'+arg.ip.replace('.', '_')+'.csv'):
+        file = open(save_path+'record_'+arg.ip.replace('.', '_')+'.csv', 'w', newline='\n')
+        file.write(record_header)
+        file.close()
 
-
-if not os.path.exists(save_path):
-    os.makedirs(save_path)
-
-save_path=os.path.join(save_path,f'{get_sn()}.csv')
-
-while True:
-    t = time.time()
-    dv_one(arg.ip,save_path)
-    sleep_time = arg.interval-time.time()+t
-    if sleep_time > 0:
-        time.sleep(sleep_time)
+    while True:
+        t=time.time()
+        times = time.strftime('%Y.%m.%d %H:%M:%S ', time.localtime(time.time()))
+        command = 'curl http://'+arg.ip+':8088/get-all-status'
+        res = get_command_result(command)
+        temp = []
+        temp.append(times)
+        temp+=extract(record_keys[1:-2], res)
+        while 1:
+            try:
+                pow = pd.read_csv(save_path+'pow_status.csv', header=None).values.tolist()
+                break
+            except:
+                continue
+        temp.append(pow[0][0])
+        temp.append(pow[0][1])
+        csv_write(save_path+'record_'+arg.ip.replace('.', '_')+'.csv', temp)
+        sleep_time=arg.interval-time.time()+t
+        if sleep_time>0:
+            time.sleep(sleep_time)
