@@ -4,7 +4,7 @@
 #  * @author katewutao
 #  * @email kate.wu@cn.innovusion.com
 #  * @create date 2022-03-22 16:48:51
-#  * @modify date 2022-05-05 11:29:29
+#  * @modify date 2022-11-15 13:36:53
 #  * @desc [description]
 #  */
 
@@ -19,18 +19,30 @@ import subprocess
 
 save_path = os.getcwd()+'/result/'
 record_keys = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'Txadc', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
-               'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'LASER current', 'temperature', 'pump_st', 'alarm', 'vol', 'curr']
-record_header = "time,temp_board,temp_adc1,temp_adc2,Temp_laser,Temp_fpga,temp_A,temp_B,temp_C,temp_D,motor speed,polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,LASER current,laser temp,pump_st,alarm,vol,curr"
+               'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'LASER current', 'temperature', 'pump_st', 'alarm','get-ref-intensity','vol', 'curr']
+record_header = "time,temp_board,temp_adc1,temp_adc2,Temp_laser,Temp_fpga,temp_A,temp_B,temp_C,temp_D,motor speed,polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,LASER current,laser temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,vol,curr"
 
-def extract(key, st):
+def extract(keys, st):
     import re
-    ret=re.search(key+".*?(-?\d+\.?\d*)",st)
-    if ret and "." in ret.group(1):
-        return float(ret.group(1))
-    elif ret and "." not in ret.group(1):
-        return int(ret.group(1))
-    else:
-        return -100
+    res=[]
+    for i in range(len(keys)):
+        if "intensity" not in keys[i]:
+            ret=re.search(keys[i]+".*?(-?\d+\.?\d*)",st)
+            if ret and "." in ret.group(1):
+                res.append(float(ret.group(1)))
+            elif ret and "." not in ret.group(1):
+                res.append(int(ret.group(1)))
+            else:
+                res.append(-100)
+        else:
+            ret=re.search(keys[i]+".*?(\d+).*?(\d+).*?(\d+).*?(\d+)",st)
+            if ret:
+                for j in range(4):
+                    res.append(int(ret.group(j+1)))
+            else:
+                for j in range(4):
+                    res.append(-100)
+    return res
 
 
 def get_command_result(command):
@@ -93,8 +105,7 @@ if __name__=="__main__":
         res = get_command_result(command)
         temp = []
         temp.append(times)
-        for i in range(1, len(record_keys)-2):
-            temp.append(extract(record_keys[i], res))
+        temp+=extract(record_keys[1:-2], res)
         while 1:
             try:
                 pow = pd.read_csv(save_path+'pow_status.csv', header=None).values.tolist()
