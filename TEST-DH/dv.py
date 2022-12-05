@@ -12,6 +12,7 @@ import os
 import subprocess
 import time
 import datetime
+import re
 from oneclient import record_header,csv_write
 
 
@@ -36,8 +37,7 @@ def ping_sure(ip,interval_time):
         flag=ping(ip,interval_time)
     print(f'[{datetime.datetime.now()}]lidar {ip} has connected')
 
-def test(times,num_e,interval_time,ip_extract,data_num_power_off):
-    times=times*num_e
+def test(times,interval_time,ip_extract,data_num_power_off):
     for item in times:
         t=time.time()
         while True:
@@ -122,7 +122,7 @@ def test(times,num_e,interval_time,ip_extract,data_num_power_off):
 
 
 
-def dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time=5,data_num_power_off=10,timeout_time=5):
+def dv_test(dict_config,interval_time=5,data_num_power_off=10,timeout_time=5):
     if not os.path.exists(os.getcwd()+'/result'):
         os.mkdir(os.getcwd()+'/result')
     print(f"[{datetime.datetime.now()}]get power permission")
@@ -135,16 +135,14 @@ def dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time=5,data_num
     ip_extract=[ip[i][2].split('/')[0].split(' ')[1].split(':')[0] for i in range(len(ip))]
     for item in ip_extract:
         ping_sure(item,0.2)
-
-    set_loop_time=set_loop_time1
-    num_e=num_e1
-    times=set_loop_time.split(',')
-    for i in range(len(times)):
-        times[i]=times[i].split(':')
-    for i in range(len(times)):
-        for j in range(len(times[i])):
-            times[i][j]=float(times[i][j].strip())*60
-
+    times=[]
+    for key in dict_config.keys():
+        temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*)",key)
+        for i in range(len(temp_times)):
+            temp_times[i]=list(temp_times[i])
+            for j in range(len(temp_times[i])):
+                temp_times[i][j]=float(temp_times[i][j])*60
+        times+=temp_times*dict_config[key]
     for i in range(len(ip_extract)):
         cmd='ssh root@'+ip_extract[i]
         print(f'[{datetime.datetime.now()}]get lidar promission: {cmd}')
@@ -157,42 +155,22 @@ def dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time=5,data_num
         except:
             pass
         child.close()
-
-
     for ip in ip_extract:
         record_file='result/record_'+ip.replace('.','_')+'.csv'
         if not os.path.exists(record_file):
             with open(record_file,"w",newline="\n") as f:
                 f.write(record_header)
     get_current_time=time.time()
-    test(times,num_e,interval_time,ip_extract,data_num_power_off)
-    set_loop_time=set_loop_time2
-    num_e=num_e2
-    time_2=set_loop_time.split(',')
-    for i in range(len(time_2)):
-        time_2[i]=time_2[i].split(':')
-    for i in range(len(time_2)):
-        for j in range(len(time_2[i])):
-            time_2[i][j]=float(time_2[i][j].strip())*60
-    test(time_2,num_e,interval_time,ip_extract,data_num_power_off)
+    test(times,interval_time,ip_extract,data_num_power_off)
+
     print(f'[{datetime.datetime.now()}]summary time is {(time.time()-get_current_time)/60} min')
     
 if __name__=="__main__":
-    ####first
-    set_loop_time1="0:90,2:28,2:28,2:28,2:28,2:28,2:148"  ##通电时间:断电时间   ,分隔  单位:分钟
-    num_e1=0  #大循坏次数
-
-    ###################last
-    set_loop_time2="0:1,1:1"  ##通电时间:断电时间   ,分隔  单位:分钟
-    num_e2=2  #大循坏次数
-    '''set_loop_time1="0:1,1:1,1:1,1:1"
-    num_e1=2
-    set_loop_time2="0:1,1:1"
-    num_e2=5'''
-
-
-
+    time_dict={
+    "0:90,2:28,2:28,2:28,2:28,2:28,2:148":0,    #通电时间:断电时间   ,分隔  :循环次数 单位:分钟 :循环次数
+    "0:1,1:1":2,
+}
     interval_time=5             # 上电时记录时间间隔(s)
     data_num_power_off=10       # 断电时或通电0s空值数量
     timeout_time=5
-    dv_test(set_loop_time1,set_loop_time2,num_e1,num_e2,interval_time,data_num_power_off,timeout_time)
+    dv_test(time_dict,interval_time,data_num_power_off,timeout_time)
