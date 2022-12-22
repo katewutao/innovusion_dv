@@ -14,10 +14,11 @@ import time
 import os
 import pandas as pd
 import subprocess
+import datetime
 
 # polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
-save_path = os.getcwd()+'/result/'
+save_path = './result'
 record_keys = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'Txadc', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
                'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'LASER current', 'temperature', 'pump_st', 'alarm','get-ref-intensity','get-fpga-intensity','vol', 'curr']
 record_header = "time,temp_board,temp_adc1,temp_adc2,Temp_laser,Temp_fpga,temp_A,temp_B,temp_C,temp_D,motor speed,polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,LASER current,laser temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,CHA_fpga,CHB_fpga,CHC_fpga,CHD_fpga,vol,curr"
@@ -87,34 +88,37 @@ def csv_write(file, lis):
         file_read.write(str1)
     file_read.close()
 
-if __name__=="__main__":
-    parse = argparse.ArgumentParser()
-    parse.add_argument('--ip', type=str, required=True, help='lidar ip address')
-    parse.add_argument('--interval', type=float, required=True,
-                    help='record time interval')
-    arg = parse.parse_args()
-    if not os.path.exists(save_path+'record_'+arg.ip.replace('.', '_')+'.csv'):
-        file = open(save_path+'record_'+arg.ip.replace('.', '_')+'.csv', 'w', newline='\n')
-        file.write(record_header)
-        file.close()
-
+def main(arg):
+    command = f"curl http://{arg.ip}:8088/get-all-status"
+    csv_path=os.path.join(save_path,f"record_{arg.ip.replace('.', '_')}.csv")
+    power_path=os.path.join(save_path,'pow_status.csv')
+    if not os.path.exists(csv_path):
+        with open(csv_path, 'w', newline='\n') as f:
+            f.write(record_header)
     while True:
         t=time.time()
-        times = time.strftime('%Y.%m.%d %H:%M:%S ', time.localtime(time.time()))
-        command = 'curl http://'+arg.ip+':8088/get-all-status'
+        times=str(datetime.datetime.now())
         res = get_command_result(command)
         temp = []
         temp.append(times)
         temp+=extract(record_keys[1:-2], res)
         while 1:
             try:
-                pow = pd.read_csv(save_path+'pow_status.csv', header=None).values.tolist()
+                pow = pd.read_csv(power_path, header=None).values.tolist()
                 break
             except:
                 continue
-        temp.append(pow[0][0])
-        temp.append(pow[0][1])
-        csv_write(save_path+'record_'+arg.ip.replace('.', '_')+'.csv', temp)
+        temp+=pow[0]
+        csv_write(csv_path, temp)
         sleep_time=arg.interval-time.time()+t
         if sleep_time>0:
             time.sleep(sleep_time)
+
+
+if __name__=="__main__":
+    parse = argparse.ArgumentParser()
+    parse.add_argument('--ip', type=str, required=True, help='lidar ip address')
+    parse.add_argument('--interval', type=float, required=True,
+                    help='record time interval')
+    arg = parse.parse_args()
+    main(arg)
