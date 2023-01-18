@@ -18,9 +18,28 @@ def downlog(ip,time_path):
     command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt {save_path}"
     cmd1=subprocess.Popen(command1,shell=True)
     cmd2=subprocess.Popen(command2,shell=True)
-    
-    
 
+def ping(ip,interval_time):
+    command='ping -c 1 -W 0.15 '+ip
+    cmd=subprocess.Popen('exec '+command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    time.sleep(interval_time)
+    if cmd.poll() is not None:
+        res=cmd.stdout.read().decode('utf-8')
+    else:
+        res=''
+    cmd.kill()
+    if "1 received" in res:
+        return 1
+    else:
+        return 0
+
+def ping_sure(ip,interval_time):
+    flag=ping(ip,interval_time)
+    while flag==0:
+        print(f'[{datetime.datetime.now()}]please connect lidar {ip}')
+        flag=ping(ip,interval_time)
+    print(f'[{datetime.datetime.now()}]lidar {ip} has connected')    
+    
 def get_promission(ip,time_out):
     if 'linux' in sys.platform:
         import pexpect as pect
@@ -119,6 +138,7 @@ def main(config,log_path):
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     for ip in config["lidar_ip"]:
+        ping_sure(ip,0.5)
         try:
             get_promission(ip,config["timeout_time"])
             set_can(ip)
@@ -128,8 +148,6 @@ def main(config,log_path):
         if not os.path.exists(record_file):
             with open(record_file,"w",newline="\n") as f:
                 f.write(record_header)
-        
-        
     os.system("python3 lib/set_usbcanfd_env.py demo")
     command='exec python3 power_client.py'
     cmd_pow=subprocess.Popen(command,stderr=subprocess.PIPE,shell=True)
