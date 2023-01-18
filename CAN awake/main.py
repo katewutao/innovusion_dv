@@ -5,6 +5,8 @@ import datetime
 import sys
 import threading
 import re
+import pandas as pd
+from oneclient import record_header,csv_write,save_path
 
 
 def downlog(ip,time_path):
@@ -19,12 +21,12 @@ def downlog(ip,time_path):
     
     
 
-def get_promission(ip):
+def get_promission(ip,time_out):
     if 'linux' in sys.platform:
         import pexpect as pect
     else:
         import wexpect as pect
-    child = pect.spawn(f'ssh root@{ip}',timeout=1)
+    child = pect.spawn(f'ssh root@{ip}',timeout=time_out)
     try:
         child.expect('yes',timeout=3)
         child.sendline('yes')
@@ -72,13 +74,18 @@ def load_config():
         return json.load(f)
 
 
-def one_cycle(power_on_time,power_off_time,ip_list,i):
+def one_cycle(power_on_time,power_off_time,ip_list,i,data_num_power_off,interval_time):
     print(f"[{str(datetime.datetime.now())}]: current circle {i}")
+    t=time.time()
     time_path=get_time()
     for ip_num in range(len(ip_list)):
         raw_save_path="result/raw/"+ip_list[ip_num].replace('.','_')+'/'+time_path
         subprocess.Popen(f'python3 capture_raw.py -i {ip_list[ip_num]} -s "{raw_save_path}" -l {9100+ip_num} -ls {8100+ip_num}',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     can=subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
+    records=[]
+    for ip in ip_list:
+        cmd=subprocess.Popen(f"exec python3 oneclient.py --ip {ip} --interval {interval_time}",shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE)
+        records.append(cmd)
     if power_on_time>=2:
         time.sleep(power_on_time-2)
     threads=[]
@@ -91,31 +98,46 @@ def one_cycle(power_on_time,power_off_time,ip_list,i):
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
     os.system("ps -ef|grep capture_raw.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
     print("start sleep")
-    time.sleep(power_off_time)
+    for record in records:
+        record.kill()
+    for i in range(data_num_power_off):
+        for ip in ip_list:
+            while True:
+                try:
+                    pow = pd.read_csv(os.path.join(save_path,'pow_status.csv'), header=None).values.tolist()
+                    break
+                except:
+                    pass
+            temp=[str(datetime.datetime.now())]+[-100]*(record_header.count(",")-2)+pow[0]
+            csv_write(os.path.join(save_path,'record_'+ip.replace('.','_')+'.csv'),temp)
+        t0=(power_on_time+power_off_time-(time.time()-t))/(data_num_power_off-i)
+        if t0>0:
+            time.sleep(t0)
 
 
 def main(config,log_path):
     if not os.path.exists(log_path):
         os.makedirs(log_path)
-    records=[]
     for ip in config["lidar_ip"]:
         try:
-            get_promission(ip)
+            get_promission(ip,config["timeout_time"])
             set_can(ip)
         except:
             pass
-        cmd=subprocess.Popen(f"exec python3 oneclient.py --ip {ip} --interval 1",shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE)
-        records.append(cmd)
+        record_file=os.path.join(save_path,'record_'+ip.replace('.','_')+'.csv')
+        if not os.path.exists(record_file):
+            with open(record_file,"w",newline="\n") as f:
+                f.write(record_header)
+        
+        
     os.system("python3 lib/set_usbcanfd_env.py demo")
     command='exec python3 power_client.py'
     cmd_pow=subprocess.Popen(command,stderr=subprocess.PIPE,shell=True)
     times=get_circle_time(config["time_dict"])
     i=1
     for time_one in times:
-        one_cycle(time_one[0],time_one[1],config["lidar_ip"],i)
-        i+=1        
-    for record in records:
-        record.kill()
+        one_cycle(time_one[0],time_one[1],config["lidar_ip"],i,config["interval_time"],config["data_num_power_off"])
+        i+=1 
     cmd_pow.kill()
     cancle_can(config["lidar_ip"])
 

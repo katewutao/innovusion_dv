@@ -13,14 +13,15 @@ import power
 import os
 import pandas as pd
 import datetime
+from oneclient import save_path
 
-if not os.path.exists(os.getcwd()+'/result'):
-    os.mkdir(os.getcwd()+'/result')
+if not os.path.exists(save_path):
+    os.mkdir(save_path)
 pow=power.Power()
 while True:
     try:
         df=pd.DataFrame([pow.PowerStatus()])
-        df.to_csv(os.getcwd()+'/result/pow_status.csv',header=None,index=None)
+        df.to_csv(os.path.join(save_path,'pow_status.csv'),header=None,index=None)
     except:
         print(f"[{datetime.datetime.now()}]get power permission")
         os.system('sshpass -p demo sudo python3 ./power.py')
