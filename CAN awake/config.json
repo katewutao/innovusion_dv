@@ -11,5 +11,8 @@
     "time_dict":{
         "0:60,20:32": 10,
         "0:49,5:1": 51
-    }
+    },
+    "data_num_power_off":10,
+    "interval_time":5,
+    "timeout_time":5
 }
