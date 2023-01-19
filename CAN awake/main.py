@@ -103,7 +103,7 @@ def load_config():
         return json.load(f)
 
 
-def one_cycle(power_on_time,power_off_time,ip_list,i,data_num_power_off,interval_time):
+def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_power_off):
     print(f"[{str(datetime.datetime.now())}]: current circle {i}")
     t=time.time()
     time_path=get_time()
@@ -147,6 +147,7 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,data_num_power_off,interval
 def main(config,log_path):
     if not os.path.exists(log_path):
         os.makedirs(log_path)
+    os.system("echo demo|sudo -s python3 power.py")
     for ip in config["lidar_ip"]:
         ping_sure(ip,0.5)
         try:
