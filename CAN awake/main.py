@@ -80,8 +80,11 @@ def set_can(ip):
     os.system(command)
     
 def cancle_can(ip_list):
+    print(f"{datetime.datetime.now()}:start set lidar power mode")
     can=subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
+    time.sleep(30)
     for ip in ip_list:
+        ping_sure(ip,0.5)
         command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
         os.system(command)
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
