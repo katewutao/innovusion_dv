@@ -119,7 +119,7 @@ if __name__ == "__main__":
         os.system('chmod 777 '+powerdev.port)
     except:
         pass
-    powerdev.power_off()
+    #powerdev.power_off()
     powerdev.set_voltage(14)
     powerdev.set_current(360/14)
     sleep(2)

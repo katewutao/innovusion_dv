@@ -1,3 +1,10 @@
+# /**
+#  * @author katewutao
+#  * @email [kate.wu@cn.innovuison.com]
+#  * @create date 2023-01-19 09:15:01
+#  * @modify date 2023-01-19 09:15:01
+#  * @desc [description]
+#  */
 import subprocess
 import time
 import os
@@ -20,7 +27,7 @@ def downlog(ip,time_path):
     cmd2=subprocess.Popen(command2,shell=True)
 
 def ping(ip,interval_time):
-    command='ping -c 1 -W 0.15 '+ip
+    command=f'ping -c 1 -W 0.15 {ip}'
     cmd=subprocess.Popen('exec '+command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     time.sleep(interval_time)
     if cmd.poll() is not None:
