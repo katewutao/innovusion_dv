@@ -37,6 +37,23 @@ def ping_sure(ip,interval_time):
         flag=ping(ip,interval_time)
     print(f'[{datetime.datetime.now()}]lidar {ip} has connected')
 
+
+def init_power():
+    import shutil
+    cmd=os.popen("lsusb")
+    res=cmd.read()
+    if os.path.exists("power.py"):
+        os.remove("power.py")
+    if "Future Technology Devices International, Ltd FT232 Serial (UART) IC" in res:
+        shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
+    elif "QinHeng Electronics HL-340 USB-Serial adapter" in res:
+        shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
+    else:
+        print("power is not PY or DH")
+        return False
+    return True
+
+
 def test(times,interval_time,ip_extract,data_num_power_off):
     for item in times:
         t=time.time()
@@ -123,6 +140,8 @@ def test(times,interval_time,ip_extract,data_num_power_off):
 
 
 def dv_test(dict_config,interval_time=5,data_num_power_off=10,timeout_time=5):
+    while not init_power():
+        pass
     if not os.path.exists(os.getcwd()+'/result'):
         os.mkdir(os.getcwd()+'/result')
     print(f"[{datetime.datetime.now()}]get power permission")

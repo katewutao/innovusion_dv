@@ -40,6 +40,23 @@ def ping(ip,interval_time):
     else:
         return 0
 
+
+def init_power():
+    import shutil
+    cmd=os.popen("lsusb")
+    res=cmd.read()
+    if os.path.exists("power.py"):
+        os.remove("power.py")
+    if "Future Technology Devices International, Ltd FT232 Serial (UART) IC" in res:
+        shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
+    elif "QinHeng Electronics HL-340 USB-Serial adapter" in res:
+        shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
+    else:
+        print("power is not PY or DH")
+        return False
+    return True
+    
+    
 def ping_sure(ip,interval_time):
     flag=ping(ip,interval_time)
     while flag==0:
@@ -145,6 +162,8 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
 
 
 def main(config,log_path):
+    while not init_power():
+        pass
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     os.system("echo demo|sudo -s python3 power.py")

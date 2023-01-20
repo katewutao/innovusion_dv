@@ -98,6 +98,6 @@ if __name__=='__main__':
         os.system('chmod 777 '+pow.com)
     except:
         pass
-    pow.power_off()
+    #pow.power_off()
     time.sleep(3)
     pow.power_on()
