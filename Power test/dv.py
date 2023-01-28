@@ -139,7 +139,11 @@ def test(times,interval_time,ip_extract,data_num_power_off):
 
 
 
-def dv_test(dict_config,interval_time=5,data_num_power_off=10,timeout_time=5):
+def dv_test(dict_config):
+    interval_time=dict_config["interval_time"]
+    data_num_power_off=dict_config["data_num_power_off"]
+    timeout_time=dict_config["timeout_time"]
+    ip_extract=dict_config["ip"]
     while not init_power():
         pass
     if not os.path.exists(os.getcwd()+'/result'):
@@ -150,8 +154,6 @@ def dv_test(dict_config,interval_time=5,data_num_power_off=10,timeout_time=5):
     pow=power.Power()
     pow.power_on()
     time.sleep(15)
-    ip=pd.read_csv(os.getcwd()+'/IP_CMD_List.csv').values.tolist()
-    ip_extract=[ip[i][2].split('/')[0].split(' ')[1].split(':')[0] for i in range(len(ip))]
     for item in ip_extract:
         ping_sure(item,0.2)
     times=[]
@@ -181,7 +183,6 @@ def dv_test(dict_config,interval_time=5,data_num_power_off=10,timeout_time=5):
                 f.write(record_header)
     get_current_time=time.time()
     test(times,interval_time,ip_extract,data_num_power_off)
-
     print(f'[{datetime.datetime.now()}]summary time is {(time.time()-get_current_time)/60} min')
     
 if __name__=="__main__":
