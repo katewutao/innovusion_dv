@@ -61,8 +61,8 @@ def downlog(ip,log_path):
     save_path_ip_time=os.path.join(save_path_ip,time_path)
     if not os.path.exists(save_path_ip_time):
         os.makedirs(save_path_ip_time)
-    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp {save_path_ip_time}"
-    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt {save_path_ip_time}"
+    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path_ip_time}'"
+    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt '{save_path_ip_time}'"
     cmd1=subprocess.Popen(command1,shell=True)
     cmd2=subprocess.Popen(command2,shell=True)
     cmd1.wait()
@@ -143,7 +143,7 @@ def test(times,interval_time,ip_extract,data_num_power_off):
         for i in range(data_num_power_off):
             for ip in ip_extract:
                 temp=[str(datetime.datetime.now())]+[-100]*(record_header.count(","))
-                csv_write(os.getcwd()+'/result/record_'+ip.replace('.','_')+'.csv',temp)
+                csv_write(os.path.join(save_path,'record_'+ip.replace('.','_')+'.csv'),temp)
             t0=(item[0]+item[1]-time.time()+t)/(data_num_power_off-i)
             if t0>0:
                 time.sleep(t0)
@@ -200,11 +200,20 @@ def dv_test(dict_config):
     print(f'[{datetime.datetime.now()}]summary time is {(time.time()-get_current_time)/60} min')
     
 if __name__=="__main__":
-    time_dict={
-    "0:90,2:28,2:28,2:28,2:28,2:28,2:148":0,    #通电时间:断电时间   ,分隔  :循环次数 单位:分钟 :循环次数
-    "0:1,1:1":2,
-}
-    interval_time=5             # 上电时记录时间间隔(s)
-    data_num_power_off=10       # 断电时或通电0s空值数量
-    timeout_time=5
-    dv_test(time_dict,interval_time,data_num_power_off,timeout_time)
+    config={
+        "lidar_ip":[
+            "172.168.1.10",
+            ],  
+        #雷达的ip,格式为英文输入法的双引号,内为ip,以,隔开
+        
+        "time_dict":{
+            "1:1": 3,  # 通电时间:断电时间   ,分隔  :循环次数 单位:分钟 :循环次数
+        },
+        #"通电时间:断电时间,通电时间:断电时间,通电时间:断电时间":循环次数
+        #时间单位为分钟
+        
+        "data_num_power_off":10,    #断电时空数据数量
+        "interval_time":5,          #记录雷达状态的时间间隔
+        "timeout_time":5,           #获取雷达连接权限的超时时间
+    }
+    dv_test(config)
