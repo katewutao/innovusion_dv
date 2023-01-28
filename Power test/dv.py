@@ -143,7 +143,7 @@ def dv_test(dict_config):
     interval_time=dict_config["interval_time"]
     data_num_power_off=dict_config["data_num_power_off"]
     timeout_time=dict_config["timeout_time"]
-    ip_extract=dict_config["ip"]
+    ip_extract=dict_config["lidar_ip"]
     dict_config=dict_config["time_dict"]
     while not init_power():
         pass
