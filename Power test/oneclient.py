@@ -18,7 +18,7 @@ import datetime
 
 # polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
-save_path = './result'
+save_path = os.getcwd()+'/result/'
 record_keys = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'Txadc', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
                'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'LASER current', 'temperature', 'pump_st', 'alarm','get-ref-intensity','get-fpga-intensity','vol', 'curr']
 record_header = "time,temp_board,temp_adc1,temp_adc2,Temp_laser,Temp_fpga,temp_A,temp_B,temp_C,temp_D,motor speed,polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,LASER current,laser temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,CHA_fpga,CHB_fpga,CHC_fpga,CHD_fpga,vol,curr"

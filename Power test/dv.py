@@ -12,7 +12,8 @@ import subprocess
 import time
 import datetime
 import re
-from oneclient import record_header,csv_write
+from oneclient import record_header,csv_write,save_path
+import threading
 
 
 def ping(ip,interval_time):
@@ -53,6 +54,23 @@ def init_power():
     return True
 
 
+def downlog(ip,log_path):
+    times_now=time.strftime('%Y.%m.%d %H:%M:%S ',time.localtime(time.time()))
+    time_path=times_now.strip().replace(':', '_').replace('.', '_').replace(' ', '_')
+    save_path_ip=os.path.join(log_path,"ip_"+ip.replace('.','_'))
+    save_path_ip_time=os.path.join(save_path_ip,time_path)
+    if not os.path.exists(save_path_ip_time):
+        os.makedirs(save_path_ip_time)
+    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp {save_path_ip_time}"
+    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt {save_path_ip_time}"
+    cmd1=subprocess.Popen(command1,shell=True)
+    cmd2=subprocess.Popen(command2,shell=True)
+    cmd1.wait()
+    cmd2.wait()
+    
+    
+    
+
 def test(times,interval_time,ip_extract,data_num_power_off):
     import power
     for item in times:
@@ -73,7 +91,7 @@ def test(times,interval_time,ip_extract,data_num_power_off):
                 except:   
                     continue
         print(f"[{datetime.datetime.now()}]power on")
-        df.to_csv('result/pow_status.csv',header=None,index=None)
+        df.to_csv(os.path.join(save_path,'pow_status.csv'),header=None,index=None)
         if item[0]>20:
             command='exec python3 power_client.py'
             cmd_pow=subprocess.Popen(command,stderr=subprocess.PIPE,stdout=subprocess.PIPE,shell=True)
@@ -96,24 +114,17 @@ def test(times,interval_time,ip_extract,data_num_power_off):
             for ip in ip_extract:
                 for _ in range(data_num_power_off):
                     temp=[str(datetime.datetime.now())]+[-100]*(record_header.count(","))
-                    csv_write(os.getcwd()+'/result/record_'+ip.replace('.','_')+'.csv',temp)
-        if not os.path.exists(os.getcwd()+'/result/log'):
-            os.mkdir(os.getcwd()+'/result/log')
+                    csv_write(os.path.join(save_path,'record_'+ip.replace('.','_')+'.csv'),temp)
+        log_path=os.path.join(save_path,"log")
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+        threads=[]
         for ip in ip_extract:
-            times_now=time.strftime('%Y.%m.%d %H:%M:%S ',time.localtime(time.time()))
-            file_name=times_now.strip().replace(':', '_').replace('.', '_').replace(' ', '_')
-            if not os.path.exists(os.getcwd()+'/result/log/ip_'+ip.replace('.','_')):
-                os.mkdir(os.getcwd()+'/result/log/ip_'+ip.replace('.','_'))
-            if not os.path.exists(os.getcwd()+'/result/log/ip_'+ip.replace('.','_')+'/'+file_name):
-                os.mkdir(os.getcwd()+'/result/log/ip_'+ip.replace('.','_')+'/'+file_name)
-            command='cd '+os.getcwd()+'/result/log/ip_'+ip.replace('.','_')+';sshpass -p 4920lidar scp -rp root@'+ip+':/tmp ./'+file_name
-            cmd=os.popen(command)
-            cmd.read()
-            cmd.close()
-            command='cd '+os.getcwd()+'/result/log/ip_'+ip.replace('.','_')+';sshpass -p 4920lidar scp -rp root@'+ip+':/mnt ./'+file_name
-            cmd=os.popen(command)
-            cmd.read()
-            cmd.close()
+            thread=threading.Thread(target=downlog,args=(ip,log_path,))
+            thread.start()
+            threads.append(thread)
+        for temp_thread in threads:
+            temp_thread.join()
         while True:
             try:    
                 pow.power_off()
@@ -148,8 +159,8 @@ def dv_test(dict_config):
     while not init_power():
         pass
     import power
-    if not os.path.exists(os.getcwd()+'/result'):
-        os.mkdir(os.getcwd()+'/result')
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
     print(f"[{datetime.datetime.now()}]get power permission")
     os.system('sshpass -p demo sudo python3 ./power.py')
     os.system("sshpass -p demo sudo chmod 777 lidar_util/inno_pc_client")
@@ -179,7 +190,7 @@ def dv_test(dict_config):
             pass
         child.close()
     for ip in ip_extract:
-        record_file='result/record_'+ip.replace('.','_')+'.csv'
+        record_file=os.path.join(save_path,'record_'+ip.replace('.','_')+'.csv')
         if not os.path.exists(record_file):
             with open(record_file,"w",newline="\n") as f:
                 f.write(record_header)
