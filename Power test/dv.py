@@ -6,7 +6,6 @@
 #  * @desc [DV test main ]
 #  */
 import pexpect
-import power
 import pandas as pd
 import os
 import subprocess
@@ -55,6 +54,7 @@ def init_power():
 
 
 def test(times,interval_time,ip_extract,data_num_power_off):
+    import power
     for item in times:
         t=time.time()
         while True:
@@ -144,8 +144,10 @@ def dv_test(dict_config):
     data_num_power_off=dict_config["data_num_power_off"]
     timeout_time=dict_config["timeout_time"]
     ip_extract=dict_config["ip"]
+    dict_config=dict_config["time_dict"]
     while not init_power():
         pass
+    import power
     if not os.path.exists(os.getcwd()+'/result'):
         os.mkdir(os.getcwd()+'/result')
     print(f"[{datetime.datetime.now()}]get power permission")
