@@ -19,7 +19,6 @@ import os
 
 class Power(object):
     def __init__(self):
-        log_path = "./INTERLOCK.log"
         self.com = None
         if self.com is None:
             port_lists = list(list_ports.comports())
