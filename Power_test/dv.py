@@ -102,13 +102,12 @@ def test(times,interval_time,ip_extract,data_num_power_off):
                 cmd=subprocess.Popen(command_record,shell=True,stdout=subprocess.PIPE)
                 cmds.append(cmd)
                 print(f'[{datetime.datetime.now()}]{ip_extract[i]} is record!!')
-            time.sleep(20)
             for i in range(len(ip_extract)):
                 raw_path=os.path.join(save_path,"raw",ip_extract[i].replace(".","_"))
                 command_raw=f'exec python3 capture_raw.py -i {ip_extract[i]} -s "{raw_path}" -l {9100+i} -ls {8100+i}'
                 cmd=subprocess.Popen(command_raw,shell=True)
                 print(f'[{datetime.datetime.now()}]{ip_extract[i]} is monitor fault!!')
-            time.sleep(item[0]-20)
+            time.sleep(item[0])
             for cmd in cmds:
                 cmd.kill()
             os.system("ps -ef|grep capture_raw.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
