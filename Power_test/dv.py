@@ -100,12 +100,15 @@ def test(times,interval_time,ip_extract,data_num_power_off):
                 command_record=f'exec python3 oneclient.py --ip {ip_extract[i]} --interval {interval_time}'
                 cmd=subprocess.Popen(command_record,shell=True,stdout=subprocess.PIPE)
                 cmds.append(cmd)
+                print(f'[{datetime.datetime.now()}]{ip_extract[i]} is record!!')
+            time.sleep(20)
+            for i in range(len(ip_extract)):
                 raw_path=os.path.join(save_path,"raw",ip_extract[i].replace(".","_"))
                 command_raw=f'exec python3 capture_raw.py -i {ip_extract[i]} -s "{raw_path}" -l {9100+i} -ls {8100+i}'
                 cmd=subprocess.Popen(command_raw,shell=True,stdout=subprocess.PIPE)
                 cmds.append(cmd)
-                print(f'[{datetime.datetime.now()}]{ip_extract[i]} is record!!')
-            time.sleep(item[0])
+                print(f'[{datetime.datetime.now()}]{ip_extract[i]} is monitor fault!!')
+            time.sleep(item[0]-20)
             for cmd in cmds:
                 cmd.kill()
             print(f"[{datetime.datetime.now()}]record has been terminated")
