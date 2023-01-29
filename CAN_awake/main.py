@@ -137,7 +137,7 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
         time.sleep(20)
         for ip_num in range(len(ip_list)):
             raw_save_path="result/raw/"+ip_list[ip_num].replace('.','_')+'/'+time_path
-            subprocess.Popen(f'python3 capture_raw.py -i {ip_list[ip_num]} -s "{raw_save_path}" -l {9100+ip_num} -ls {8100+ip_num}',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            subprocess.Popen(f'python3 capture_raw.py -i {ip_list[ip_num]} -s "{raw_save_path}" -l {9100+ip_num} -ls {8100+ip_num}',shell=True)
         time.sleep(power_on_time-22)
     threads=[]
     for ip in ip_list:
@@ -195,6 +195,26 @@ def main(config,log_path):
     cancle_can(config["lidar_ip"])
 
 if __name__=="__main__":
-    config=load_config()
-    log_path="result/log"
+    config={
+        "lidar_ip":[
+            "172.168.1.10",
+            "172.168.1.2",
+            "172.168.1.3",
+            "172.168.1.4",
+            "172.168.1.5",
+            "172.168.1.6",
+            ],  
+        #雷达的ip,格式为英文输入法的双引号,内为ip,以,隔开
+        
+        "time_dict":{
+            "1:1": 10,
+        },
+        #"CAN唤醒时间:CAN休眠时间,CAN唤醒时间:CAN休眠时间,CAN唤醒时间:CAN休眠时间":循环次数
+        #时间单位为分钟
+        
+        "data_num_power_off":10,    #CAN休眠时空数据数量
+        "interval_time":5,          #记录雷达状态的时间间隔
+        "timeout_time":5,           #获取雷达连接权限的超时时间
+    }
+    log_path=os.path.join(save_path,"log")
     main(config,log_path)
