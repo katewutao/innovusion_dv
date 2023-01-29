@@ -162,7 +162,7 @@ def dv_test(dict_config):
     timeout_time=dict_config["timeout_time"]
     ip_extract=dict_config["lidar_ip"]
     dict_config=dict_config["time_dict"]
-    print(f"[{datetime.datetime.now()}]get inno_pc_client permision")
+    print(f"[{datetime.datetime.now()}]get inno_pc_client permission")
     os.system("echo demo|sudo -S chmod 777 lidar_util/inno_pc_client")
     while not init_power():
         pass
