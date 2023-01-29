@@ -68,7 +68,7 @@ if __name__=="__main__":
             break
     if not os.path.exists(args.savepath):
         os.makedirs(args.savepath)
-    i=0
+    i=1
     newest_path=newest_folder(args.savepath,i)
     command1=f"exec lidar_util/inno_pc_client --lidar-ip {args.ip} --lidar-port 8010 --lidar-udp-port 8010 --tcp-port {args.lidarport} --udp-port {args.lidarport}"
     command2=f"curl localhost:{args.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
