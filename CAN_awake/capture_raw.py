@@ -70,7 +70,6 @@ if __name__=="__main__":
         os.makedirs(args.savepath)
     i=0
     newest_path=newest_folder(args.savepath,i)
-    
     command1=f"exec lidar_util/inno_pc_client --lidar-ip {args.ip} --lidar-port 8010 --lidar-udp-port 8010 --tcp-port {args.lidarport} --udp-port {args.lidarport}"
     command2=f"curl localhost:{args.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
     command3=f"curl {args.ip}:8010/command/?set_faults_save_raw=ffffffffffffffff"
@@ -80,7 +79,8 @@ if __name__=="__main__":
     os.system(command2)
     os.system(command3)
     os.system(command4)
-    while 1:
+    raw_count=len(os.listdir(args.savepath))
+    while True:
         delete_util_log(os.path.join("lidar_util",f"{args.ip}_out"))
         delete_util_log(os.path.join("lidar_util",f"{args.ip}_err"))
         delete_util_log(os.path.join("lidar_util","inno_pc_client.log"))
@@ -88,7 +88,8 @@ if __name__=="__main__":
         delete_util_log(os.path.join("lidar_util","inno_pc_client.log.1"))
         delete_util_log(os.path.join("lidar_util","inno_pc_client.log.2"))
         if check_raw(os.listdir(newest_path)):
-            print(f"record raw data to {os.path.abspath(newest_path)}")
+            if i>=raw_count:
+                print(f"record raw data to {os.path.abspath(newest_path)}")
             i+=1
             newest_path=newest_folder(args.savepath,i)
             command2=f"curl localhost:{args.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
