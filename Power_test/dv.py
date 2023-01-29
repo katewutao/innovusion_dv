@@ -112,6 +112,7 @@ def test(times,interval_time,ip_extract,data_num_power_off):
             for cmd in cmds:
                 cmd.kill()
             os.system("ps -ef|grep capture_raw.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+            os.system("ps -ef|grep inno_pc_client|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
             print(f"[{datetime.datetime.now()}]record has been terminated")
             cmd_pow.kill()
             cmd_pow.wait()

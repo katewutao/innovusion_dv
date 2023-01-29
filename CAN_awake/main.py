@@ -148,6 +148,7 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
         temp_thread.join()
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
     os.system("ps -ef|grep capture_raw.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+    os.system("ps -ef|grep inno_pc_client|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
     print("start sleep")
     for record in records:
         record.kill()
