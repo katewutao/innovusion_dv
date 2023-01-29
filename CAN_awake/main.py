@@ -168,7 +168,7 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
 
 
 def main(config,log_path):
-    print(f"[{datetime.datetime.now()}]get inno_pc_client permision")
+    print(f"[{datetime.datetime.now()}]get inno_pc_client permission")
     os.system("echo demo|sudo -S chmod 777 lidar_util/inno_pc_client")
     while not init_power():
         pass
