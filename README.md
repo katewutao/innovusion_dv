@@ -33,7 +33,8 @@ gsettings set org.gnome.desktop.peripherals.touchpad click-method areas
 ubantu 20.04::::sudo python3 -m pip install serial   sudo python3 -m pip install pyserial
 
 
-
+crtl+H 显示文件夹内隐藏文件,复制文件夹时需要和.git文件夹一起
+git log 查看代码更新内容以及日期
 
 
 404  Not Found [IP: 202.141.160.110 80]  :    sudo add-apt-repository ppa:chris-lea/node.js
