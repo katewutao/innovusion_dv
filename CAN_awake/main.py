@@ -204,6 +204,16 @@ def main(config,log_path):
         i+=1 
     cmd_pow.kill()
     cancle_can(config["lidar_ip"])
+    import power
+    while True:
+        try:
+            pow=power.Power()
+            pow.power_off()
+            break
+        except:
+            print(f"[{datetime.datetime.now()}]get power permission")
+            os.system('sshpass -p demo sudo python3 ./power.py')
+            pass
 
 if __name__=="__main__":
     config={
