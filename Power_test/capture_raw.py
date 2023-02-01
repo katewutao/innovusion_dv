@@ -86,6 +86,9 @@ def main(args):
         delete_util_log(os.path.join(util_dir,"inno_pc_client.log.err"))
         delete_util_log(os.path.join(util_dir,"inno_pc_client.log.1"))
         delete_util_log(os.path.join(util_dir,"inno_pc_client.log.2"))
+        if not os.path.exists(newest_path):
+            print(f"inno_pc_client boot failed!")
+            return None
         if check_raw(os.listdir(newest_path)):
             if i>=raw_count:
                 print(f"record raw data to {os.path.abspath(newest_path)}")
