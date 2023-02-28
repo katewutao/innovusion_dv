@@ -19,9 +19,9 @@ import datetime
 # polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
 save_path = os.getcwd()+'/result/'
-record_keys = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'Txadc', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'LASER current','pump voltage=','temperature=','seed temperature=','polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
+record_keys = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'LASER current','pump voltage=','temperature=','seed temperature=','polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
                'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'temperature', 'pump_st', 'alarm','get-ref-intensity','get-fpga-intensity','vol', 'curr']
-record_header = "time,temp_board,temp_adc1,temp_adc2,Temp_laser,Temp_fpga,temp_A,temp_B,temp_C,temp_D,motor speed,Pump_laser_current,pump_voltage,laser_module_temperature,seed_temperature,polygon_speed,Motor_DC_bus_voltage,Motor_RMS_current,Motor_speed_control_err,Galvo_FPS,Galvo_RMS_current,Galvo_frame_counter,Galvo_position_control_err,laser_module_current,unit_current,laser_temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,CHA_fpga,CHB_fpga,CHC_fpga,CHD_fpga,vol,curr"
+record_header = "time,Temp_fpga,temp_adc,temp_board,Temp_laser,temp_A,temp_B,temp_C,temp_D,motor speed,Pump_laser_current,pump_voltage,laser_module_temperature,seed_temperature,polygon_speed,Motor_DC_bus_voltage,Motor_RMS_current,Motor_speed_control_err,Galvo_FPS,Galvo_RMS_current,Galvo_frame_counter,Galvo_position_control_err,laser_module_current,unit_current,laser_temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,CHA_fpga,CHB_fpga,CHC_fpga,CHD_fpga,vol,curr"
 
 def extract(keys, st):
     import re

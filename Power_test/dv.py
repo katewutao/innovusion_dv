@@ -13,9 +13,9 @@ import subprocess
 import time
 import datetime
 import re
-from serial.tools import list_ports
 from oneclient import record_header,csv_write,save_path
 import threading
+from auto_update_sdk import down_sdk
 
 
 def ping(ip,interval_time):
@@ -38,30 +38,22 @@ def ping_sure(ip,interval_time):
         print(f'[{datetime.datetime.now()}]please connect lidar {ip}')
         flag=ping(ip,interval_time)
     print(f'[{datetime.datetime.now()}]lidar {ip} has connected')
-    
-    
+
+
 def init_power():
     import shutil
-    port_lists=list(list_ports.comports())
-    for _, i in enumerate(port_lists):
-        if "FT232R USB UART - FT232R USB UART" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
-            return True
-        elif "USB-Serial Controller" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
-            return True
     cmd=os.popen("lsusb")
     res=cmd.read()
     if os.path.exists("power.py"):
         os.remove("power.py")
-    if "FT232" in res or "Prolific Technology" in res:
+    if "FT232" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
-        return True
-    elif "HL-340" in res or "Future Technology Devices International" in res:
+    elif "HL-340" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
-        return True
-    print("power is not PY or DH")
-    return False
+    else:
+        print("power is not PY or DH")
+        return False
+    return True
 
 
 def downlog(ip,log_path):
@@ -185,6 +177,7 @@ def dv_test(dict_config):
     time.sleep(15)
     for item in ip_extract:
         ping_sure(item,0.2)
+    down_sdk(item)
     times=[]
     for key in dict_config.keys():
         temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*)",key)

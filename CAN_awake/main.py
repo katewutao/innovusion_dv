@@ -15,8 +15,8 @@ import sys
 import threading
 import re
 import pandas as pd
-from serial.tools import list_ports
 from oneclient import record_header,csv_write,save_path
+from auto_update_sdk import down_sdk
 
 
 def downlog(ip,time_path):
@@ -48,26 +48,18 @@ def ping(ip,interval_time):
 
 def init_power():
     import shutil
-    port_lists=list(list_ports.comports())
-    for _, i in enumerate(port_lists):
-        if "FT232R USB UART - FT232R USB UART" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
-            return True
-        elif "USB-Serial Controller" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
-            return True
     cmd=os.popen("lsusb")
     res=cmd.read()
     if os.path.exists("power.py"):
         os.remove("power.py")
-    if "FT232" in res or "Prolific Technology" in res:
+    if "FT232" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
-        return True
-    elif "HL-340" in res or "Future Technology Devices International" in res:
+    elif "HL-340" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
-        return True
-    print("power is not PY or DH")
-    return False
+    else:
+        print("power is not PY or DH")
+        return False
+    return True
     
     
 def ping_sure(ip,interval_time):
@@ -154,9 +146,9 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
         threads.append(thread)
     for temp_thread in threads:
         temp_thread.join()
-    os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
-    os.system("ps -ef|grep capture_raw.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
-    os.system("ps -ef|grep inno_pc_client|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+    os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk '{print $2}'|xargs kill -9")
+    os.system("ps -ef|grep capture_raw.py|grep -v grep|awk '{print $2}'|xargs kill -9")
+    os.system("ps -ef|grep inno_pc_client|grep -v grep|awk '{print $2}'|xargs kill -9")
     print("start sleep")
     for record in records:
         record.kill()
@@ -185,6 +177,7 @@ def main(config,log_path):
     os.system("echo demo|sudo -s python3 power.py")
     for ip in config["lidar_ip"]:
         ping_sure(ip,0.5)
+        down_sdk(ip)
         try:
             get_promission(ip,config["timeout_time"])
             set_can(ip)
@@ -204,16 +197,6 @@ def main(config,log_path):
         i+=1 
     cmd_pow.kill()
     cancle_can(config["lidar_ip"])
-    import power
-    while True:
-        try:
-            pow=power.Power()
-            pow.power_off()
-            break
-        except:
-            print(f"[{datetime.datetime.now()}]get power permission")
-            os.system('sshpass -p demo sudo python3 ./power.py')
-            pass
 
 if __name__=="__main__":
     config={

@@ -3,10 +3,10 @@
 import argparse
 import os
 import subprocess
-import time
+import time,datetime,select
 import sys
 import re
-
+from oneclient import save_path
 
 
 
@@ -41,7 +41,7 @@ def newest_folder(A,B):
     return newest_path
 
 def check_raw(file_list):
-    key="sn\d+-\d+-incomplete.inno_raw"
+    key="sn\d+-\d+.*\.inno_raw$"
     for file in file_list:
         if re.match(key,file):
             return True
@@ -56,9 +56,32 @@ def delete_util_log(log_path):
             pass
 
 
+def get_cmd_print(cmd,poll_obj,fault_log_path):
+    if poll_obj.poll(0):
+        stderr=cmd.stderr.readline().decode("utf-8")
+        ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sset",stderr)
+        if ret:
+            str1=f"[{datetime.datetime.now()}] {args.ip} {ret.group(2)} has been set"
+            with open(fault_log_path,"a") as f:
+                f.write(str1+"\n")
+            print("\033[0;31;40m",str1, "\033[0m")
+    stdout=cmd.stdout.readline().decode("utf-8")
+    ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sheal",stdout)
+    if ret:
+        str1=f"[{datetime.datetime.now()}] {args.ip} {ret.group(2)} has been heal"
+        with open(fault_log_path,"a") as f:
+            f.write(str1+"\n")
+        print("\033[1;32m",str1, "\033[0m")
+
+
+
 def main(args):
     util_dir="lidar_util"
     util_path=os.path.join(util_dir,"inno_pc_client")
+    fault_log_path=os.path.join(save_path,"fault")
+    if not os.path.exists(fault_log_path):
+        os.makedirs(fault_log_path)
+    fault_log_path=os.path.join(fault_log_path,args.ip.replace(".","_")+".txt")
     if not os.path.exists(util_path):
         print(f"file {util_path} not exists!")
         return None
@@ -69,17 +92,21 @@ def main(args):
         os.makedirs(args.savepath)
     i=1
     newest_path=newest_folder(args.savepath,i)
-    command1=f"exec {util_path} --lidar-ip {args.ip} --lidar-port 8010 --lidar-udp-port 8010 --tcp-port {args.lidarport} --udp-port {args.lidarport}"
+    command1=f"{util_path} --lidar-ip {args.ip} --lidar-port 8010 --lidar-udp-port 8010 --tcp-port {args.lidarport} --udp-port {args.lidarport}"
     command2=f"curl localhost:{args.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
     command3=f"curl {args.ip}:8010/command/?set_faults_save_raw=ffffffffffffffff"
     command4=f"curl localhost:{args.lidarport}/command/?set_save_raw_data={args.lisenport}"
-    cmd=subprocess.Popen(command1,shell=True,stdout=open(os.path.join(util_dir,f"{args.ip}_out"),'w'),stderr=open(os.path.join(util_dir,f"{args.ip}_err"),'w'))
+    # cmd=subprocess.Popen(command1,shell=True,stdout=open(os.path.join(util_dir,f"{args.ip}_out"),'w'),stderr=open(os.path.join(util_dir,f"{args.ip}_err"),'w'))
+    cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    poll_obj=select.poll()
+    poll_obj.register(cmd.stderr,select.POLLIN)
     time.sleep(1)
     os.system(command2)
     os.system(command3)
     os.system(command4)
     raw_count=len(os.listdir(args.savepath))
     while True:
+        get_cmd_print(cmd,poll_obj,fault_log_path)
         delete_util_log(os.path.join(util_dir,f"{args.ip}_out"))
         delete_util_log(os.path.join(util_dir,f"{args.ip}_err"))
         delete_util_log(os.path.join(util_dir,"inno_pc_client.log"))
