@@ -177,7 +177,10 @@ def main(config,log_path):
     os.system("echo demo|sudo -s python3 power.py")
     for ip in config["lidar_ip"]:
         ping_sure(ip,0.5)
-        down_sdk(ip)
+        try:
+            down_sdk(ip)
+        except:
+            print("update sdk failed")
         try:
             get_promission(ip,config["timeout_time"])
             set_can(ip)
