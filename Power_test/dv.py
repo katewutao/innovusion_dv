@@ -177,7 +177,10 @@ def dv_test(dict_config):
     time.sleep(15)
     for item in ip_extract:
         ping_sure(item,0.2)
-    down_sdk(item)
+    try:
+        down_sdk(item)
+    except:
+        print("update sdk failed")
     times=[]
     for key in dict_config.keys():
         temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*)",key)
