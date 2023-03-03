@@ -137,7 +137,7 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
     if power_on_time>2:
         for ip_num in range(len(ip_list)):
             raw_save_path="result/raw/"+ip_list[ip_num].replace('.','_')+'/'+time_path
-            subprocess.Popen(f'python3 capture_raw.py -i {ip_list[ip_num]} -s "{raw_save_path}" -l {9100+ip_num} -ls {8100+ip_num}',shell=True)
+            subprocess.Popen(f'python3 capture_raw.py -i {ip_list[ip_num]} -s "{raw_save_path}" -l {9100+ip_num} -ls {8100+ip_num} -lup {8600+ip_num}',shell=True)
         time.sleep(power_on_time-2)
     threads=[]
     for ip in ip_list:
@@ -169,18 +169,15 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
 
 def main(config,log_path):
     print(f"[{datetime.datetime.now()}]get inno_pc_client permission")
-    os.system("echo demo|sudo -S chmod 777 lidar_util/inno_pc_client")
+    os.system('/bin/bash -c "chmod 777 lidar_util/inno_pc_client"')
     while not init_power():
         pass
     if not os.path.exists(log_path):
         os.makedirs(log_path)
-    os.system("echo demo|sudo -s python3 power.py")
+    os.system("python3 power.py")
     for ip in config["lidar_ip"]:
         ping_sure(ip,0.5)
-        try:
-            down_sdk(ip)
-        except:
-            print("update sdk failed")
+        down_sdk(ip)
         try:
             get_promission(ip,config["timeout_time"])
             set_can(ip)

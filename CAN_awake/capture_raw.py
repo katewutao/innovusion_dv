@@ -92,9 +92,9 @@ def main(args):
         os.makedirs(args.savepath)
     i=1
     newest_path=newest_folder(args.savepath,i)
-    command1=f"{util_path} --lidar-ip {args.ip} --lidar-port 8010 --lidar-udp-port 8010 --tcp-port {args.lidarport} --udp-port {args.lidarport}"
+    command1=f"{util_path} --lidar-ip {args.ip} --lidar-port 8010 --lidar-udp-port {args.lidarudpport} --tcp-port {args.lidarport}"
     command2=f"curl localhost:{args.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
-    command3=f"curl {args.ip}:8010/command/?set_faults_save_raw=ffffffffffffffff"
+    command3=f"curl localhost:{args.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"
     command4=f"curl localhost:{args.lidarport}/command/?set_save_raw_data={args.lisenport}"
     # cmd=subprocess.Popen(command1,shell=True,stdout=open(os.path.join(util_dir,f"{args.ip}_out"),'w'),stderr=open(os.path.join(util_dir,f"{args.ip}_err"),'w'))
     cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -130,6 +130,7 @@ if __name__=="__main__":
     parses.add_argument('--ip','-i',type=str,required=True)
     parses.add_argument('--savepath','-s',type=str,required=True)
     parses.add_argument('--lidarport','-l',type=str,required=True)
+    parses.add_argument('--lidarudpport','-lup',type=str,required=True)
     parses.add_argument('--lisenport','-ls',type=str,required=True)
     args=parses.parse_args()
     main(args)
