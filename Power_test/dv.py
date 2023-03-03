@@ -105,7 +105,7 @@ def test(times,interval_time,ip_extract,data_num_power_off):
                 print(f'[{datetime.datetime.now()}]{ip_extract[i]} is record!!')
             for i in range(len(ip_extract)):
                 raw_path=os.path.join(save_path,"raw",ip_extract[i].replace(".","_"))
-                command_raw=f'exec python3 capture_raw.py -i {ip_extract[i]} -s "{raw_path}" -l {9100+i} -ls {8100+i}'
+                command_raw=f'exec python3 capture_raw.py -i {ip_extract[i]} -s "{raw_path}" -l {9100+i} -ls {8100+i} -lup {8600+i}'
                 cmd=subprocess.Popen(command_raw,shell=True)
                 print(f'[{datetime.datetime.now()}]{ip_extract[i]} is monitor fault!!')
             time.sleep(item[0])
@@ -163,7 +163,7 @@ def dv_test(dict_config):
     ip_extract=dict_config["lidar_ip"]
     dict_config=dict_config["time_dict"]
     print(f"[{datetime.datetime.now()}]get inno_pc_client permission")
-    os.system("echo demo|sudo -S chmod 777 lidar_util/inno_pc_client")
+    os.system('/bin/bash -c "chmod 777 lidar_util/inno_pc_client"')
     while not init_power():
         pass
     import power
@@ -171,16 +171,13 @@ def dv_test(dict_config):
         os.mkdir(save_path)
     print(f"[{datetime.datetime.now()}]get power permission")
     os.system('sshpass -p demo sudo python3 ./power.py')
-    os.system("sshpass -p demo sudo chmod 777 lidar_util/inno_pc_client")
+    os.system('/bin/bash -c "chmod 777 lidar_util/inno_pc_client"')
     pow=power.Power()
     pow.power_on()
     time.sleep(15)
     for item in ip_extract:
         ping_sure(item,0.2)
-    try:
-        down_sdk(item)
-    except:
-        print("update sdk failed")
+    down_sdk(item)
     times=[]
     for key in dict_config.keys():
         temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*)",key)

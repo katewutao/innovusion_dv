@@ -91,6 +91,7 @@ class Power(object):
         else:
             print("Error! The PS output on failed!")
         return result
+        
 if __name__=='__main__':
     pow=Power()
     try:
