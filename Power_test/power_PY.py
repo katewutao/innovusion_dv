@@ -26,6 +26,7 @@ class Power(object):
                  if 'Serial' in i.description:
                      self.com = port_lists[int(index)][0]
                      break
+        os.system(f'echo demo|sudo -S chmod 777 {self.com}')
 
     def power_off(self):
         master = modbus_rtu.RtuMaster(serial.Serial(self.com, 9600, 8, 'N', 1))
@@ -95,10 +96,6 @@ class Power(object):
         return result
 if __name__=='__main__':
     pow=Power()
-    try:
-        os.system(f'echo demo|sudo -S chmod 777 {pow.com}')
-    except:
-        pass
     #pow.power_off()
     time.sleep(3)
     pow.power_on()
