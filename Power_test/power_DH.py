@@ -42,6 +42,7 @@ class Power(object):
                 port = port_lists[int(index)][0]
                 break
         self.port=port
+        os.system(f'echo demo|sudo -S chmod 777 {port}')
         self.com = serial.Serial(port, timeout=timeout, stopbits=stop, baudrate=baudrate)
 
     def send(self, cmd):
@@ -115,10 +116,6 @@ class Power(object):
 
 if __name__ == "__main__":
     powerdev = Power()    # reset and set remote mode
-    try:
-        os.system('echo demo|sudo -S chmod 777 '+powerdev.port)
-    except:
-        pass
     #powerdev.power_off()
     powerdev.set_voltage(14)
     powerdev.set_current(360/14)
