@@ -116,7 +116,7 @@ class Power(object):
 if __name__ == "__main__":
     powerdev = Power()    # reset and set remote mode
     try:
-        os.system('chmod 777 '+powerdev.port)
+        os.system('echo demo|sudo -S chmod 777 '+powerdev.port)
     except:
         pass
     #powerdev.power_off()

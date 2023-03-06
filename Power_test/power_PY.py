@@ -96,7 +96,7 @@ class Power(object):
 if __name__=='__main__':
     pow=Power()
     try:
-        os.system(f'/bin/bash -c "chmod 777 {pow.com}"')
+        os.system(f'echo demo|sudo -S chmod 777 {pow.com}')
     except:
         pass
     #pow.power_off()
