@@ -46,10 +46,10 @@ def init_power():
     res=cmd.read()
     if os.path.exists("power.py"):
         os.remove("power.py")
-    if "FT232" in res:
+    if "FT232" in res or "0403:6001" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
         return True 
-    elif "HL-340" in res or "PL2303" in res:
+    elif "HL-340" in res or "PL2303" in res or "1a86:7523" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
         return True
     from serial.tools import list_ports
