@@ -24,8 +24,8 @@ def downlog(ip,time_path):
     save_path=os.path.join(save_path,time_path)
     os.makedirs(save_path)
     #os.makedirs(os.path.join(save_path,'mnt'))
-    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp {save_path}"
-    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt {save_path}"
+    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
+    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt '{save_path}'"
     cmd1=subprocess.Popen(command1,shell=True)
     cmd2=subprocess.Popen(command2,shell=True)
     cmd1.wait()
@@ -52,10 +52,10 @@ def init_power():
     res=cmd.read()
     if os.path.exists("power.py"):
         os.remove("power.py")
-    if "FT232" in res:
+    if "FT232" in res or "0403:6001" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
         return True 
-    elif "HL-340" in res or "PL2303" in res:
+    elif "HL-340" in res or "PL2303" in res or "1a86:7523" in res:
         shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
         return True
     from serial.tools import list_ports
@@ -179,7 +179,7 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
 
 def main(config,log_path):
     print(f"[{datetime.datetime.now()}]get inno_pc_client permission")
-    os.system('/bin/bash -c "chmod 777 lidar_util/inno_pc_client"')
+    os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
     while not init_power():
         pass
     if not os.path.exists(log_path):
@@ -207,6 +207,7 @@ def main(config,log_path):
         i+=1 
     cmd_pow.kill()
     cancle_can(config["lidar_ip"])
+    os.system("echo demo|sudo -S python3 ./power.py")
     import power
     pow=power.Power()
     pow.power_off()
