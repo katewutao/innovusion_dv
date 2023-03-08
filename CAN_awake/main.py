@@ -98,11 +98,17 @@ def get_promission(ip,time_out):
 def get_circle_time(dict_config):
     times=[]
     for key in dict_config.keys():
-        temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*)",key)
+        temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*):?(\d+\.?\d*)?",key)
         for i in range(len(temp_times)):
             temp_times[i]=list(temp_times[i])
             for j in range(len(temp_times[i])):
-                temp_times[i][j]=float(temp_times[i][j])*60
+                if j!=2:
+                    temp_times[i][j]=float(temp_times[i][j])*60
+                else:
+                    if temp_times[i][j]!="":
+                        temp_times[i][j]=float(temp_times[i][j])
+                    else:
+                        temp_times[i][j]=13.5
         times+=temp_times*dict_config[key]
     return times
 
@@ -135,20 +141,26 @@ def load_config():
         return json.load(f)
 
 
-def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_power_off):
+def one_cycle(power_one_time,ip_list,i,interval_time,data_num_power_off):
+    try:
+        from power import Power
+        pow=Power()
+        pow.set_voltage(power_one_time[2])
+    except:
+        print(f"{datetime.datetime.now()} set power voltage failed")
     print(f"[{str(datetime.datetime.now())}]: current circle {i}")
     t=time.time()
     time_path=get_time()
-    can=subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
+    subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
     records=[]
     for ip in ip_list:
         cmd=subprocess.Popen(f"exec python3 oneclient.py --ip {ip} --interval {interval_time}",shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE)
         records.append(cmd)
-    if power_on_time>2:
+    if power_one_time[0]>2:
         for ip_num in range(len(ip_list)):
             raw_save_path="result/raw/"+ip_list[ip_num].replace('.','_')+'/'+time_path
             subprocess.Popen(f'python3 capture_raw.py -i {ip_list[ip_num]} -s "{raw_save_path}" -l {9100+ip_num} -ls {8100+ip_num} -lup {8600+ip_num}',shell=True)
-        time.sleep(power_on_time-2)
+        time.sleep(power_one_time[0]-2)
     threads=[]
     for ip in ip_list:
         thread=threading.Thread(target=downlog,args=(ip,time_path,))
@@ -172,7 +184,7 @@ def one_cycle(power_on_time,power_off_time,ip_list,i,interval_time,data_num_powe
                     pass
             temp=[str(datetime.datetime.now())]+[-100]*(record_header.count(",")-2)+pow[0]
             csv_write(os.path.join(save_path,'record_'+ip.replace('.','_')+'.csv'),temp)
-        t0=(power_on_time+power_off_time-(time.time()-t))/(data_num_power_off-i)
+        t0=(power_one_time[0]+power_one_time[1]-(time.time()-t))/(data_num_power_off-i)
         if t0>0:
             time.sleep(t0)
 
@@ -184,7 +196,7 @@ def main(config,log_path):
         pass
     if not os.path.exists(log_path):
         os.makedirs(log_path)
-    os.system("python3 power.py")
+    os.system("python3 ./power.py")
     for ip in config["lidar_ip"]:
         ping_sure(ip,0.5)
         down_sdk(ip)
@@ -203,7 +215,7 @@ def main(config,log_path):
     times=get_circle_time(config["time_dict"])
     i=1
     for time_one in times:
-        one_cycle(time_one[0],time_one[1],config["lidar_ip"],i,config["interval_time"],config["data_num_power_off"])
+        one_cycle(time_one,config["lidar_ip"],i,config["interval_time"],config["data_num_power_off"])
         i+=1 
     cmd_pow.kill()
     cancle_can(config["lidar_ip"])
@@ -228,8 +240,9 @@ if __name__=="__main__":
         "time_dict":{
             "1:0.5": 10,
         },
-        #"CAN唤醒时间:CAN休眠时间,CAN唤醒时间:CAN休眠时间,CAN唤醒时间:CAN休眠时间":循环次数
+        #"CAN唤醒时间:CAN休眠时间:电源电压,CAN唤醒时间:CAN休眠时间:电源电压,CAN唤醒时间:CAN休眠时间:电源电压":循环次数
         #时间单位为分钟
+        #电源电压单位V，不设默认为13.5V
         
         "data_num_power_off":10,    #CAN休眠时空数据数量
         "interval_time":5,          #记录雷达状态的时间间隔

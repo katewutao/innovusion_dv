@@ -94,8 +94,14 @@ class Power(object):
         else:
             print("Error! The PS output on failed!")
         return result
+    
+    def set_voltage(self,voltage):
+        master = modbus_rtu.RtuMaster(serial.Serial(self.com, 9600, 8, 'N', 1))
+        master.execute(1, cst.WRITE_MULTIPLE_REGISTERS, 2021, output_value=[voltage*100,(900//voltage)*100])
+    
 if __name__=='__main__':
     pow=Power()
     #pow.power_off()
     time.sleep(3)
     pow.power_on()
+    pow.set_voltage(13.5)
