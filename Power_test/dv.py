@@ -79,8 +79,24 @@ def downlog(ip,log_path):
     cmd2=subprocess.Popen(command2,shell=True)
     cmd1.wait()
     cmd2.wait()
-    
-    
+
+
+def get_circle_time(dict_config):
+    times=[]
+    for key in dict_config.keys():
+        temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*):?(\d+\.?\d*)?",key)
+        for i in range(len(temp_times)):
+            temp_times[i]=list(temp_times[i])
+            for j in range(len(temp_times[i])):
+                if j!=2:
+                    temp_times[i][j]=float(temp_times[i][j])*60
+                else:
+                    if temp_times[i][j]!="":
+                        temp_times[i][j]=float(temp_times[i][j])
+                    else:
+                        temp_times[i][j]=13.5
+        times+=temp_times*dict_config[key]
+    return times
     
 
 def test(times,interval_time,ip_extract,data_num_power_off):
@@ -90,6 +106,7 @@ def test(times,interval_time,ip_extract,data_num_power_off):
         while True:
             try:
                 pow.power_on()
+                pow.set_voltage(item[2])
                 df=pd.DataFrame([pow.PowerStatus()])
                 break
             except:
@@ -172,6 +189,7 @@ def dv_test(dict_config):
     timeout_time=dict_config["timeout_time"]
     ip_extract=dict_config["lidar_ip"]
     dict_config=dict_config["time_dict"]
+    times=get_circle_time(dict_config)
     print(f"[{datetime.datetime.now()}]get inno_pc_client permission")
     os.system('/bin/bash -c "chmod 777 lidar_util/inno_pc_client"')
     while not init_power():
@@ -188,14 +206,6 @@ def dv_test(dict_config):
     for item in ip_extract:
         ping_sure(item,0.2)
     down_sdk(item)
-    times=[]
-    for key in dict_config.keys():
-        temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*)",key)
-        for i in range(len(temp_times)):
-            temp_times[i]=list(temp_times[i])
-            for j in range(len(temp_times[i])):
-                temp_times[i][j]=float(temp_times[i][j])*60
-        times+=temp_times*dict_config[key]
     for i in range(len(ip_extract)):
         cmd='ssh root@'+ip_extract[i]
         print(f'[{datetime.datetime.now()}]get lidar promission: {cmd}')
@@ -225,9 +235,9 @@ if __name__=="__main__":
         #雷达的ip,格式为英文输入法的双引号,内为ip,以,隔开
         
         "time_dict":{
-            "1:0.3": 3,  # 通电时间:断电时间   ,分隔  :循环次数 单位:分钟 :循环次数
+            "1:0.3": 3,  # 通电时间:断电时间:电源电压   ,分隔  :循环次数 单位:分钟 :循环次数
         },
-        #"通电时间:断电时间,通电时间:断电时间,通电时间:断电时间":循环次数
+        #"通电时间:断电时间:电源电压,通电时间:断电时间:电源电压,通电时间:断电时间:电源电压":循环次数，其中电源电压默认13.5V，单位V
         #时间单位为分钟
         
         "data_num_power_off":10,    #断电时空数据数量
