@@ -95,6 +95,7 @@ class Power(object):
 
     def set_voltage(self, V):
         self.send(self.setvolcmd+str(V))
+        self.send(self.setcurcmd + str(360//V))
         #print('Set voltage {}V'.format(V))
 
     def set_current(self, A):
