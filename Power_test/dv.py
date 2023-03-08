@@ -105,8 +105,9 @@ def test(times,interval_time,ip_extract,data_num_power_off):
         t=time.time()
         while True:
             try:
-                pow.power_on()
+                pow=power.Power()
                 pow.set_voltage(item[2])
+                pow.power_on()
                 df=pd.DataFrame([pow.PowerStatus()])
                 break
             except:
@@ -114,6 +115,7 @@ def test(times,interval_time,ip_extract,data_num_power_off):
                 os.system('sshpass -p demo sudo python3 ./power.py')
                 try:
                     pow=power.Power()
+                    pow.set_voltage(item[2])
                     pow.power_on()
                     df=pd.DataFrame([pow.PowerStatus()])
                     break
