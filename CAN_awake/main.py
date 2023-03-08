@@ -142,12 +142,14 @@ def load_config():
 
 
 def one_cycle(power_one_time,ip_list,i,interval_time,data_num_power_off):
-    try:
-        from power import Power
-        pow=Power()
-        pow.set_voltage(power_one_time[2])
-    except:
-        print(f"{datetime.datetime.now()} set power voltage failed")
+    from power import Power
+    while True:
+        try:
+            pow=Power()
+            pow.set_voltage(power_one_time[2])
+            break
+        except:
+            print(f"{datetime.datetime.now()} set power voltage failed")
     print(f"[{str(datetime.datetime.now())}]: current circle {i}")
     t=time.time()
     time_path=get_time()
