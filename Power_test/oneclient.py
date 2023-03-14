@@ -19,9 +19,10 @@ import datetime
 # polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
 save_path = os.getcwd()+'/result/'
-record_keys = ['time', 'T0', 'T1', 'T2', 'Tlaser', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'LASER current','pump voltage=','temperature=','seed temperature=','polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
+record_keys = ['time','SN','CustomerSN','T0', 'T1', 'T2', 'Tlaser', 'A=', 'B=', 'C=', 'D=', 'SP: ', 'LASER current','pump voltage=','temperature=','seed temperature=','polygon speed:', 'Motor DC bus voltage:', 'Motor RMS current:', 'Motor speed control err:',
                'Galvo FPS:', 'Galvo RMS current:', 'Galvo frame counter:', 'Galvo position control err:', 'laser current:', 'unit current:', 'temperature', 'pump_st', 'alarm','get-ref-intensity','get-fpga-intensity','vol', 'curr']
-record_header = "time,Temp_fpga,temp_adc,temp_board,Temp_laser,temp_A,temp_B,temp_C,temp_D,motor speed,Pump_laser_current,pump_voltage,laser_module_temperature,seed_temperature,polygon_speed,Motor_DC_bus_voltage,Motor_RMS_current,Motor_speed_control_err,Galvo_FPS,Galvo_RMS_current,Galvo_frame_counter,Galvo_position_control_err,laser_module_current,unit_current,laser_temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,CHA_fpga,CHB_fpga,CHC_fpga,CHD_fpga,vol,curr"
+record_header = "time,SN,CustomerSN,Temp_fpga,temp_adc,temp_board,Temp_laser,temp_A,temp_B,temp_C,temp_D,motor speed,Pump_laser_current,pump_voltage,laser_module_temperature,seed_temperature,polygon_speed,Motor_DC_bus_voltage,Motor_RMS_current,Motor_speed_control_err,Galvo_FPS,Galvo_RMS_current,Galvo_frame_counter,Galvo_position_control_err,laser_module_current,unit_current,laser_temp,pump_st,alarm,CHA_ref,CHB_ref,CHC_ref,CHD_ref,CHA_fpga,CHB_fpga,CHC_fpga,CHD_fpga,vol,curr"
+
 
 def extract(keys, st):
     import re
@@ -29,17 +30,15 @@ def extract(keys, st):
     for i in range(len(keys)):
         if "intensity" not in keys[i]:
             ret=re.search(keys[i]+".*?(-?\d+\.?\d*)",st)
-            if ret and "." in ret.group(1):
-                res.append(float(ret.group(1)))
-            elif ret and "." not in ret.group(1):
-                res.append(int(ret.group(1)))
+            if ret:
+                res.append(ret.group(1))
             else:
                 res.append(-100)
         else:
             ret=re.search(keys[i]+".*?(\d+).*?(\d+).*?(\d+).*?(\d+)",st)
             if ret:
                 for j in range(4):
-                    res.append(int(ret.group(j+1)))
+                    res.append(ret.group(j+1))
             else:
                 for j in range(4):
                     res.append(-100)
@@ -83,12 +82,33 @@ def csv_write(file, lis):
         file_read.write(str1)
     file_read.close()
 
-if __name__=="__main__":
-    parse = argparse.ArgumentParser()
-    parse.add_argument('--ip', type=str, required=True, help='lidar ip address')
-    parse.add_argument('--interval', type=float, required=True,
-                    help='record time interval')
-    arg = parse.parse_args()
+def get_customerid(ip):
+    customerid = ''
+    import socket
+    command = 'mfg_rd "CustomerSN"\n'
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((ip, 8001))
+    s.settimeout(1)
+    rert = s.sendall(command.encode())
+    try:
+        data=s.recv(1024)
+        lst = data.decode('ascii').split('\n')
+        for string in lst:
+            if ':' in string:
+                # print(string)
+                customerid = string.split(':')[1].split('"')[1]
+    except Exception as e:
+        print(e)
+    s.close()
+    return customerid 
+
+
+def get_sn(ip):
+    SN=os.popen(f"curl {ip}:8010/command/?get_sn").read()
+    return SN  
+
+
+def main(arg):
     ip_name=arg.ip.replace('.', '_')
     save_log=os.path.join(save_path,f"testlog_{ip_name}.txt")
     save_csv=os.path.join(save_path,f"record_{ip_name}.csv")
@@ -98,11 +118,15 @@ if __name__=="__main__":
         file.write(record_header)
         file.close()
     command = f'curl http://{arg.ip}:8088/get-all-status'
+    SN=get_sn(arg.ip)
+    CustomerSN=get_customerid(arg.ip)
     while True:
         t=time.time()
         res = get_command_result(command,save_log)
-        temp = [datetime.datetime.now()]
-        temp+=extract(record_keys[1:-2], res)
+        temp = [datetime.datetime.now(),SN,CustomerSN]
+        temp+=extract(record_keys[len(temp):-2], res)
+        if -100 in temp:
+            continue
         while 1:
             try:
                 pow = pd.read_csv(power_csv, header=None).values.tolist()
@@ -115,3 +139,15 @@ if __name__=="__main__":
         sleep_time=arg.interval-time.time()+t
         if sleep_time>0:
             time.sleep(sleep_time)
+
+
+
+
+if __name__=="__main__":
+    parse = argparse.ArgumentParser()
+    parse.add_argument('--ip', type=str, required=True, help='lidar ip address')
+    parse.add_argument('--interval', type=float, required=True,
+                    help='record time interval')
+    args = parse.parse_args()
+    main(args)
+    
