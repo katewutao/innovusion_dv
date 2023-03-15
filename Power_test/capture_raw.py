@@ -58,14 +58,14 @@ def delete_util_log(log_path):
 
 def get_cmd_print(cmd,poll_obj,fault_log_path):
     if poll_obj.poll(0):
-        stderr=cmd.stderr.readline().decode("utf-8")
+        stderr=cmd.stderr.readline()
         ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sset",stderr)
         if ret:
             str1=f"[{datetime.datetime.now()}] {args.ip} {ret.group(2)} has been set"
             with open(fault_log_path,"a") as f:
                 f.write(str1+"\n")
             print("\033[0;31;40m",str1, "\033[0m")
-    stdout=cmd.stdout.readline().decode("utf-8")
+    stdout=cmd.stdout.readline()
     ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sheal",stdout)
     if ret:
         str1=f"[{datetime.datetime.now()}] {args.ip} {ret.group(2)} has been heal"
@@ -97,7 +97,7 @@ def main(args):
     command3=f"curl localhost:{args.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"
     command4=f"curl localhost:{args.lidarport}/command/?set_save_raw_data={args.lisenport}"
     # cmd=subprocess.Popen(command1,shell=True,stdout=open(os.path.join(util_dir,f"{args.ip}_out"),'w'),stderr=open(os.path.join(util_dir,f"{args.ip}_err"),'w'))
-    cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
     poll_obj=select.poll()
     poll_obj.register(cmd.stderr,select.POLLIN)
     time.sleep(1)

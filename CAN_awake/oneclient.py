@@ -131,8 +131,16 @@ def get_customerid(ip):
 
 
 def get_sn(ip):
-    SN=os.popen(f"curl {ip}:8010/command/?get_sn").read()
-    return SN  
+    command=f"curl {ip}:8010/command/?get_sn"
+    cmd = subprocess.Popen(command, shell=True,
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True)
+    
+    res=cmd.communicate()
+    SN=res[0]
+    
+    #SN=cmd.stdout.read()
+    
+    return SN
 
 
 def main(arg):
