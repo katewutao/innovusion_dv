@@ -14,7 +14,7 @@ import time
 import os
 import pandas as pd
 import subprocess
-import datetime
+import datetime,platform
 
 # polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
@@ -58,6 +58,33 @@ def get_command_result(command,save_log):
     cmd.kill()
     write_log(save_log, command, res1)
     return res
+
+
+def ping(ip,time_interval):
+    if 'windows' not in platform.platform().lower():
+        cmd=subprocess.Popen(f'exec ping -c 1 {ip}',shell=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(time_interval)
+        if cmd.poll() is not None:
+            res = cmd.stdout.read().decode('utf-8')
+        else:
+            res = ''
+        cmd.kill()
+        if "100%" in res or res=='':
+            return False
+        else:
+            return True
+    else:
+        cmd=subprocess.Popen(f'ping -n 1 -w 100 {ip}',shell=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd.wait()
+        res = cmd.stdout.read()
+        cmd.kill()
+        if b"100%" in res:
+            return False
+        else:
+            return True
+
 
 
 def write_log(txt_path, command, res):
@@ -109,6 +136,9 @@ def get_sn(ip):
 
 
 def main(arg):
+    while True:
+        if ping(arg.ip,1):
+            break
     ip_name=arg.ip.replace('.', '_')
     save_log=os.path.join(save_path,f"testlog_{ip_name}.txt")
     save_csv=os.path.join(save_path,f"record_{ip_name}.csv")
