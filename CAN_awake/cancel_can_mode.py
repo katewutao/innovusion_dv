@@ -1,4 +1,4 @@
-from main import cancle_can,os
+from main import cancle_can,os,init_power,time
 
 ip_list=[
     "172.168.1.39",
@@ -9,5 +9,8 @@ ip_list=[
     "172.168.1.44",
 ]
 
+init_power()
 os.system("python3 lib/set_usbcanfd_env.py demo")
+os.system("python3 ./power.py")
+time.sleep(20)
 cancle_can(ip_list)
