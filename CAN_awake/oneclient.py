@@ -163,7 +163,7 @@ def main(arg):
         res = get_command_result(command,save_log)
         temp = [datetime.datetime.now(),SN,CustomerSN]
         temp+=extract(record_keys[len(temp):-2], res)
-        if -100 in temp:
+        if res=="":
             continue
         while 1:
             try:
