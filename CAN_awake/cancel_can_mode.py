@@ -8,8 +8,9 @@ ip_list=[
     "172.168.1.43",
     "172.168.1.44",
 ]
-
-init_power()
+while True:
+    if init_power():
+        break
 os.system("python3 lib/set_usbcanfd_env.py demo")
 os.system("python3 ./power.py")
 time.sleep(20)
