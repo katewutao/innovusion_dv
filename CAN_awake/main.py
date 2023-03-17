@@ -19,7 +19,7 @@ from oneclient import record_header,csv_write,save_path
 from auto_update_sdk import down_sdk
 
 
-def downlog(ip,time_path):
+def downlog(ip,log_path,time_path):
     save_path=os.path.join(log_path,ip.replace('.','_'))
     save_path=os.path.join(save_path,time_path)
     os.makedirs(save_path)
@@ -141,7 +141,7 @@ def load_config():
         return json.load(f)
 
 
-def one_cycle(power_one_time,ip_list,i,interval_time,data_num_power_off):
+def one_cycle(power_one_time,ip_list,i,interval_time,data_num_power_off,log_path):
     from power import Power
     while True:
         try:
@@ -165,7 +165,7 @@ def one_cycle(power_one_time,ip_list,i,interval_time,data_num_power_off):
         time.sleep(power_one_time[0]-2)
     threads=[]
     for ip in ip_list:
-        thread=threading.Thread(target=downlog,args=(ip,time_path,))
+        thread=threading.Thread(target=downlog,args=(ip,log_path,time_path,))
         thread.start()
         threads.append(thread)
     for temp_thread in threads:
@@ -217,7 +217,7 @@ def main(config,log_path):
     times=get_circle_time(config["time_dict"])
     i=1
     for time_one in times:
-        one_cycle(time_one,config["lidar_ip"],i,config["interval_time"],config["data_num_power_off"])
+        one_cycle(time_one,config["lidar_ip"],i,config["interval_time"],config["data_num_power_off"],log_path)
         i+=1 
     cmd_pow.kill()
     cancle_can(config["lidar_ip"])
