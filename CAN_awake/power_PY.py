@@ -97,7 +97,10 @@ class Power(object):
     
     def set_voltage(self,voltage):
         master = modbus_rtu.RtuMaster(serial.Serial(self.com, 9600, 8, 'N', 1))
-        master.execute(1, cst.WRITE_MULTIPLE_REGISTERS, 2021, output_value=[voltage*100,(900//voltage)*100])
+        try:
+            master.execute(1, cst.WRITE_MULTIPLE_REGISTERS, 2021, output_value=[voltage*100,(900//voltage)*100])
+        except:
+            pass
     
 if __name__=='__main__':
     pow=Power()
