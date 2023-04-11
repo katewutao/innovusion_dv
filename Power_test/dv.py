@@ -40,16 +40,22 @@ def ping_sure(ip,interval_time):
     print(f'[{datetime.datetime.now()}]lidar {ip} has connected')
 
 
+def list_in_str(key_list,str1):
+    for key in key_list:
+        if key in str1:
+            return True
+    return False
+
 def init_power():
     import shutil
     cmd=os.popen("lsusb")
     res=cmd.read()
     if os.path.exists("power.py"):
         os.remove("power.py")
-    if "FT232" in res or "0403:6001" in res:
+    if list_in_str(["FT232","0403:6001","067b:23c3"],res):
         shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
         return True 
-    elif "HL-340" in res or "PL2303" in res or "1a86:7523" in res:
+    elif list_in_str(["HL-340","PL2303","1a86:7523"],res):
         shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
         return True
     from serial.tools import list_ports
