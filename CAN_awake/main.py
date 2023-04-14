@@ -19,6 +19,22 @@ from oneclient import record_header,csv_write,save_path
 from auto_update_sdk import down_sdk
 
 
+
+
+def get_current_date():
+    start_time=f"{datetime.datetime.now()}"
+    ret=re.findall("\d+",start_time)
+    start_time=f"{ret[0].zfill(4)}{ret[1].zfill(2)}{ret[2].zfill(2)}T{ret[3].zfill(2)}{ret[4].zfill(2)}{ret[5].zfill(2)}"
+    return start_time
+
+log_file="python_"+get_current_date()+".log"
+rewrite_print=print
+def print(*arg,**kwarg):
+    rewrite_print(*arg,**kwarg)
+    rewrite_print(*arg,**kwarg,file=open(log_file,"a"))
+
+
+
 def downlog(ip,log_path,time_path):
     save_path=os.path.join(log_path,ip.replace('.','_'))
     save_path=os.path.join(save_path,time_path)
@@ -64,18 +80,8 @@ def init_power():
     elif list_in_str(["HL-340","PL2303","1a86:7523"],res):
         shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
         return True
-    from serial.tools import list_ports
-    port_lists=list(list_ports.comports())
-    for _,i in enumerate(port_lists):
-        if "FT232R" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
-            return True 
-        elif "Serial" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
-            return True
-    else:
-        print("power is not PY or DH")
-        return False
+    print("power is not PY or DH")
+    return False
     
     
 def ping_sure(ip,interval_time):
