@@ -55,10 +55,6 @@ class Power(object):
         master.set_verbose(True)
 
         # set output voltage=13.50V, current=10.00A
-        try:
-            master.execute(1, cst.WRITE_MULTIPLE_REGISTERS, 2021, output_value=[1400, 3000])
-        except:
-            pass
         result = master.execute(1, cst.READ_HOLDING_REGISTERS, 2001, 2)  # get the vol & current of setting
         vol = float(int(result[0]) / 100)
         cur = float(int(result[1]) / 100)
