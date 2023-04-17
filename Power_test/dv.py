@@ -72,18 +72,8 @@ def init_power():
     elif list_in_str(["HL-340","PL2303","1a86:7523"],res):
         shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
         return True
-    from serial.tools import list_ports
-    port_lists=list(list_ports.comports())
-    for _,i in enumerate(port_lists):
-        if "FT232R" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_DH.py"),os.path.join(os.getcwd(),"power.py"))
-            return True 
-        elif "Serial" in i.description:
-            shutil.copyfile(os.path.join(os.getcwd(),"power_PY.py"),os.path.join(os.getcwd(),"power.py"))
-            return True
-    else:
-        print("power is not PY or DH")
-        return False
+    print("power is not PY or DH")
+    return False
 
 
 def downlog(ip,log_path):

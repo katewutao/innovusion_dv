@@ -161,7 +161,7 @@ def main(arg):
     while True:
         t=time.time()
         res = get_command_result(command,save_log)
-        temp = [datetime.datetime.now(),SN,CustomerSN]
+        temp = [f" {datetime.datetime.now()}",SN,CustomerSN]
         temp+=extract(record_keys[len(temp):-2], res)
         if res=="":
             continue
