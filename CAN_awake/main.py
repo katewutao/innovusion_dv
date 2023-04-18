@@ -9,7 +9,7 @@
 #  */
 import subprocess
 import time
-import os
+import os,shutil
 import datetime
 import sys
 import threading
@@ -139,7 +139,13 @@ def cancle_can(ip_list):
         os.system(command)
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
     
-    
+def rm_empty_folder(path):
+    for root,_,files in os.walk(path):
+        if len(files)==0:
+            try:
+                shutil.rmtree(root)
+            except:
+                pass
 
 def get_time():
     times_now=time.strftime('%Y.%m.%d %H:%M:%S ',time.localtime(time.time()))
@@ -237,7 +243,7 @@ def main(config,log_path):
     import power
     pow=power.Power()
     pow.power_off()
-    
+    rm_empty_folder(save_path)
 
 if __name__=="__main__":
     config={
