@@ -12,7 +12,7 @@ import os
 import subprocess
 import time
 import datetime
-import re
+import re,shutil
 from oneclient import record_header,csv_write,save_path
 import threading
 from auto_update_sdk import down_sdk
@@ -30,7 +30,13 @@ def print(*arg,**kwarg):
     rewrite_print(*arg,**kwarg)
     rewrite_print(*arg,**kwarg,file=open(log_file,"a"))
 
-
+def rm_empty_folder(path):
+    for root,_,files in os.walk(path):
+        if len(files)==0:
+            try:
+                shutil.rmtree(root)
+            except:
+                pass
 
 def ping(ip,interval_time):
     command='ping -c 1 -W 0.15 '+ip
@@ -237,6 +243,7 @@ def dv_test(dict_config):
                 f.write(record_header)
     get_current_time=time.time()
     test(times,interval_time,ip_extract,data_num_power_off)
+    rm_empty_folder(save_path)
     print(f'[{datetime.datetime.now()}]summary time is {(time.time()-get_current_time)/60} min')
     
 if __name__=="__main__":
