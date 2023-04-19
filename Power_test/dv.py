@@ -135,6 +135,15 @@ def test(times,interval_time,ip_extract,data_num_power_off):
                 break
             except:
                 print(f"[{datetime.datetime.now()}]get power permission")
+                try:
+                    pow=power.Power()
+                    pow.power_on()
+                    pow.set_voltage(item[2])
+                    df=pd.DataFrame([pow.PowerStatus()])
+                    break
+                except:
+                    pass
+                
         print(f"[{datetime.datetime.now()}]power on")
         df.to_csv(os.path.join(save_path,'pow_status.csv'),header=None,index=None)
         if item[0]>20:
