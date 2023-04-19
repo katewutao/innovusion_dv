@@ -39,7 +39,6 @@ def is_empty_folder(path):
 
 def rm_empty_folder(path):
     for root,_,_ in os.walk(path):
-        print(root,os.path.getsize(root))
         if is_empty_folder(root):
             try:
                 shutil.rmtree(root)
