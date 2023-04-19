@@ -172,7 +172,9 @@ def one_cycle(power_one_time,ip_list,i,interval_time,data_num_power_off,log_path
         try:
             pow=Power()
             pow.set_voltage(power_one_time[2])
-            break
+            df=pd.DataFrame([pow.PowerStatus()])
+            if abs(df.iloc[0,0]-power_one_time[2])<0.5:
+                break
         except:
             print(f"{datetime.datetime.now()} set power voltage failed")
     print(f"[{str(datetime.datetime.now())}]: current circle {i}")
