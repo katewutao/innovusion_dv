@@ -139,9 +139,17 @@ def cancle_can(ip_list):
         os.system(command)
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
     
+def is_empty_folder(path):
+    for _,_,files in os.walk(path):
+        if len(files)!=0:
+            return False
+    return True
+
+
 def rm_empty_folder(path):
-    for root,_,files in os.walk(path):
-        if len(files)==0:
+    for root,_,_ in os.walk(path):
+        print(root,os.path.getsize(root))
+        if is_empty_folder(root):
             try:
                 shutil.rmtree(root)
             except:
