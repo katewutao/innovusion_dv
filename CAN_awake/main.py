@@ -127,17 +127,36 @@ def get_circle_time(dict_config):
 
 def set_can(ip):
     command=f'echo "dsp_boot_from can" | nc -nv {ip} 8001'
-    os.system(command)
-    
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    res=cmd.communicate()
+    if "dsp boot from can: OK" in res[0]:
+        print(f"{datetime.datetime.now()}: {ip} set can mode success")
+        return True
+    else:
+        set_can(ip)
+
+
+def set_power(ip):
+    command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    res=cmd.communicate()
+    if "dsp boot from power: OK" in res[0]:
+        print(f"{datetime.datetime.now()}: {ip} set power mode success")
+        return True
+    else:
+        set_power(ip)
+
+
 def cancle_can(ip_list):
+    os.system("python3 ./power.py")
+    os.system("python3 lib/set_usbcanfd_env.py demo")
     print(f"{datetime.datetime.now()}:start set lidar power mode")
-    can=subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
-    time.sleep(30)
+    subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
     for ip in ip_list:
         ping_sure(ip,0.5)
-        command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
-        os.system(command)
+        set_power(ip)
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+    print(f"{datetime.datetime.now()}: all lidar cancle can mode success")
     
 def is_empty_folder(path):
     for _,_,files in os.walk(path):

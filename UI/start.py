@@ -175,18 +175,38 @@ def get_circle_time(dict_config):
 
 
 def set_can(ip):
-    command=f'echo "dsp_boot_from can" | nc -nv {ip} 8001 -w1'
-    os.system(command)
-    
+    command=f'echo "dsp_boot_from can" | nc -nv {ip} 8001'
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    res=cmd.communicate()
+    if "dsp boot from can: OK" in res[0]:
+        print(f"{datetime.datetime.now()}: {ip} set can mode success")
+        return True
+    else:
+        set_can(ip)
+
+
+def set_power(ip):
+    command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    res=cmd.communicate()
+    if "dsp boot from power: OK" in res[0]:
+        print(f"{datetime.datetime.now()}: {ip} set power mode success")
+        return True
+    else:
+        set_power(ip)
+
+
 def cancle_can(ip_list):
     os.system("python3 ./power.py")
+    os.system("python3 lib/set_usbcanfd_env.py demo")
     print(f"{datetime.datetime.now()}:start set lidar power mode")
     subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
     for ip in ip_list:
         ping_sure(ip,0.5)
-        command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001 -w1'
-        os.system(command)
+        set_power(ip)
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+    print(f"{datetime.datetime.now()}: all lidar cancle can mode success")
+    
     
 def is_empty_folder(path):
     for _,_,files in os.walk(path):
@@ -389,7 +409,7 @@ class MonitorFault(QThread):
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.1"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.2"))
             if not os.path.exists(newest_path):
-                print(f"inno_pc_client boot failed!")
+                print(f"{datetime.datetime.now()}:inno_pc_client boot failed!")
                 if self.cmd.poll() is not None:
                     self.cmd.kill()
                     self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
@@ -768,7 +788,6 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         ef.format()
     
     def cancle_can_mode(self):
-        os.system("python3 lib/set_usbcanfd_env.py demo")
         cancle_can(self.ip_list)
     
         
