@@ -23,7 +23,7 @@ import inspect
 import pandas as pd
 import shutil,json,importlib
 from auto_update_sdk import down_sdk
-import ctypes,inspect
+import ctypes,inspect,select
  
  
 def _async_raise(tid, exctype):
@@ -85,19 +85,30 @@ def downlog(ip,log_path,time_path):
     cmd1.wait()
     cmd2.wait()
 
-def ping(ip,interval_time):
-    command=f'ping -c 1 -W 0.15 {ip}'
-    cmd=subprocess.Popen('exec '+command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    time.sleep(interval_time)
-    if cmd.poll() is not None:
-        res=cmd.stdout.read().decode('utf-8')
+def ping(ip,time_interval):
+    if 'windows' not in platform.platform().lower():
+        cmd=subprocess.Popen(f'exec ping -c 1 {ip}',shell=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(time_interval)
+        if cmd.poll() is not None:
+            res = cmd.stdout.read().decode('utf-8')
+        else:
+            res = ''
+        cmd.kill()
+        if "100%" in res or res=='':
+            return False
+        else:
+            return True
     else:
-        res=''
-    cmd.kill()
-    if "1 received" in res:
-        return 1
-    else:
-        return 0
+        cmd=subprocess.Popen(f'ping -n 1 -w 100 {ip}',shell=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd.wait()
+        res = cmd.stdout.read()
+        cmd.kill()
+        if b"100%" in res:
+            return False
+        else:
+            return True
 
 
 def list_in_str(key_list,str1):
@@ -124,13 +135,13 @@ def init_power():
     
 def ping_sure(ip,interval_time):
     flag=ping(ip,interval_time)
-    while flag==0:
+    while not flag:
         print(f'[{datetime.datetime.now()}]please connect lidar {ip}')
         flag=ping(ip,interval_time)
     print(f'[{datetime.datetime.now()}]lidar {ip} has connected')    
     
 def get_promission(ip,time_out):
-    if 'linux' in sys.platform:
+    if 'windows' not in platform.platform().lower():
         import pexpect as pect
     else:
         import wexpect as pect
@@ -288,9 +299,126 @@ class one_lidar_record_thread(QThread):
 
 
 
+class MonitorFault(QThread):
+    sigout_fault_info = pyqtSignal(str,int)
+    def __init__(self,ip,faultpath,savepath,row_idx,lidarport,lidarudpport,lisenport):
+        super(MonitorFault,self).__init__()
+        self.ip=ip
+        self.faultpath=faultpath
+        self.savepath=savepath
+        self.lidarport=lidarport
+        self.lidarudpport=lidarudpport
+        self.lisenport=lisenport
+        self.row_idx=row_idx
+        
+    def newest_folder(self,A,B):
+        newest_path=os.path.join(A,str(B))
+        return newest_path
+
+    def check_raw(self,file_list):
+        key="sn\d+-\d+.*\.inno_raw$"
+        for file in file_list:
+            if re.match(key,file):
+                return True
+        return False
+
+    def delete_util_log(self,log_path):
+        log_path=os.path.abspath(log_path)
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+            except:
+                pass
+
+
+    def get_cmd_print(self,poll_obj,fault_log_path):
+        if poll_obj.poll(0):
+            stderr=self.cmd.stderr.readline()
+            ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sset",stderr)
+            if ret:
+                str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(2)} has been set"
+                with open(fault_log_path,"a") as f:
+                    f.write(str1+"\n")
+                print(str1)
+                ret_fault=re.search("IN_FAULT_([A-Z_0-9]+)",ret.group(2))
+                if ret_fault:
+                    self.sigout_fault_info.emit(ret_fault.group(1),self.row_idx)
+        stdout=self.cmd.stdout.readline()
+        ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sheal",stdout)
+        if ret:
+            str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(2)} has been heal"
+            with open(fault_log_path,"a") as f:
+                f.write(str1+"\n")
+            print(str1)
+
+    def run(self):
+        util_dir="lidar_util"
+        util_path=os.path.join(util_dir,"inno_pc_client")
+        fault_log_path=os.path.join(self.faultpath,"fault")
+        if not os.path.exists(fault_log_path):
+            os.makedirs(fault_log_path)
+        fault_log_path=os.path.join(fault_log_path,self.ip.replace(".","_")+".txt")
+        if not os.path.exists(util_path):
+            print(f"file {util_path} not exists!")
+            return None
+        while True:
+            if ping(self.ip,0.3):
+                break
+        if not os.path.exists(self.savepath):
+            os.makedirs(self.savepath)
+        i=1
+        newest_path=self.newest_folder(self.savepath,i)
+        command1=f"{util_path} --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port {self.lidarudpport} --tcp-port {self.lidarport}"
+        command2=f"curl localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
+        command3=f"curl localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"
+        command4=f"curl localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}"
+        self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
+        poll_obj=select.poll()
+        poll_obj.register(self.cmd.stderr,select.POLLIN)
+        time.sleep(1)
+        os.system(command2)
+        os.system(command3)
+        os.system(command4)
+        raw_count=len(os.listdir(self.savepath))
+        while True:
+            self.get_cmd_print(poll_obj,fault_log_path)
+            self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
+            self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
+            self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log"))
+            self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.err"))
+            self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.1"))
+            self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.2"))
+            if not os.path.exists(newest_path):
+                print(f"inno_pc_client boot failed!")
+                if self.cmd.poll() is not None:
+                    self.cmd.kill()
+                    self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
+                    poll_obj=select.poll()
+                    poll_obj.register(self.cmd.stderr,select.POLLIN)
+                    time.sleep(1)
+                os.system(command2)
+                os.system(command3)
+                os.system(command4)
+                continue
+            if self.check_raw(os.listdir(newest_path)):
+                if i>=raw_count:
+                    print(f"record raw data to {os.path.abspath(newest_path)}")
+                i+=1
+                newest_path=self.newest_folder(self.savepath,i)
+                command2=f"curl localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
+                os.system(command2)
+                os.system(command3)
+    
+    
+    def stop(self):
+        self.terminate()
+
+
+
+
 class TestMain(QThread):
     sigout_test_finish = pyqtSignal(str)
-    def __init__(self,ip_list,record_folder,record_header,times,set_table_value,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
+    def __init__(self,ip_list,record_folder,record_header,times,set_table_value,report_fault,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
         super(TestMain,self).__init__()
         self.csv_write_func=csv_write_func
         self.txt_record_interval=txt_record_interval
@@ -303,7 +431,9 @@ class TestMain(QThread):
         self.txt_off_counter=txt_off_counter
         self.times=times
         self.record_func=record_func
+        self.report_fault=report_fault
     
+    @handle_exceptions
     def one_cycle(self,power_one_time,ip_list,i,data_num_power_off,log_path):
         from power import Power
         while True:
@@ -334,10 +464,14 @@ class TestMain(QThread):
             record_thread.sigout_set_tbw_value.connect(self.set_table_value)
             record_thread.start()
             self.records.append(record_thread)
+        self.monitors=[]
         if power_one_time[0]>2:
             for ip_num,ip in enumerate(ip_list):
                 raw_save_path=os.path.join(log_path,"raw",ip.replace(".","_"),time_path)
-                subprocess.Popen(f'python3 capture_raw.py -i {ip} -s "{raw_save_path}" -f "{log_path}" -l {9100+ip_num} -ls {8100+ip_num} -lup {8600+ip_num}',shell=True)
+                monitor_thread=MonitorFault(ip,log_path,raw_save_path,ip_num,9100+ip_num,8600+ip_num,8100+ip_num)
+                monitor_thread.sigout_fault_info.connect(self.report_fault)
+                monitor_thread.start()
+                self.monitors.append(monitor_thread)
             time.sleep(power_one_time[0]-2)
         threads=[]
         for ip in ip_list:
@@ -356,7 +490,9 @@ class TestMain(QThread):
                     break
                 except:
                     print(f"[{datetime.datetime.now()}]power off failed")
-        os.system("ps -ef|grep capture_raw.py|grep -v grep|awk '{print $2}'|xargs kill -9")
+        for monitor in self.monitors:
+            if monitor.isRunning():
+                monitor.stop()
         os.system("ps -ef|grep inno_pc_client|grep -v grep|awk '{print $2}'|xargs kill -9")
         print("start sleep")
         for record in self.records:
@@ -422,7 +558,6 @@ class TestMain(QThread):
         self.cmd_pow.kill()
         if self.cb_lidar_mode.currentText()=="CAN":
             cancle_can(self.ip_list)
-        os.system("echo demo|sudo -S python3 ./power.py")
         import power
         pow=power.Power()
         pow.power_off()
@@ -430,14 +565,18 @@ class TestMain(QThread):
         self.sigout_test_finish.emit("done")
         
     def stop(self):
-        try:
+        if hasattr(self,"records"):
             for record in self.records:
                 try:
                     record.stop()
                 except:
                     pass
-        except:
-            pass
+        if hasattr(self,"monitors"):
+            for monitor in self.monitors:
+                try:
+                    monitor.stop()
+                except:
+                    pass
         try:
             self.cmd_pow.kill()
         except:
@@ -495,20 +634,45 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def init_table(self,row_counter,columns):
         for row_num in range(self.tbw_data.rowCount(),-1,-1):
             self.tbw_data.removeRow(row_num)
+        for row_num in range(self.tbw_fault.rowCount(),-1,-1):
+            self.tbw_fault.removeRow(row_num)
         self.tbw_data.setColumnCount(len(columns))
+        self.tbw_fault.setColumnCount(0)
         for j in range(len(columns)):
             self.tbw_data.setHorizontalHeaderItem(j, QtWidgets.QTableWidgetItem())
             item = self.tbw_data.horizontalHeaderItem(j)
             item.setText(f"{columns[j]}")
         for i in range(row_counter):
             self.tbw_data.insertRow(i)
-            for j in range(10):
+            self.tbw_fault.insertRow(i)
+            for j in range(len(columns)):
                 self.tbw_data.setItem(i,j,QtWidgets.QTableWidgetItem(f""))        
     
     def set_table_value(self,values,row_idx):
         for idx,value in enumerate(values):
             self.tbw_data.setItem(row_idx,idx,QtWidgets.QTableWidgetItem(f"{value}"))
     
+    
+    def report_fault(self,fault,row_idx):
+        for col_idx in range(self.tbw_fault.columnCount()):
+            if  self.tbw_fault.horizontalHeaderItem(col_idx).text()==fault:
+                if self.tbw_fault.item(row_idx,col_idx)!=None:
+                    last_fault_count=self.tbw_fault.item(row_idx,col_idx).text()
+                    if re.search("\d+",last_fault_count):
+                        self.tbw_fault.setItem(row_idx,col_idx,QtWidgets.QTableWidgetItem(f"{int(last_fault_count)+1}"))
+                        return
+                self.tbw_fault.setItem(row_idx,col_idx,QtWidgets.QTableWidgetItem(f"{1}"))
+                return
+        last_max_col=self.tbw_fault.columnCount()
+        self.tbw_fault.setColumnCount(last_max_col+1)
+        self.tbw_fault.setHorizontalHeaderItem(last_max_col, QtWidgets.QTableWidgetItem())
+        item = self.tbw_fault.horizontalHeaderItem(last_max_col)
+        item.setText(f"{fault}")
+        # for row_num in range(self.tbw_fault.rowCount()):
+        #     if row_num!=row_idx:
+        #         self.tbw_fault.setItem(row_num,last_max_col,QtWidgets.QTableWidgetItem(f""))
+        self.tbw_fault.setItem(row_idx,last_max_col,QtWidgets.QTableWidgetItem(f"{1}"))
+        
     def init_select_item(self):
         self.cb_project.clear()
         self.cb_test_name.clear()
@@ -548,13 +712,14 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     @handle_exceptions
     def test_main(self):
-        self.test=TestMain(self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
+        self.test=TestMain(self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.report_fault,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.start()
         self.test_set_off()
     
     def test_finish(self,str1):
         self.test_set_on()
+        self.save_tbw_fault()
         print(f"[{datetime.datetime.now()}]:Test finished")
     
     def test_set_off(self):
@@ -579,10 +744,25 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.btn_cancle_can.setEnabled(True)
         self.btn_stop.setEnabled(False)
     
+    @handle_exceptions
     def test_stop(self):
         self.test.stop()
         self.test_set_on()
     
+    def save_tbw_fault(self):
+        headers=[]
+        for col_idx in range(self.tbw_fault.columnCount()):
+            headers.append(self.tbw_fault.horizontalHeaderItem(col_idx).text())
+        df=pd.DataFrame([],columns=headers)
+        for row_idx in range(self.tbw_fault.rowCount()):
+            row=[]
+            for col_idx in range(self.tbw_fault.columnCount()):
+                if self.tbw_fault.item(row_idx,col_idx)!=None:
+                    row.append(int(self.tbw_fault.item(row_idx,col_idx).text()))
+                else:
+                    row.append(0)
+            df.loc[self.ip_list[row_idx],:]=row
+        df.to_excel(os.path.join(self.save_folder,"fault_counter.xlsx"),sheet_name="fault",index_label="ip")        
     
     def cancle_can_mode(self):
         os.system("python3 lib/set_usbcanfd_env.py demo")
