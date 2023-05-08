@@ -77,7 +77,7 @@ def get_command_result(command,save_log):
         res = ''
         res1 = 'failed'
     cmd.kill()
-    write_log(save_log, command, res1)
+    # write_log(save_log, command, res1)
     return res
 
 

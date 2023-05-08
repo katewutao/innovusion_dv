@@ -762,7 +762,10 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                 else:
                     row.append(0)
             df.loc[self.ip_list[row_idx],:]=row
-        df.to_excel(os.path.join(self.save_folder,"fault_counter.xlsx"),sheet_name="fault",index_label="ip")        
+        df.to_excel(os.path.join(self.save_folder,"fault_counter.xlsx"),sheet_name="fault",index_label="ip")
+        from excel_format import ExcelFormat
+        ef=ExcelFormat(os.path.join(self.save_folder,"fault_counter.xlsx"))
+        ef.format()
     
     def cancle_can_mode(self):
         os.system("python3 lib/set_usbcanfd_env.py demo")
