@@ -24,7 +24,7 @@ import pandas as pd
 import shutil,json,importlib
 from auto_update_sdk import down_sdk
 import ctypes,inspect,select
- 
+from threading import Thread
  
 def _async_raise(tid, exctype):
     """raises the exception, performs cleanup if needed"""
@@ -43,7 +43,34 @@ def _async_raise(tid, exctype):
  
 def stop_thread(thread):
     _async_raise(thread.ident, SystemExit)
-    
+
+def time_limited(timeout):
+    def decorator(function):
+        def decorator2(*args, **kwargs):
+            class TimeLimited(Thread):
+                def __init__(self, _error=None, ):
+                    Thread.__init__(self)
+                    self.error = _error
+                    self.result = None
+
+                def run(self):
+                    try:
+                        self.result = function(*args, **kwargs)
+                    except Exception as e:
+                        self.error = e
+
+            t = TimeLimited()
+            t.setDaemon(True)
+            t.start()
+            t.join(timeout)
+
+            if t.error:
+                raise t.error
+            if t.is_alive():
+                print(f"[{datetime.datetime.now()}] {function.__name__} time out")
+            return t.result
+        return decorator2
+    return decorator
 
 def handle_exceptions(func):
     def wrapper(*args, **kwargs):
@@ -136,9 +163,9 @@ def init_power():
 def ping_sure(ip,interval_time):
     flag=ping(ip,interval_time)
     while not flag:
-        print(f'[{datetime.datetime.now()}]please connect lidar {ip}')
+        print(f'[{datetime.datetime.now()}] please connect lidar {ip}')
         flag=ping(ip,interval_time)
-    print(f'[{datetime.datetime.now()}]lidar {ip} has connected')    
+    print(f'[{datetime.datetime.now()}] lidar {ip} has connected')    
     
 def get_promission(ip,time_out):
     if 'windows' not in platform.platform().lower():
@@ -179,9 +206,10 @@ def set_can(ip):
     cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
     res=cmd.communicate()
     if "dsp boot from can: OK" in res[0]:
-        print(f"{datetime.datetime.now()}: {ip} set can mode success")
+        print(f"[{datetime.datetime.now()}] {ip} set can mode success")
         return True
     else:
+        print(f"[{datetime.datetime.now()}] {ip} set can mode fail")
         set_can(ip)
 
 
@@ -189,10 +217,12 @@ def set_power(ip):
     command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
     cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
     res=cmd.communicate()
+    
     if "dsp boot from power: OK" in res[0]:
-        print(f"{datetime.datetime.now()}: {ip} set power mode success")
+        print(f"[{datetime.datetime.now()}] {ip} set power mode success")
         return True
     else:
+        print(f"[{datetime.datetime.now()}] {ip} set power mode fail")
         set_power(ip)
 
 
@@ -205,7 +235,7 @@ def cancle_can(ip_list):
         ping_sure(ip,0.5)
         set_power(ip)
     os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
-    print(f"{datetime.datetime.now()}: all lidar cancle can mode success")
+    print(f"[{datetime.datetime.now()}] all lidar cancle can mode success")
     
     
 def is_empty_folder(path):
@@ -229,7 +259,17 @@ def get_time():
     return res
 
 
-
+def kill_client():
+    command="exec ps -ef|grep inno_pc_client|grep -v grep|awk '{print $2}'|xargs kill -9"
+    # print(command)
+    print(f"{datetime.datetime.now()} kill client")
+    cmd=subprocess.Popen(command,shell=True)
+    time.sleep(1)
+    if cmd.poll() is not None:
+        return
+    else:
+        cmd.kill()
+        kill_client()
 
 class one_lidar_record_thread(QThread):
     sigout_set_tbw_value = pyqtSignal(list,int)
@@ -291,7 +331,7 @@ class one_lidar_record_thread(QThread):
     @handle_exceptions
     def run(self):
         while True:
-            if ping(self.ip,1):
+            if ping(self.ip,1) or self.isInterruptionRequested():
                 break
         ip_name=self.ip.replace('.', '_')
         save_log=os.path.join(self.record_folder,f"testlog_{ip_name}.txt")
@@ -304,6 +344,8 @@ class one_lidar_record_thread(QThread):
         SN=self.get_sn()
         CustomerSN=self.get_customerid()
         while True:
+            if self.isInterruptionRequested():
+                break
             t=time.time()
             temp=self.record_func(self.ip,save_log,SN,CustomerSN,power_csv)
             if isinstance(temp,type(None)):
@@ -313,10 +355,17 @@ class one_lidar_record_thread(QThread):
             sleep_time=self.interval-time.time()+t
             if sleep_time>0:
                 time.sleep(sleep_time)
-        
+    
+    @handle_exceptions  
     def stop(self):
-        self.terminate()
-
+        print(f"[{datetime.datetime.now()}] {self.ip} start finish record lidar status")
+        t=time.time()
+        while self.isRunning():
+            self.requestInterruption()
+            self.wait(100)
+            if time.time()-t>1:
+                self.terminate()
+                break
 
 
 class MonitorFault(QThread):
@@ -350,7 +399,7 @@ class MonitorFault(QThread):
             except:
                 pass
 
-
+    @time_limited(1)
     def get_cmd_print(self,poll_obj,fault_log_path):
         if poll_obj.poll(0):
             stderr=self.cmd.stderr.readline()
@@ -371,21 +420,28 @@ class MonitorFault(QThread):
                 f.write(str1+"\n")
             print(str1)
 
+    @handle_exceptions
     def run(self):
         util_dir="lidar_util"
         util_path=os.path.join(util_dir,"inno_pc_client")
         fault_log_path=os.path.join(self.faultpath,"fault")
         if not os.path.exists(fault_log_path):
-            os.makedirs(fault_log_path)
+            try:
+                os.makedirs(fault_log_path)
+            except:
+                pass
         fault_log_path=os.path.join(fault_log_path,self.ip.replace(".","_")+".txt")
         if not os.path.exists(util_path):
-            print(f"file {util_path} not exists!")
+            print(f"[{datetime.datetime.now()}] file {util_path} not exists!")
             return None
         while True:
-            if ping(self.ip,0.3):
+            if ping(self.ip,0.3) or self.isInterruptionRequested():
                 break
         if not os.path.exists(self.savepath):
-            os.makedirs(self.savepath)
+            try:
+                os.makedirs(self.savepath)
+            except:
+                pass
         i=1
         newest_path=self.newest_folder(self.savepath,i)
         command1=f"{util_path} --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port {self.lidarudpport} --tcp-port {self.lidarport}"
@@ -396,11 +452,18 @@ class MonitorFault(QThread):
         poll_obj=select.poll()
         poll_obj.register(self.cmd.stderr,select.POLLIN)
         time.sleep(1)
-        os.system(command2)
-        os.system(command3)
-        os.system(command4)
+        self.cmd2=subprocess.Popen(command2,shell=True)
+        self.cmd3=subprocess.Popen(command3,shell=True)
+        self.cmd4=subprocess.Popen(command4,shell=True)
+        self.cmd2.wait()
+        self.cmd3.wait()
+        self.cmd4.wait()
         raw_count=len(os.listdir(self.savepath))
+        last_client_fail_time=time.time()
         while True:
+            if self.isInterruptionRequested():
+                # print(f"[{datetime.datetime.now()}] recieve interruption request")
+                break
             self.get_cmd_print(poll_obj,fault_log_path)
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
@@ -409,29 +472,54 @@ class MonitorFault(QThread):
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.1"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.2"))
             if not os.path.exists(newest_path):
-                print(f"{datetime.datetime.now()}:inno_pc_client boot failed!")
+                current_time=time.time()
+                if current_time-last_client_fail_time>3:
+                    last_client_fail_time=current_time
+                    print(f"[{datetime.datetime.now()}] {self.ip} inno_pc_client boot failed!")
                 if self.cmd.poll() is not None:
                     self.cmd.kill()
                     self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
                     poll_obj=select.poll()
                     poll_obj.register(self.cmd.stderr,select.POLLIN)
                     time.sleep(1)
-                os.system(command2)
-                os.system(command3)
-                os.system(command4)
+                self.cmd2=subprocess.Popen(command2,shell=True)
+                self.cmd3=subprocess.Popen(command3,shell=True)
+                self.cmd4=subprocess.Popen(command4,shell=True)
+                self.cmd2.wait()
+                self.cmd3.wait()
+                self.cmd4.wait()
                 continue
             if self.check_raw(os.listdir(newest_path)):
                 if i>=raw_count:
-                    print(f"record raw data to {os.path.abspath(newest_path)}")
+                    print(f"[{datetime.datetime.now()}] record raw data to {os.path.abspath(newest_path)}")
                 i+=1
                 newest_path=self.newest_folder(self.savepath,i)
                 command2=f"curl localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
-                os.system(command2)
-                os.system(command3)
+                self.cmd2=subprocess.Popen(command2,shell=True)
+                self.cmd3=subprocess.Popen(command3,shell=True)
+                self.cmd2.wait()
+                self.cmd3.wait()
     
-    
+    @handle_exceptions
     def stop(self):
-        self.terminate()
+        t=time.time()
+        while self.isRunning():
+            print(f"[{datetime.datetime.now()}] {self.ip} try finish monitor fault")
+            self.requestInterruption()
+            self.wait(1000)
+            if time.time()-t>3:
+                self.terminate()
+                break
+        if hasattr(self,"cmd"):
+            self.cmd.kill()
+        for i in range(2,5):
+            if hasattr(self,f"cmd{i}"):
+                try:
+                    getattr(self,f"cmd{i}").kill()
+                except:
+                    pass
+        print(f"[{datetime.datetime.now()}] {self.ip} finish monitor fualt success")
+        
 
 
 
@@ -464,12 +552,12 @@ class TestMain(QThread):
                 if abs(df.iloc[0,0]-power_one_time[2])<0.5:
                     break
             except:
-                print(f"{datetime.datetime.now()} set power voltage failed")
-        print(f"[{str(datetime.datetime.now())}]: current circle {i}")
+                print(f"[{datetime.datetime.now()}] set power voltage failed")
+        print(f"[{str(datetime.datetime.now())}] current circle {i}")
         t=time.time()
         time_path=get_time()
         if self.cb_lidar_mode.currentText()=="CAN":
-            subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
+            self.cmd_can=subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
         else:
             while True:
                 try:
@@ -500,8 +588,15 @@ class TestMain(QThread):
             threads.append(thread)
         for temp_thread in threads:
             temp_thread.join()
+        for monitor in self.monitors:
+            if monitor.isRunning():
+                # monitor.requestInterruption()
+                monitor.stop()
         if self.cb_lidar_mode.currentText()=="CAN":
-            os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk '{print $2}'|xargs kill -9")
+            self.cmd_can.kill()
+            self.kill_cmd_can=subprocess.Popen("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk '{print $2}'|xargs kill -9",shell=True)
+            self.kill_cmd_can.wait()
+            # os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk '{print $2}'|xargs kill -9")
         else:
             while True:
                 try:
@@ -510,11 +605,8 @@ class TestMain(QThread):
                     break
                 except:
                     print(f"[{datetime.datetime.now()}]power off failed")
-        for monitor in self.monitors:
-            if monitor.isRunning():
-                monitor.stop()
-        os.system("ps -ef|grep inno_pc_client|grep -v grep|awk '{print $2}'|xargs kill -9")
-        print("start sleep")
+        kill_client()
+        print(f"[{datetime.datetime.now()}] start sleep")
         for record in self.records:
             record.stop()
         for i in range(data_num_power_off):
@@ -536,15 +628,15 @@ class TestMain(QThread):
 
     @handle_exceptions
     def run(self):
-        os.system("ps -ef|grep inno_pc_client|grep -v grep|awk '{print $2}'|xargs kill -9")
+        kill_client()
         os.system("ps -ef|grep 'python3 power_client.py'|grep -v grep|awk '{print $2}'|xargs kill -9")
         if self.txt_record_interval.text().strip()=="":
-            print("please input record interval time")
+            print(f"[{datetime.datetime.now()}] please input record interval time")
             return None
         if self.txt_off_counter.text().strip()=="":
-            print("please input power off empty data number")
+            print(f"[{datetime.datetime.now()}] please input power off empty data number")
             return None
-        print(f"[{datetime.datetime.now()}]get inno_pc_client permission")
+        print(f"[{datetime.datetime.now()}] get inno_pc_client permission")
         os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
         while not init_power():
             pass
@@ -553,16 +645,15 @@ class TestMain(QThread):
         os.system("python3 ./power.py")
         for idx,ip in enumerate(self.ip_list):
             ping_sure(ip,0.5)
-            try:
-                down_sdk(ip)
-            except:
-                pass
-            try:
-                get_promission(ip,float(self.txt_timeout.text()))
-                if self.cb_lidar_mode.currentText()=="CAN":
-                    set_can(ip)
-            except:
-                pass
+            while True:
+                try:
+                    down_sdk(ip)
+                    get_promission(ip,float(self.txt_timeout.text()))
+                    if self.cb_lidar_mode.currentText()=="CAN":
+                        set_can(ip)
+                    break
+                except Exception as e:
+                    print(e)
             record_file=os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv')
             if not os.path.exists(record_file):
                 with open(record_file,"w",newline="\n") as f:
@@ -583,18 +674,32 @@ class TestMain(QThread):
         pow.power_off()
         rm_empty_folder(self.save_folder)
         self.sigout_test_finish.emit("done")
-        
+    
+    @handle_exceptions
     def stop(self):
         if hasattr(self,"records"):
             for record in self.records:
                 try:
                     record.stop()
+                    record.wait()
                 except:
                     pass
         if hasattr(self,"monitors"):
             for monitor in self.monitors:
                 try:
                     monitor.stop()
+                    monitor.wait()
+                except:
+                    pass
+        if self.cb_lidar_mode.currentText()=="CAN":
+            if hasattr(self,"cmd_can"):
+                try:
+                    self.cmd_can.kill()
+                except:
+                    pass
+            if hasattr(self,"kill_cmd_can"):
+                try:
+                    self.kill_cmd_can.kill()
                 except:
                     pass
         try:
@@ -602,7 +707,8 @@ class TestMain(QThread):
         except:
             pass
         self.terminate()
-        print(f"[{datetime.datetime.now()}]:Test has been stop")
+        os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk '{print $2}'|xargs kill -9")
+        print(f"[{datetime.datetime.now()}] Test has been stop")
 
 class EmittingStream(QtCore.QObject):
     textWritten = QtCore.pyqtSignal(str)
@@ -660,11 +766,14 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.tbw_fault.setColumnCount(0)
         for j in range(len(columns)):
             self.tbw_data.setHorizontalHeaderItem(j, QtWidgets.QTableWidgetItem())
+            self.tbw_data.horizontalHeader().setSectionResizeMode(j, QHeaderView.ResizeToContents)
             item = self.tbw_data.horizontalHeaderItem(j)
             item.setText(f"{columns[j]}")
         for i in range(row_counter):
             self.tbw_data.insertRow(i)
             self.tbw_fault.insertRow(i)
+            self.tbw_data.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            self.tbw_fault.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
             for j in range(len(columns)):
                 self.tbw_data.setItem(i,j,QtWidgets.QTableWidgetItem(f""))        
     
@@ -686,12 +795,11 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         last_max_col=self.tbw_fault.columnCount()
         self.tbw_fault.setColumnCount(last_max_col+1)
         self.tbw_fault.setHorizontalHeaderItem(last_max_col, QtWidgets.QTableWidgetItem())
+        self.tbw_fault.horizontalHeader().setSectionResizeMode(last_max_col, QHeaderView.ResizeToContents)
         item = self.tbw_fault.horizontalHeaderItem(last_max_col)
         item.setText(f"{fault}")
-        # for row_num in range(self.tbw_fault.rowCount()):
-        #     if row_num!=row_idx:
-        #         self.tbw_fault.setItem(row_num,last_max_col,QtWidgets.QTableWidgetItem(f""))
         self.tbw_fault.setItem(row_idx,last_max_col,QtWidgets.QTableWidgetItem(f"{1}"))
+
         
     def init_select_item(self):
         self.cb_project.clear()
@@ -740,7 +848,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def test_finish(self,str1):
         self.test_set_on()
         self.save_tbw_fault()
-        print(f"[{datetime.datetime.now()}]:Test finished")
+        print(f"[{datetime.datetime.now()}] Test finished")
     
     def test_set_off(self):
         self.cb_lidar_mode.setEnabled(False)

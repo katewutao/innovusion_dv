@@ -42,9 +42,9 @@ class ExcelFormat(object):
 
     def column_width(self):
         if "windows" in platform.platform().lower():
-            compensate = 1.2
+            compensate = 1.25
         else:
-            compensate = 1.18
+            compensate = 1.23
         for sheetname in self.wb.sheetnames:
             sheet = self.wb[sheetname]
             column_max_width = [0]*sheet.max_column
