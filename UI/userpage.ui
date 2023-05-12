@@ -108,6 +108,12 @@
       <height>161</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
     <property name="editTriggers">
      <set>QAbstractItemView::NoEditTriggers</set>
     </property>
