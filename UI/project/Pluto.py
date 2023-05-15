@@ -142,7 +142,7 @@ def csv_write(file, lis):
 def one_record(ip,save_log,SN,CustomerSN):
     command = f'curl http://{ip}:8088/get-all-status'
     res = get_command_result(command,save_log)
-    temp = [f" {datetime.datetime.now()}",SN,CustomerSN]
+    temp = [f" {datetime.datetime.now()}",SN,CustomerSN,"","",""]
     temp+=extract(record_keys[len(temp):-2], res)
     if res=="":
         return None

@@ -690,7 +690,6 @@ class TestMain(QThread):
 
     @handle_exceptions
     def run(self):
-        import power
         kill_client()
         os.system("ps -ef|grep 'python3 power_client.py'|grep -v grep|awk '{print $2}'|xargs kill -9")
         if self.txt_record_interval.text().strip()=="":
@@ -735,6 +734,7 @@ class TestMain(QThread):
         # self.cmd_pow.kill()
         if self.cb_lidar_mode.currentText()=="CAN":
             cancle_can(self.ip_list)
+        import power
         pow=power.Power()
         pow.power_off()
         rm_empty_folder(self.save_folder)
