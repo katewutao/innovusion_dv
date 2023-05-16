@@ -417,9 +417,10 @@ class one_lidar_record_thread(QThread):
         t=time.time()
         while self.isRunning():
             self.requestInterruption()
-            self.wait(100)
-            if time.time()-t>2:
+            self.wait(1000)
+            if time.time()-t>3:
                 self.terminate()
+                break
         print(f"[{datetime.datetime.now()}] {self.ip} finish record thread success")
 
 
