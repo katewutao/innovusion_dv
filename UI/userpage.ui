@@ -54,7 +54,7 @@
      <rect>
       <x>20</x>
       <y>140</y>
-      <width>261</width>
+      <width>281</width>
       <height>50</height>
      </rect>
     </property>
@@ -187,7 +187,7 @@
       <rect>
        <x>190</x>
        <y>10</y>
-       <width>71</width>
+       <width>101</width>
        <height>31</height>
       </rect>
      </property>
@@ -201,13 +201,18 @@
        <string>CAN</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>No Power</string>
+      </property>
+     </item>
     </widget>
     <widget class="QLineEdit" name="txt_off_counter">
      <property name="geometry">
       <rect>
        <x>190</x>
        <y>50</y>
-       <width>71</width>
+       <width>101</width>
        <height>25</height>
       </rect>
      </property>
@@ -310,7 +315,7 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>310</x>
+      <x>320</x>
       <y>140</y>
       <width>291</width>
       <height>50</height>
