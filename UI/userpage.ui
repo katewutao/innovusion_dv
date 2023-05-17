@@ -52,9 +52,9 @@
    <widget class="QPushButton" name="btn_start">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>20</x>
       <y>140</y>
-      <width>291</width>
+      <width>261</width>
       <height>50</height>
      </rect>
     </property>
@@ -72,7 +72,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>log:</string>
+     <string>Log:</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -225,7 +225,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>record interval(s)</string>
+      <string>Record Interval(s)</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="txt_record_interval">
@@ -251,7 +251,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>timeout(s)</string>
+      <string>Timeout(s)</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="txt_timeout">
@@ -294,9 +294,9 @@
    <widget class="QPushButton" name="btn_cancle_can">
     <property name="geometry">
      <rect>
-      <x>610</x>
+      <x>630</x>
       <y>140</y>
-      <width>291</width>
+      <width>271</width>
       <height>50</height>
      </rect>
     </property>
@@ -349,6 +349,59 @@
      <string>Lidar Fault</string>
     </property>
    </widget>
+   <widget class="QLabel" name="lb_schedule">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>400</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <italic>false</italic>
+      <bold>true</bold>
+      <underline>false</underline>
+      <kerning>true</kerning>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color:rgb(239, 41, 41)</string>
+    </property>
+    <property name="text">
+     <string>Test Schedule</string>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="pgb_test">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>402</y>
+      <width>281</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>10000</number>
+    </property>
+    <property name="value">
+     <number>0</number>
+    </property>
+    <property name="textVisible">
+     <bool>true</bool>
+    </property>
+    <property name="invertedAppearance">
+     <bool>false</bool>
+    </property>
+    <property name="textDirection">
+     <enum>QProgressBar::TopToBottom</enum>
+    </property>
+    <property name="format">
+     <string>%p%</string>
+    </property>
+   </widget>
    <zorder>frame</zorder>
    <zorder>txt_log</zorder>
    <zorder>label_4</zorder>
@@ -362,6 +415,8 @@
    <zorder>btn_stop</zorder>
    <zorder>tbw_fault</zorder>
    <zorder>label_11</zorder>
+   <zorder>lb_schedule</zorder>
+   <zorder>pgb_test</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_record_start">
