@@ -46,7 +46,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Lidar mode</string>
+     <string>Lidar Mode</string>
     </property>
    </widget>
    <widget class="QPushButton" name="btn_start">
@@ -67,12 +67,12 @@
      <rect>
       <x>10</x>
       <y>600</y>
-      <width>60</width>
+      <width>71</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Log:</string>
+     <string>Test Log:</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -128,7 +128,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Lidar status</string>
+     <string>Lidar Status</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_6">
@@ -179,7 +179,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Power_off_data_number</string>
+      <string>Power Off Empty Data</string>
      </property>
     </widget>
     <widget class="QComboBox" name="cb_lidar_mode">
@@ -346,12 +346,12 @@
      <rect>
       <x>10</x>
       <y>400</y>
-      <width>80</width>
+      <width>141</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Lidar Fault</string>
+     <string>Lidar Fault Statistic</string>
     </property>
    </widget>
    <widget class="QLabel" name="lb_schedule">
@@ -446,7 +446,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Fault status</string>
+     <string>Fault Status</string>
     </property>
    </widget>
    <zorder>frame</zorder>
