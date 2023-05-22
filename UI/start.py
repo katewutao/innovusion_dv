@@ -934,17 +934,18 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         
     @handle_exceptions
     def set_fault(self,fault,row_idx):
+        fault_name_width=185
         if fault not in self.scrollArea_list:
             self.scrollArea_list.append(fault)
             self.scrollArea.takeWidget()
-            self.scrollAreaWidgetContents.setMinimumSize(200+40*len(self.ip_list),20+30*len(self.scrollArea_list))
+            self.scrollAreaWidgetContents.setMinimumSize(fault_name_width+19+40*len(self.ip_list),20+30*len(self.scrollArea_list))
             label=QtWidgets.QLabel(self.scrollAreaWidgetContents)
-            label.setGeometry(QtCore.QRect(10,30*len(self.scrollArea_list)-10,171,21))
+            label.setGeometry(QtCore.QRect(10,30*len(self.scrollArea_list)-10,fault_name_width,21))
             label.setText(fault)
             setattr(self,f"lb_{fault}",label)            
             for idx,ip in enumerate(self.ip_list):
                 label=QtWidgets.QLabel(self.scrollAreaWidgetContents)
-                label.setGeometry(QtCore.QRect(200+40*idx, 30*len(self.scrollArea_list)-10, 21, 21))
+                label.setGeometry(QtCore.QRect(fault_name_width+19+40*idx, 30*len(self.scrollArea_list)-10, 21, 21))
                 label.setText("")
                 label.setStyleSheet("border-radius:10px;background-color:rgb(0, 0, 0)")
                 setattr(self,f"lb_{fault}_{idx}",label)
@@ -997,9 +998,16 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 485, 795))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.scrollArea_list=[]
     
-    # @handle_exceptions
-    def test_main(self):        
+    @handle_exceptions
+    def test_main(self):  
+        # if not hasattr(self,"num"):
+        #     self.num=0
+        # self.num+=1
+        # import random
+        # self.set_fault(f"WINDOWS_{self.num}",random.randint(0,5))
+              
         self.pgb_test.setValue(0)
         self.test=TestMain(self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
