@@ -33,6 +33,24 @@ gsettings set org.gnome.desktop.peripherals.touchpad click-method areas
 ubantu 20.04::::sudo python3 -m pip install serial   sudo python3 -m pip install pyserial
 
 
+python安装
+
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ openpyxl
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pandas
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyserial
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ modbus_tk
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyqt5
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pexpect
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlrd
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlsxwriter
+
+
+如果pyqt5安装失败，可能是本地没有安装qt，尝试:
+sudo apt-get install libhdf5-dev
+sudo apt install pyqt5
+sudo apt install pyqt5*
+sudo apt install qt5-default qttools5-dev-tools
+
 crtl+H 显示文件夹内隐藏文件,复制文件夹时需要和.git文件夹一起
 git log 查看代码更新内容以及日期
 

@@ -961,11 +961,12 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def init_select_item(self):
         self.cb_project.clear()
         self.cb_test_name.clear()
-        for project in sorted(os.listdir(self.project_folder)):
+        
+        for project in os.listdir(self.project_folder):
             ret=re.search("^(.+)\.py",project)
             if ret:
                 self.cb_project.addItem(ret.group(1))
-        for test_name in sorted(os.listdir(self.test_folder)):  # may can be json file, but no explain
+        for test_name in os.listdir(self.test_folder):  # may can be json file, but no explain
             ret=re.search("^(.+)\.py",test_name)
             if ret:
                 self.cb_test_name.addItem(ret.group(1))
