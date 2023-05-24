@@ -1083,6 +1083,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
         
 if __name__ == '__main__':
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
     QGuiApplication.setAttribute(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QtWidgets.QApplication(sys.argv)
     window = MainCode()
