@@ -185,7 +185,7 @@
     <widget class="QComboBox" name="cb_lidar_mode">
      <property name="geometry">
       <rect>
-       <x>190</x>
+       <x>100</x>
        <y>10</y>
        <width>101</width>
        <height>31</height>
@@ -210,7 +210,7 @@
     <widget class="QLineEdit" name="txt_off_counter">
      <property name="geometry">
       <rect>
-       <x>190</x>
+       <x>180</x>
        <y>50</y>
        <width>101</width>
        <height>25</height>
@@ -223,7 +223,7 @@
     <widget class="QLabel" name="label_8">
      <property name="geometry">
       <rect>
-       <x>310</x>
+       <x>400</x>
        <y>50</y>
        <width>121</width>
        <height>21</height>
@@ -236,7 +236,7 @@
     <widget class="QLineEdit" name="txt_record_interval">
      <property name="geometry">
       <rect>
-       <x>440</x>
+       <x>530</x>
        <y>50</y>
        <width>71</width>
        <height>25</height>
@@ -249,7 +249,7 @@
     <widget class="QLabel" name="label_9">
      <property name="geometry">
       <rect>
-       <x>630</x>
+       <x>720</x>
        <y>50</y>
        <width>121</width>
        <height>21</height>
@@ -262,7 +262,7 @@
     <widget class="QLineEdit" name="txt_timeout">
      <property name="geometry">
       <rect>
-       <x>730</x>
+       <x>820</x>
        <y>50</y>
        <width>71</width>
        <height>25</height>
@@ -275,9 +275,9 @@
     <widget class="QComboBox" name="cb_project">
      <property name="geometry">
       <rect>
-       <x>440</x>
+       <x>490</x>
        <y>10</y>
-       <width>161</width>
+       <width>111</width>
        <height>31</height>
       </rect>
      </property>
@@ -285,7 +285,7 @@
     <widget class="QLabel" name="label_10">
      <property name="geometry">
       <rect>
-       <x>310</x>
+       <x>430</x>
        <y>10</y>
        <width>80</width>
        <height>31</height>
@@ -293,6 +293,29 @@
      </property>
      <property name="text">
       <string>Project</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_13">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>10</y>
+       <width>80</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Power Type</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="cb_power_type">
+     <property name="geometry">
+      <rect>
+       <x>340</x>
+       <y>10</y>
+       <width>61</width>
+       <height>31</height>
+      </rect>
      </property>
     </widget>
    </widget>

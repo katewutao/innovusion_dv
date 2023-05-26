@@ -720,8 +720,8 @@ class TestMain(QThread):
         os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
         
         if self.cb_lidar_mode.currentText()!="No Power":
-            while not init_power():
-                pass
+            # while not init_power():
+            #     pass
             os.system("python3 ./power.py")
         for idx,ip in enumerate(self.ip_list):
             ping_sure(ip,0.5)
@@ -856,6 +856,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
 
         self.cb_project.currentIndexChanged.connect(self.project_changed)
         self.cb_test_name.currentIndexChanged.connect(self.test_name_changed)
+        self.cb_power_type.currentIndexChanged.connect(self.power_changed)
+        self.cb_lidar_mode.currentIndexChanged.connect(self.lidar_mode_changed)
         self.btn_start.clicked.connect(self.test_main)
         self.btn_cancle_can.clicked.connect(self.cancle_can_mode)
         self.btn_stop.clicked.connect(self.test_stop)
@@ -957,8 +959,6 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         if fault in self.scrollArea_list:
             getattr(self,f"lb_{fault}_{row_idx}").setStyleSheet("border-radius:10px;background-color:rgb(115, 210, 22)")
     
-    
-        
     def init_select_item(self):
         self.cb_project.clear()
         self.cb_test_name.clear()
@@ -970,8 +970,23 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             ret=re.search("^(.+)\.py",test_name)
             if ret:
                 self.cb_test_name.addItem(ret.group(1))
-        self.test_name_changed()
-        self.project_changed()
+        for power_type in sorted(os.listdir("./")):
+            ret=re.search("^power_(.+)\.py$",power_type)
+            if ret:
+                self.cb_power_type.addItem(ret.group(1))
+    
+    @handle_exceptions
+    def power_changed(self):
+        print(f"[{datetime.datetime.now()}] current power is {self.cb_power_type.currentText()},please ensure has connect!")
+        if os.path.exists("power.py"):
+            os.remove("power.py")
+        shutil.copyfile(os.path.join(os.getcwd(),f"power_{self.cb_power_type.currentText()}.py"),os.path.join(os.getcwd(),"power.py"))
+    
+    def lidar_mode_changed(self):
+        if self.cb_lidar_mode.currentText()=="No Power":
+            self.cb_power_type.setEnabled(False)
+        else:
+            self.cb_power_type.setEnabled(True)
     
     @handle_exceptions
     def test_name_changed(self):
@@ -1001,13 +1016,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.scrollArea_list=[]
     
     @handle_exceptions
-    def test_main(self):  
-        # if not hasattr(self,"num"):
-        #     self.num=0
-        # self.num+=1
-        # import random
-        # self.set_fault(f"WINDOWS_{self.num}",random.randint(0,5))
-              
+    def test_main(self):
         self.pgb_test.setValue(0)
         self.test=TestMain(self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
@@ -1027,6 +1036,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.cb_lidar_mode.setEnabled(False)
         self.cb_project.setEnabled(False)
         self.cb_test_name.setEnabled(False)
+        self.cb_power_type.setEnabled(False)
         self.txt_off_counter.setEnabled(False)  #setReadOnly(True)
         self.txt_record_interval.setEnabled(False)
         self.txt_timeout.setEnabled(False)
@@ -1038,6 +1048,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.cb_lidar_mode.setEnabled(True)
         self.cb_project.setEnabled(True)
         self.cb_test_name.setEnabled(True)
+        if self.cb_lidar_mode.currentText()!="No Power":
+            self.cb_power_type.setEnabled(True)
         self.txt_off_counter.setEnabled(True)  #setReadOnly(True)
         self.txt_record_interval.setEnabled(True)
         self.txt_timeout.setEnabled(True)
