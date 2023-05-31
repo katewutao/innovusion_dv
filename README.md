@@ -46,6 +46,7 @@ pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlsxwriter
 
 
 如果pyqt5安装失败，可能是本地没有安装qt，尝试:
+pip3 install --upgrade pip
 sudo apt-get install libhdf5-dev
 sudo apt-get install libxcb-xinerama0
 sudo apt install pyqt5
