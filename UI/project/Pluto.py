@@ -18,8 +18,8 @@ import datetime,platform
 
 # polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
-record_keys = ['TimeStamp','SN','CustomerSN','Rel Test Name','Rel CP code','Rel Leg','T0','T1','T2','Tlaser', 'A=', 'B=', 'C=', 'D=', 'LASER current','pump voltage=','temperature=','seed temperature=','polygon speed:','Board humidity','laser current:','vol', 'curr']
-record_header = "TimeStamp,SN,CustomerSN,Rel Test Name,Rel CP code,Rel Leg,FPGA_temp,Adc_temp,Tboard_temp,Tlaser_temp,det_A temp,det_B temp,det_C temp,det_D temp,Pump Laser Current,Pump Voltage,Laser module temperature,Seed Temperature,Polygon Speed,Board humidity,Laser Current,Driving Voltage,Driving Current"
+record_keys = ['TimeStamp','SN','CustomerSN','Rel Test Name','Rel CP code','Rel Leg','T0','T1','T2','Tlaser', 'A=', 'B=', 'C=', 'D=', 'LASER current','pump voltage=','temperature=','seed temperature=','polygon speed:','Board humidity','laser current:','get-sqi"','vol', 'curr']
+record_header = "TimeStamp,SN,CustomerSN,Rel Test Name,Rel CP code,Rel Leg,FPGA_temp,Adc_temp,Tboard_temp,Tlaser_temp,det_A temp,det_B temp,det_C temp,det_D temp,Pump Laser Current,Pump Voltage,Laser module temperature,Seed Temperature,Polygon Speed,Board humidity,Laser Current,SQI,Driving Voltage,Driving Current"
 
 def extract(keys, st):
     import re

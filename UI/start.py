@@ -61,12 +61,10 @@ def time_limited(timeout):
                         self.result = function(*args, **kwargs)
                     except Exception as e:
                         self.error = e
-
             t = TimeLimited()
             t.setDaemon(True)
             t.start()
             t.join(timeout)
-
             if t.error:
                 raise t.error
             if t.is_alive():
@@ -105,8 +103,7 @@ def print(*arg,**kwarg):
     rewrite_print(*arg,**kwarg,file=open(log_file,"a"))
 
 def downlog(ip,log_path,time_path):
-    save_path=os.path.join(log_path,ip.replace('.','_'))
-    save_path=os.path.join(save_path,time_path)
+    save_path=os.path.join(log_path,"log",ip.replace('.','_'),time_path)
     os.makedirs(save_path)
     command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
     command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt '{save_path}'"
@@ -292,7 +289,7 @@ class Power_monitor(QThread):
                 break
             try:
                 temp=pow.PowerStatus()
-                if isinstance(temp,list) and len(temp)==2:
+                if isinstance(temp,list) and len(temp)==2 and re.search("^\d+\.?\d*$",str(temp[0])) and re.search("^\d+\.?\d*$",str(temp[1])):
                     pow_status=temp
             except:
                 try:
