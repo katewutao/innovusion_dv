@@ -39,7 +39,7 @@ pip3 install -i https://mirrors.aliyun.com/pypi/simple/ openpyxl
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pandas
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyserial
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ modbus_tk
-pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyqt5
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyqt5==5.15.8
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pexpect
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlrd
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlsxwriter
