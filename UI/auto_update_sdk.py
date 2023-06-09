@@ -121,11 +121,22 @@ def down_sdk(ip):
         client_name="inno_pc_client"
         client_path_down=os.path.join(public_path,"apps/pcs/",client_name)
         client_path_current=f"./lidar_util/{client_name}"
+        
+        get_pcd_name="get_pcd"
+        get_pcd_path_down=os.path.join(public_path,"apps/example/",get_pcd_name)
+        get_pcd_current=f"./lidar_util/{get_pcd_name}"
+
+        if not os.path.exists(os.path.dirname(get_pcd_current)):
+            os.makedirs(os.path.dirname(get_pcd_current))
         if os.path.exists(client_path_down):
             if os.path.exists(client_path_current):
                 os.remove(client_path_current)
+            if os.path.exists(get_pcd_current):
+                os.remove(get_pcd_current)
             shutil.copyfile(client_path_down,client_path_current)
+            shutil.copyfile(get_pcd_path_down,get_pcd_current)
             if "linux" in platform.platform().lower():
                 os.system(f"echo demo|sudo -S chmod 777 {client_path_current}")
+                os.system(f"echo demo|sudo -S chmod 777 {get_pcd_current}")
             write_sdk_version(sdk_version)
             shutil.rmtree(public_path)
