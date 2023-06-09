@@ -96,7 +96,12 @@ def get_current_date():
     start_time=f"{ret[0].zfill(4)}{ret[1].zfill(2)}{ret[2].zfill(2)}T{ret[3].zfill(2)}{ret[4].zfill(2)}{ret[5].zfill(2)}"
     return start_time
 
-log_file="python_"+get_current_date()+".log"
+
+
+log_folder="./python_log"
+if not os.path.exists(log_folder):
+    os.makedirs(log_folder)
+log_file=os.path.join(log_folder,get_current_date()+".log")
 rewrite_print=print
 def print(*arg,**kwarg):
     rewrite_print(*arg,**kwarg)
