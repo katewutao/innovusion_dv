@@ -16,16 +16,10 @@ import pandas as pd
 import subprocess
 import datetime,platform
 
-
-
+# polygon speed,Motor DC bus voltage,Motor RMS current,Motor speed control err,Galvo FPS,Galvo RMS current,Galvo frame counter,Galvo position control err,laser current,unit current,
 
 search_keys={
     "TimeStamp": "",
-    "SN": "",
-    "CustomerSN": "",
-    "Rel Test Name": "",
-    "Rel CP code": "",
-    "Rel Leg": "",
     "FPGA_temp": "T0",
     "Adc_temp": "T1",
     "Tboard_temp": "T2",
@@ -34,19 +28,17 @@ search_keys={
     "det_B temp": "B=",
     "det_C temp": "C=",
     "det_D temp": "D=",
-    "Pump Laser Current": "LASER current",
-    "Pump Voltage": "pump voltage=",
     "Laser module temperature": "temperature=",
     "Seed Temperature": "seed temperature=",
-    "Polygon Speed": "polygon speed:",
-    "Board humidity": "Board humidity",
+    "Pump Laser Current": "LASER current",
     "Laser Current": "laser current:",
-    "SQI": "get-sqi\"",
-    "Driving Voltage": "",
-    "Driving Current": ""
+    "Polygon Speed": "polygon speed:",
+    "Galvo_FPS": "Galvo FPS:",
+    "SQI": "get-sqi\""
 }
 
 record_header=",".join(search_keys.keys())
+
 
 def extract(search_keys, st):
     import re
@@ -79,7 +71,6 @@ def csv_write(file, lis):
     with open(file, 'a', newline='\n') as f:
         f.write(str1)
 
-
 def get_command_result(command,save_log):
     cmd = subprocess.Popen(command, shell=True,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -100,8 +91,6 @@ def one_record(ip,save_log,SN,CustomerSN):
     global search_keys
     command = f'curl http://{ip}:8088/get-all-status'
     res = get_command_result(command,save_log)
-    if res=="":
-        return None
-    temp = [f" {datetime.datetime.now()}",SN,CustomerSN,"","",""]
+    temp = [f" {datetime.datetime.now()}"]
     temp+=extract(search_keys, res)
     return temp
