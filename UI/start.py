@@ -710,9 +710,9 @@ class TestMain(QThread):
             temp_pow=pow_status
             for row_idx,ip in enumerate(ip_list):
                 if self.cb_lidar_mode.currentText()=="CAN":
-                    temp=[str(datetime.datetime.now())]+[-100]*(self.record_header.count(",")-2)+temp_pow
+                    temp=[f" {datetime.datetime.now()}"]+[-100]*(self.record_header.count(",")-2)+temp_pow
                 else:
-                    temp=[str(datetime.datetime.now())]+[-100]*(self.record_header.count(","))
+                    temp=[f" {datetime.datetime.now()}"]+[-100]*(self.record_header.count(","))
                 self.sigout_set_empty.emit(temp,row_idx)
                 self.csv_write_func(os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv'),temp)
             t0=(power_one_time[0]+power_one_time[1]-(time.time()-t))/(data_num_power_off-i)
