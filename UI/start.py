@@ -68,7 +68,8 @@ def time_limited(timeout):
             if t.error:
                 raise t.error
             if t.is_alive():
-                print(f"[{datetime.datetime.now()}] {function.__name__} time out")
+                # print(f"[{datetime.datetime.now()}] {function.__name__} time out")
+                pass
             return t.result
         return decorator2
     return decorator
@@ -300,7 +301,7 @@ class Power_monitor(QThread):
                 try:
                     pow=power.Power()
                 except:
-                    print(f"retry get power output value")
+                    print(f"[{datetime.datetime.now()}] retry get power output value")
     
     @handle_exceptions
     def pause(self):
@@ -471,6 +472,12 @@ class MonitorFault(QThread):
                 ret_fault=re.search("IN_FAULT_([A-Z_0-9]+)",ret.group(2))
                 if ret_fault:
                     self.sigout_fault_info.emit(ret_fault.group(1),self.row_idx)
+            ret=re.search("(fault_id.+)\sfrom .+isr",stderr)
+            if ret:
+                str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(1)} has been set"
+                with open(fault_log_path,"a") as f:
+                    f.write(str1+"\n")
+                self.sigout_fault_info.emit(ret.group(1),self.row_idx)
         stdout=self.cmd.stdout.readline()
         ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sheal",stdout)
         if ret:
@@ -481,7 +488,12 @@ class MonitorFault(QThread):
             ret_fault=re.search("IN_FAULT_([A-Z_0-9]+)",ret.group(2))
             if ret_fault:
                 self.sigout_fault_heal.emit(ret_fault.group(1),self.row_idx)
-            
+        ret=re.search("(fault_id.+)\sfrom .+isr",stdout)
+        if ret:
+            str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(1)} has been set"
+            with open(fault_log_path,"a") as f:
+                f.write(str1+"\n")
+            self.sigout_fault_info.emit(ret.group(1),self.row_idx)   
             
     @handle_exceptions
     def run(self):
