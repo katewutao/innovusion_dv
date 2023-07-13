@@ -1118,7 +1118,10 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             row=[]
             for col_idx in range(self.tbw_fault.columnCount()):
                 if self.tbw_fault.item(row_idx,col_idx)!=None:
-                    row.append(int(self.tbw_fault.item(row_idx,col_idx).text()))
+                    if col_idx!=0:
+                        row.append(int(self.tbw_fault.item(row_idx,col_idx).text()))
+                    else:
+                        row.append(self.tbw_fault.item(row_idx,col_idx).text())
                 else:
                     row.append(0)
             df.loc[self.ip_list[row_idx],:]=row
