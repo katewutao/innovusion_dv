@@ -1122,7 +1122,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                 else:
                     row.append(0)
             df.loc[self.ip_list[row_idx],:]=row
-        df.to_excel(os.path.join(self.save_folder,"fault_counter.xlsx"),sheet_name="fault",index_label="ip")
+        df.to_excel(os.path.join(self.save_folder,"fault_counter.xlsx"),sheet_name="fault",index=None)
         from excel_format import ExcelFormat
         ef=ExcelFormat(os.path.join(self.save_folder,"fault_counter.xlsx"))
         ef.format()
