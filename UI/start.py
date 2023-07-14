@@ -444,9 +444,16 @@ class MonitorFault(QThread):
         newest_path=os.path.join(A,str(B))
         return newest_path
 
-    def check_raw(self,file_list):
+    def check_raw(self,folder):
+        file_list=os.listdir(folder)
         key="sn\d+-\d+.*\.inno_raw$"
         for file in file_list:
+            if re.search("^sn\d+-(45|49).*\.inno_raw$",file):
+                try:
+                    os.remove(os.path.join(folder,file))
+                    print(f"[{datetime.datetime.now()}] remove {file} success")
+                except:
+                    print(f"[{datetime.datetime.now()}] remove {file} failed")
             if re.match(key,file):
                 return True
         return False
@@ -564,7 +571,7 @@ class MonitorFault(QThread):
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.err"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.1"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.2"))
-            if self.check_raw(os.listdir(newest_path)):
+            if self.check_raw(newest_path):
                 if i>=raw_count:
                     print(f"[{datetime.datetime.now()}] record raw data to {os.path.abspath(newest_path)}")
                 i+=1
