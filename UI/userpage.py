@@ -152,7 +152,7 @@ class Ui_MainWindow(object):
         self.label_12.setGeometry(QtCore.QRect(1140, 50, 80, 31))
         self.label_12.setObjectName("label_12")
         self.lb_power = QtWidgets.QLabel(self.centralwidget)
-        self.lb_power.setGeometry(QtCore.QRect(250, 400, 41, 21))
+        self.lb_power.setGeometry(QtCore.QRect(230, 400, 51, 21))
         font = QtGui.QFont()
         font.setBold(True)
         font.setItalic(False)
