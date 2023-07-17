@@ -448,7 +448,7 @@ class MonitorFault(QThread):
         file_list=os.listdir(folder)
         key="sn\d+-\d+.*\.inno_raw$"
         for file in file_list:
-            if re.search("^sn\d+-(45|49).*\.inno_raw$",file):
+            if re.search("^sn\d+-(45|49|3|4).*\.inno_raw$",file):
                 try:
                     os.remove(os.path.join(folder,file))
                     print(f"[{datetime.datetime.now()}] remove {file} success")
