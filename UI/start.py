@@ -23,7 +23,8 @@ import traceback
 import inspect
 import pandas as pd
 import shutil,json,importlib
-from auto_update_sdk import down_sdk
+from common.auto_update_sdk import down_sdk
+from common.excel_format import ExcelFormat
 import ctypes,inspect,select,math
 from threading import Thread
 
@@ -223,7 +224,6 @@ def set_power(ip):
     command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
     cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
     res=cmd.communicate()
-    
     if "dsp boot from power: OK" in res[0]:
         print(f"[{datetime.datetime.now()}] {ip} set power mode success")
         return True
@@ -232,15 +232,16 @@ def set_power(ip):
         set_power(ip)
 
 
-def cancle_can(ip_list):
+def cancle_can(ip_list,can_mode="Default"):
     os.system("python3 ./power.py")
     os.system("python3 lib/set_usbcanfd_env.py demo")
     print(f"[{datetime.datetime.now()}] start set lidar power mode")
-    subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
+    subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
         ping_sure(ip,0.5)
         set_power(ip)
-    os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+    if can_mode=="Default":
+        os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f"[{datetime.datetime.now()}] all lidar cancle can mode success")
     
     
@@ -615,7 +616,7 @@ class TestMain(QThread):
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,ip_list,record_folder,record_header,times,set_table_value,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
+    def __init__(self,can_mode,ip_list,record_folder,record_header,times,set_table_value,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
         super(TestMain,self).__init__()
         self.csv_write_func=csv_write_func
         self.txt_record_interval=txt_record_interval
@@ -628,6 +629,7 @@ class TestMain(QThread):
         self.txt_off_counter=txt_off_counter
         self.times=times
         self.record_func=record_func
+        self.can_mode=can_mode
     
     
     def set_fault(self,fault,row_idx):
@@ -665,7 +667,7 @@ class TestMain(QThread):
         t=time.time()
         time_path=get_time()
         if self.cb_lidar_mode.currentText()=="CAN":
-            self.cmd_can=subprocess.Popen(f'exec python3 usbcanfd_controler.py',shell=True)
+            self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         self.power_monitor.resume()
         self.records=[]
         self.monitors=[]
@@ -701,7 +703,7 @@ class TestMain(QThread):
         self.sigout_power.emit(False)
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can.kill()
-            self.kill_cmd_can=subprocess.Popen("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk '{print $2}'|xargs kill -9",shell=True)
+            self.kill_cmd_can=subprocess.Popen(f'exec python3 can_cancle.py -c {self.can_mode}',shell=True)
             self.kill_cmd_can.wait()
         else:
             self.power_monitor.pause()
@@ -774,7 +776,7 @@ class TestMain(QThread):
                 i+=1 
             self.power_monitor.stop()
             if self.cb_lidar_mode.currentText()=="CAN":
-                cancle_can(self.ip_list)
+                cancle_can(self.ip_list,self.can_mode)
             import power
             pow=power.Power()
             pow.power_off()
@@ -830,6 +832,7 @@ class TestMain(QThread):
                     self.kill_cmd_can.kill()
                 except:
                     pass
+            
         if hasattr(self,"power_monitor"):
             try:
                 self.power_monitor.stop()
@@ -845,7 +848,7 @@ class TestMain(QThread):
                 break
         kill_client()
         if self.cb_lidar_mode.currentText()=="CAN":
-            os.system("ps -ef|grep usbcanfd_controler.py|grep -v grep|awk '{print $2}'|xargs kill -9")
+            os.system(f'exec python3 can_cancle.py -c {self.can_mode}')
         elif self.cb_lidar_mode.currentText()=="No Power":
             threads=[]
             time_path=get_time()
@@ -887,6 +890,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.btn_stop.clicked.connect(self.test_stop)
         self.init_select_item()
     
+        self.cb_can_mode.setEnabled(False)
         
         IntValidator = QIntValidator(0,100000)
         DoubleValidator = QDoubleValidator(0,100000,3,notation=QtGui.QDoubleValidator.StandardNotation)
@@ -1026,6 +1030,11 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             self.cb_power_type.setEnabled(False)
         else:
             self.cb_power_type.setEnabled(True)
+        if self.cb_lidar_mode.currentText()=="CAN":
+            self.cb_can_mode.setEnabled(True)
+        else:
+            self.cb_can_mode.setEnabled(False)
+            
     
     def power_status(self,mode):
         if mode:
@@ -1063,7 +1072,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     @handle_exceptions
     def test_main(self):
         self.pgb_test.setValue(0)
-        self.test=TestMain(self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
+        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_set_empty.connect(self.set_table_value)
         self.test.sigout_schedule.connect(self.set_schedule)
@@ -1083,6 +1092,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.cb_project.setEnabled(False)
         self.cb_test_name.setEnabled(False)
         self.cb_power_type.setEnabled(False)
+        self.cb_can_mode.setEnabled(False)
         self.txt_off_counter.setEnabled(False)  #setReadOnly(True)
         self.txt_record_interval.setEnabled(False)
         self.txt_timeout.setEnabled(False)
@@ -1096,6 +1106,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.cb_test_name.setEnabled(True)
         if self.cb_lidar_mode.currentText()!="No Power":
             self.cb_power_type.setEnabled(True)
+        if self.cb_lidar_mode.currentText()=="CAN":
+            self.cb_can_mode.setEnabled(True)
         self.txt_off_counter.setEnabled(True)  #setReadOnly(True)
         self.txt_record_interval.setEnabled(True)
         self.txt_timeout.setEnabled(True)
@@ -1133,12 +1145,11 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                     row.append(0)
             df.loc[self.ip_list[row_idx],:]=row
         df.to_excel(os.path.join(self.save_folder,"fault_counter.xlsx"),sheet_name="fault",index=None)
-        from excel_format import ExcelFormat
         ef=ExcelFormat(os.path.join(self.save_folder,"fault_counter.xlsx"))
         ef.format()
     
     def cancle_can_mode(self):
-        cancle_can(self.ip_list)
+        cancle_can(self.ip_list,self.cb_can_mode.currentText())
     
         
     

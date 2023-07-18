@@ -1,19 +1,35 @@
-{
-    "id": {
-        "frame_ID": 505,
-        "multiFrame_ID": []
+{   
+    "user": {
+        "pwd": "demo"
+    },
+
+    "redis": {
+        "upload": false,
+        "host": "172.16.98.20",
+        "port": 6379,
+        "db_num": 0
+    },
+    
+    "frame": {
+        "frame_ID": "7f9",
+        "multiFrame_ID": ["505", "523", "578", "47f"],
+        "payload_len": 3,
+        "payload": "000000",
+        "send_count": 1,
+        "send_interval": 640,
+        "frame_count": 1
     },
 
     "device": {
         "device_type": 33,
         "device_idx": 0,
-        "channel": 0,
+        "tx_ch": 0,
+        "rx_ch": 0,
         "reserved": 0
     },
 
     "loop": {
-        "cycle_time": 640,
-        "loop_count": -1
+        "cycle_time": 640
     },
 
     "can_type": {
