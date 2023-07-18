@@ -43,6 +43,7 @@ pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyqt5==5.15.8
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pexpect
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlrd
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlsxwriter
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ redis
 
 
 如果pyqt5安装失败，可能是本地没有安装qt，尝试:
