@@ -9,10 +9,8 @@
 #  */
 
 
-import argparse
 import time
 import os
-import pandas as pd
 import subprocess
 import datetime,platform
 
@@ -23,24 +21,21 @@ search_keys={
     "TimeStamp": "",
     "SN": "",
     "CustomerSN": "",
-    "Rel Test Name": "",
-    "Rel CP code": "",
-    "Rel Leg": "",
-    "FPGA_temp": "T0",
-    "Adc_temp": "T1",
-    "Tboard_temp": "T2",
-    "Tlaser_temp": "Tlaser",
-    "det_A temp": "A=",
-    "det_B temp": "B=",
-    "det_C temp": "C=",
-    "det_D temp": "D=",
-    "Pump Laser Current": "LASER current",
-    "Pump Voltage": "pump voltage=",
-    "Laser module temperature": "temperature=",
-    "Seed Temperature": "seed temperature=",
-    "Polygon Speed": "polygon speed:",
-    "Board humidity": "Board humidity",
-    "Laser Current": "laser current:",
+    "FPGA_temp": "T0.*?(\d+\.?\d*)",
+    "Adc_temp": "T1.*?(\d+\.?\d*)",
+    "Tboard_temp": "T2.*?(\d+\.?\d*)",
+    "Tlaser_temp": "Tlaser.*?(\d+\.?\d*)",
+    "det_A temp": "A=.*?(\d+\.?\d*)",
+    "det_B temp": "B=.*?(\d+\.?\d*)",
+    "det_C temp": "C=.*?(\d+\.?\d*)",
+    "det_D temp": "D=.*?(\d+\.?\d*)",
+    "Pump Laser Current": "LASER current.*?(\d+\.?\d*)",
+    "Pump Voltage": "pump voltage=.*?(\d+\.?\d*)",
+    "Laser module temperature": "temperature=.*?(\d+\.?\d*)",
+    "Seed Temperature": "seed temperature=.*?(\d+\.?\d*)",
+    "Polygon Speed": "polygon speed:.*?(\d+\.?\d*)",
+    "Board humidity": "Board humidity.*?(\d+\.?\d*)",
+    "Laser Current": "laser current:.*?(\d+\.?\d*)",
     "SQI": "get-sqi\"",
     "Driving Voltage": "",
     "Driving Current": ""
@@ -48,24 +43,16 @@ search_keys={
 
 record_header=",".join(search_keys.keys())
 
-def extract(search_keys, st):
+def extract(search_keys, str1):
     import re
     res=[]
     for key in search_keys.keys():
         if search_keys[key]!="":
-            if re.search("^CH([A|B|C|D])_",key) and re.search("intensity$",search_keys[key]):
-                ret=re.search(search_keys[key]+".*?(\d+).*?(\d+).*?(\d+).*?(\d+)",st)
-                CH_idx=ord(re.search("^CH([A|B|C|D])_",key).group(1))-ord("A")
-                if ret:
-                    res.append(ret.group(CH_idx+1))
-                else:
-                    res.append("NaN")
+            ret=re.search(search_keys[key],str1)
+            if ret:
+                res.append(ret.group(1))
             else:
-                ret=re.search(search_keys[key]+".*?(-?\d+\.?\d*)",st)
-                if ret:
-                    res.append(ret.group(1))
-                else:
-                    res.append("NaN")
+                res.append("NaN")
     return res
 
 def csv_write(file, lis):
@@ -102,6 +89,6 @@ def one_record(ip,save_log,SN,CustomerSN):
     res = get_command_result(command,save_log)
     if res=="":
         return None
-    temp = [f" {datetime.datetime.now()}",SN,CustomerSN,"","",""]
+    temp = [f" {datetime.datetime.now()}",SN,CustomerSN]
     temp+=extract(search_keys, res)
     return temp
