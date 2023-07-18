@@ -23,7 +23,8 @@ search_keys={
     "time": "",
     "SN": "",
     "CustomerSN": "",
-    "Temp_fpga": "T0",
+    "temp_fpga": "T0",
+    "temp_chip": "Chip=",
     "temp_adc": "T1",
     "temp_board": "T2",
     "Temp_laser": "Tlaser",
@@ -76,13 +77,13 @@ def extract(search_keys, st):
                 if ret:
                     res.append(ret.group(CH_idx+1))
                 else:
-                    res.append(-100)
+                    res.append("NaN")
             else:
                 ret=re.search(search_keys[key]+".*?(-?\d+\.?\d*)",st)
                 if ret:
                     res.append(ret.group(1))
                 else:
-                    res.append(-100)
+                    res.append("NaN")
     return res
 
 def csv_write(file, lis):

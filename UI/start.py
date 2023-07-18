@@ -880,6 +880,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         
         self.project_folder="./project"
         self.test_folder="./test_config"
+        self.power_folder="./power"
 
         self.cb_project.currentIndexChanged.connect(self.project_changed)
         self.cb_test_name.currentIndexChanged.connect(self.test_name_changed)
@@ -1013,7 +1014,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             ret=re.search("^(.+)\.py",test_name)
             if ret:
                 self.cb_test_name.addItem(ret.group(1))
-        for power_type in sorted(os.listdir("./")):
+        for power_type in sorted(os.listdir(self.power_folder)):
             ret=re.search("^power_(.+)\.py$",power_type)
             if ret:
                 self.cb_power_type.addItem(ret.group(1))
@@ -1023,7 +1024,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         print(f"[{datetime.datetime.now()}] current power is {self.cb_power_type.currentText()},please ensure has connect!")
         if os.path.exists("power.py"):
             os.remove("power.py")
-        shutil.copyfile(os.path.join(os.getcwd(),f"power_{self.cb_power_type.currentText()}.py"),os.path.join(os.getcwd(),"power.py"))
+        shutil.copyfile(os.path.join(self.power_folder,f"power_{self.cb_power_type.currentText()}.py"),os.path.join(os.getcwd(),"power.py"))
     
     def lidar_mode_changed(self):
         if self.cb_lidar_mode.currentText()=="No Power":
