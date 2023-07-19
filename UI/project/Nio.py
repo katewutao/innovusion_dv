@@ -101,15 +101,12 @@ def csv_write(file, lis):
 def get_command_result(command,save_log):
     cmd = subprocess.Popen(command, shell=True,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    time.sleep(0.8)
-    if cmd.poll() is not None:
+    try: 
+        cmd.wait(0.5)
         res = str(cmd.stdout.read())
-        res1 = 'success'
-    else:
-        res = ''
-        res1 = 'failed'
+    except:
+        res=""
     cmd.kill()
-    # write_log(save_log, command, res1)
     return res
 
 
