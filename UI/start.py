@@ -267,6 +267,8 @@ def get_time():
 
 
 def kill_client():
+    if "windows" in platform.platform().lower():
+        return
     command="exec ps -ef|grep inno_pc_client|grep -v grep|awk '{print $2}'|xargs kill -9"
     # print(command)
     print(f"[{datetime.datetime.now()}] kill client")
@@ -468,40 +470,26 @@ class MonitorFault(QThread):
                 pass
 
     @time_limited(1)
-    def get_cmd_print(self,poll_obj,fault_log_path):
-        if poll_obj.poll(0):
-            stderr=self.cmd.stderr.readline()
-            ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sset",stderr)
-            if ret:
-                str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(2)} has been set"
-                with open(fault_log_path,"a") as f:
-                    f.write(str1+"\n")
-                print(str1)
-                ret_fault=re.search("IN_FAULT_([A-Z_0-9]+)",ret.group(2))
-                if ret_fault:
-                    self.sigout_fault_info.emit(ret_fault.group(1),self.row_idx)
-            ret=re.search("(fault_id.+)\sfrom .+isr",stderr)
-            if ret:
-                str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(1)} has been set"
-                with open(fault_log_path,"a") as f:
-                    f.write(str1+"\n")
-                self.sigout_fault_info.emit(ret.group(1),self.row_idx)
+    def get_cmd_print(self,fault_log_path):
         stdout=self.cmd.stdout.readline()
-        ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\sheal",stdout)
+        ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\s(set|heal)",stdout)
         if ret:
-            str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(2)} has been heal"
+            str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(2)} has been {ret.group(3)}"
             with open(fault_log_path,"a") as f:
                 f.write(str1+"\n")
             print(str1)
             ret_fault=re.search("IN_FAULT_([A-Z_0-9]+)",ret.group(2))
             if ret_fault:
-                self.sigout_fault_heal.emit(ret_fault.group(1),self.row_idx)
+                if ret.group(3)=="set":
+                    self.sigout_fault_info.emit(ret_fault.group(1),self.row_idx)
+                else:
+                    self.sigout_fault_heal.emit(ret_fault.group(1),self.row_idx)
         ret=re.search("(fault_id.+)\sfrom .+isr",stdout)
         if ret:
             str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(1)} has been set"
             with open(fault_log_path,"a") as f:
                 f.write(str1+"\n")
-            self.sigout_fault_info.emit(ret.group(1),self.row_idx)   
+            self.sigout_fault_info.emit(ret.group(1),self.row_idx)  
             
     @handle_exceptions
     def run(self):
@@ -527,10 +515,10 @@ class MonitorFault(QThread):
                 pass
         i=1
         newest_path=self.newest_folder(self.savepath,i)
-        command1=f"exec {util_path} --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port {self.lidarudpport} --tcp-port {self.lidarport}"
-        command2=f"curl localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
-        command3=f"curl localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"
-        command4=f"curl localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}"
+        command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port 8010 udp-port {self.lidarudpport} --tcp-port {self.lidarport}'
+        command2=f'curl "localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}"'
+        command3=f'curl "localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"'
+        command4=f'curl "localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}"'
         raw_count=len(os.listdir(self.savepath))
         print(f"[{datetime.datetime.now()}] {self.ip} inno_pc_client start boot")
         last_client_fail_time=time.time()
@@ -545,9 +533,7 @@ class MonitorFault(QThread):
                     print(f"[{datetime.datetime.now()}] {self.ip} inno_pc_client boot failed!")
                 if hasattr(self,"cmd"):
                     self.cmd.kill()
-                self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
-                poll_obj=select.poll()
-                poll_obj.register(self.cmd.stderr,select.POLLIN)
+                self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
                 time.sleep(1)
                 self.cmd2=subprocess.Popen(command2,shell=True)
                 self.cmd3=subprocess.Popen(command3,shell=True)
@@ -565,7 +551,7 @@ class MonitorFault(QThread):
                 except:
                     self.cmd4.kill()
                 continue
-            self.get_cmd_print(poll_obj,fault_log_path)
+            self.get_cmd_print(fault_log_path)
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log"))
