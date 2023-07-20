@@ -114,17 +114,33 @@ def down_sdk(ip):
         public_path = './scripts/common/sdk'
         #download public
         if "linux" in platform.platform().lower():
+            lidar_util_name="innovusion_lidar_util"
+            get_pcd_name="get_pcd"
+            client_name="inno_pc_client"
             command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version_no_platform}-public.tgz" -o katewutao.tgz'
+            # print(command)
             if not update_sdk(command, public_path):
                 command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version}-public.tgz" -o katewutao.tgz'
                 update_sdk(command, public_path)
-        client_name="inno_pc_client"
+        elif "windows" in platform.platform().lower():
+            lidar_util_name="innovusion_lidar_util.exe"
+            get_pcd_name="get_pcd.exe"
+            client_name="inno_pc_client.exe"
+            command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version_no_platform}-mingw64-public.tgz" -o katewutao.tgz'
+            if not update_sdk(command, public_path):
+                command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version}-mingw64-public.tgz" -o katewutao.tgz'
+                update_sdk(command, public_path)
+        else:
+            return
+        
         client_path_down=os.path.join(public_path,"apps/pcs/",client_name)
         client_path_current=f"./lidar_util/{client_name}"
-        
-        get_pcd_name="get_pcd"
+
         get_pcd_path_down=os.path.join(public_path,"apps/example/",get_pcd_name)
         get_pcd_current=f"./lidar_util/{get_pcd_name}"
+        
+        util_path_down=os.path.join(public_path,"apps/lidar_util",lidar_util_name) 
+        util_current=f"./lidar_util/{lidar_util_name}"
 
         if not os.path.exists(os.path.dirname(get_pcd_current)):
             os.makedirs(os.path.dirname(get_pcd_current))
@@ -133,10 +149,18 @@ def down_sdk(ip):
                 os.remove(client_path_current)
             if os.path.exists(get_pcd_current):
                 os.remove(get_pcd_current)
+            if os.path.exists(util_current):
+                os.remove(util_current)
             shutil.copyfile(client_path_down,client_path_current)
             shutil.copyfile(get_pcd_path_down,get_pcd_current)
+            shutil.copyfile(util_path_down,util_current)
             if "linux" in platform.platform().lower():
                 os.system(f"echo demo|sudo -S chmod 777 {client_path_current}")
                 os.system(f"echo demo|sudo -S chmod 777 {get_pcd_current}")
+                os.system(f"echo demo|sudo -S chmod 777 {util_current}")
             write_sdk_version(sdk_version)
             shutil.rmtree(public_path)
+            
+            
+if __name__=="__main__":
+    down_sdk("172.168.1.10")
