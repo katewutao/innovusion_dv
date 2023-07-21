@@ -21,22 +21,36 @@ search_keys={
     "TimeStamp": "",
     "SN": "",
     "CustomerSN": "",
-    "FPGA_temp": "T0.*?(\d+\.?\d*)",
-    "Adc_temp": "T1.*?(\d+\.?\d*)",
-    "Tboard_temp": "T2.*?(\d+\.?\d*)",
-    "Tlaser_temp": "Tlaser.*?(\d+\.?\d*)",
-    "det_A temp": "A=.*?(\d+\.?\d*)",
-    "det_B temp": "B=.*?(\d+\.?\d*)",
-    "det_C temp": "C=.*?(\d+\.?\d*)",
-    "det_D temp": "D=.*?(\d+\.?\d*)",
-    "Pump Laser Current": "LASER current.*?(\d+\.?\d*)",
-    "Pump Voltage": "pump voltage=.*?(\d+\.?\d*)",
-    "Laser module temperature": "temperature=.*?(\d+\.?\d*)",
-    "Seed Temperature": "seed temperature=.*?(\d+\.?\d*)",
-    "Polygon Speed": "polygon speed:.*?(\d+\.?\d*)",
-    "Board humidity": "Board humidity.*?(\d+\.?\d*)",
-    "Laser Current": "laser current:.*?(\d+\.?\d*)",
-    "SQI": "get-sqi\"",
+    "db_vbias_fb": "db_info.*?db_vbias_fb.*?(-?\d+\.?\d*)",
+    "db_vbias_set": "db_info.*?db_vbias_set.*?(-?\d+\.?\d*)",
+    
+    "laser_5V": "laser_info.*?laser_5V.*?(-?\d+\.?\d*)",
+    "laser_pg": "laser_info.*?laser_pg.*?(-?\d+\.?\d*)",
+    "trig_rate": "laser_info.*?trig_rate.*?(-?\d+\.?\d*)",
+    "trig_rate_fb": "laser_info.*?trig_rate_fb.*?(-?\d+\.?\d*)",
+    
+    "motor current": "motor.*?current.*?(-?\d+\.?\d*)",
+    "fault_status": "fault_status.*?(-?\d+\.?\d*)",
+    "hall_status": "hall_status.*?(-?\d+\.?\d*)",
+    "polygon_speed": "polygon_speed.*?(-?\d+\.?\d*)",
+    
+    "voltage_moni": "input_voltage_moni.*?(-?\d+\.?\d*)",
+    "vbat_current": "vbat_current.*?(-?\d+\.?\d*)",
+    "vbat_voltage": "vbat_voltage.*?(-?\d+\.?\d*)",
+    "voltage_0V85": "voltage_0V85.*?(-?\d+\.?\d*)",
+    "voltage_0V9": "voltage_0V9.*?(-?\d+\.?\d*)",
+    "voltage_1V1": "voltage_1V1.*?(-?\d+\.?\d*)",
+    "voltage_1V2": "voltage_1V2.*?(-?\d+\.?\d*)",
+    "voltage_1V8": "voltage_1V8.*?(-?\d+\.?\d*)",
+    "voltage_3V3": "voltage_3V3.*?(-?\d+\.?\d*)",
+    "restart_counter": "restart_counter.*?(-?\d+\.?\d*)",
+    
+    "det_temp": "temperature.*?det.*?(-?\d+\.?\d*)",
+    "fpga_temp": "temperature.*?fpga.*?(-?\d+\.?\d*)",
+    "laser_temp": "temperature.*?laser.*?(-?\d+\.?\d*)",
+    "pmic_temp1": "temperature.*?pmic_temp1.*?(-?\d+\.?\d*)",
+    "pmic_temp2": "temperature.*?pmic_temp2.*?(-?\d+\.?\d*)",
+
     "Driving Voltage": "",
     "Driving Current": ""
 }
@@ -82,10 +96,39 @@ def get_command_result(command,save_log):
 
 def one_record(ip,save_log,SN,CustomerSN):
     global search_keys
-    command = f'exec curl -s http://{ip}:8088/get-all-status'
+    if "windows" not in platform.platform().lower():
+        command = f'exec curl -s http://{ip}:8088/get-lidar-status'
+    else:
+        command = f'curl -s http://{ip}:8088/get-lidar-status'
     res = get_command_result(command,save_log)
     if res=="":
         return None
     temp = [f" {datetime.datetime.now()}",SN,CustomerSN]
     temp+=extract(search_keys, res)
     return temp
+
+
+
+if __name__=="__main__":
+    str1='''
+        {"db_info":{"db_vbias_fb":10.195,"db_vbias_set":26.577},
+
+        "error_info":{"content":"no error","err_code":0,"level":"warn","type":"none"},
+
+        "laser_info":{"laser_5V":0.0,"laser_pg":-1,"trig_rate":3356,"trig_rate_fb":3356},
+
+        "motor":{"current":0,"fault_status":8,"hall_status":7,"internal_lock":false,"polygon_speed":0},
+
+        "power_info":{"input_voltage_moni":4.9335,"vbat_current":0.333395698051948,"vbat_voltage":13.722432613054133,"voltage_0V85":0.85175,"voltage_0V9":0.916,"voltage_1V1":1.09825,"voltage_1V2":1.19925,"voltage_1V8":1.79625,"voltage_3V3":3.27325},
+
+        "restart_counter":75,
+
+        "temperature":{"det":25,"fpga":83,"laser":27,"pmic_temp1":75.0,"pmic_temp2":74.75},
+
+        "timestamp":8283611613040,
+
+        "uptime":93600}
+'''
+    t=time.time()
+    print(extract(search_keys,str1))
+    print(time.time()-t)
