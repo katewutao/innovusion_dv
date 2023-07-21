@@ -95,7 +95,10 @@ def get_command_result(command,save_log):
 
 def one_record(ip,save_log,SN,CustomerSN):
     global search_keys
-    command = f'exec curl -s http://{ip}:8088/get-all-status'
+    if "windows" not in platform.platform().lower():
+        command = f'exec curl -s http://{ip}:8088/get-all-status'
+    else:
+        command = f'curl -s http://{ip}:8088/get-all-status'
     res = get_command_result(command,save_log)
     if res=="":
         return None
