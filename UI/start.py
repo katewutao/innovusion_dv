@@ -28,7 +28,7 @@ from common.excel_format import ExcelFormat
 import ctypes,inspect,select,math
 from threading import Thread
 import sys
-sys.path.append("..")
+sys.path.append(".")
 
 pow_status=[0,0]
 
