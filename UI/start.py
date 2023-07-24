@@ -491,7 +491,7 @@ class MonitorFault(QThread):
             str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(1)} has been set"
             with open(fault_log_path,"a") as f:
                 f.write(str1+"\n")
-            self.sigout_fault_info.emit(ret.group(1),self.row_idx)  
+            self.sigout_fault_info.emit(ret.group(1),self.row_idx)
             
     @handle_exceptions
     def run(self):
