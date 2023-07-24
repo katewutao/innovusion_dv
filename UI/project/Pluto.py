@@ -84,7 +84,7 @@ def get_command_result(command,save_log):
     cmd = subprocess.Popen(command, shell=True,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try: 
-        cmd.wait(0.5)
+        cmd.wait(2)
         res = str(cmd.stdout.read())
     except:
         res=""

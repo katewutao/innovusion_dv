@@ -15,6 +15,7 @@
 
 IT新装纯Ubantu系统须安装一下包：
  sudo apt-get update
+ sudo apt-get install libssl-dev openssl
  sudo apt-get install git
  sudo apt install python3-pip
  sudo pip3 install pyserial -i https://mirrors.aliyun.com/pypi/simple/
