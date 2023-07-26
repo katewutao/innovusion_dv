@@ -518,9 +518,9 @@ class MonitorFault(QThread):
         i=1
         newest_path=self.newest_folder(self.savepath,i)
         command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port 8010 udp-port {self.lidarudpport} --tcp-port {self.lidarport}'
-        command2=f'curl "localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}"'
-        command3=f'curl "localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"'
-        command4=f'curl "localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}"'
+        command2=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}"'
+        command3=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"'
+        command4=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}"'
         raw_count=len(os.listdir(self.savepath))
         print(f"[{datetime.datetime.now()}] {self.ip} inno_pc_client start boot")
         last_client_fail_time=time.time()
@@ -565,7 +565,7 @@ class MonitorFault(QThread):
                     print(f"[{datetime.datetime.now()}] record raw data to {os.path.abspath(newest_path)}")
                 i+=1
                 newest_path=self.newest_folder(self.savepath,i)
-                command2=f"curl localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
+                command2=f"curl --connect-timeout 1 localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
                 self.cmd2=subprocess.Popen(command2,shell=True)
                 self.cmd3=subprocess.Popen(command3,shell=True)
                 self.cmd2.wait()
@@ -583,6 +583,7 @@ class MonitorFault(QThread):
                 break
         if hasattr(self,"cmd"):
             self.cmd.kill()
+        kill_client()
         for i in range(2,5):
             if hasattr(self,f"cmd{i}"):
                 try:
