@@ -583,7 +583,6 @@ class MonitorFault(QThread):
                 break
         if hasattr(self,"cmd"):
             self.cmd.kill()
-        kill_client()
         for i in range(2,5):
             if hasattr(self,f"cmd{i}"):
                 try:
