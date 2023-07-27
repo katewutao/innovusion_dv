@@ -8,4 +8,17 @@ def kill_subprocess(cmd):
     os.system(command)
     print(command)
     
-kill_subprocess("inno_pc_server")
+def multi_cmd(command_list,max_thread_counter):
+    cmds=[]
+    for command in command_list:
+        cmd=subprocess.Popen(command,shell=True)
+        cmds.append(cmd)
+        while True:
+            cmd_counter=0
+            for cmd in cmds:
+                if cmd.poll()==None:
+                    cmd_counter+=1
+            if cmd_counter<max_thread_counter:
+                break
+    for cmd in cmds:
+        cmd.wait()
