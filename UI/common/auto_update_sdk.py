@@ -120,60 +120,43 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
         if ret:
             sdk_version_no_platform=ret.group(1)
         public_path = './sdk'
-        #download public
+        util_folder = "./lidar_util"
+        util_names={
+            "innovusion_lidar_util":"",
+            "get_pcd":"",
+            "inno_pc_client":"",
+            "inno_pc_server":"",
+            "get_cali_data":"",
+            }
         if "linux" in platform.platform().lower():
-            lidar_util_name="innovusion_lidar_util"
-            get_pcd_name="get_pcd"
-            client_name="inno_pc_client"
+            for filename in util_names.keys():
+                util_names[filename]=filename
             command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version_no_platform}-public.tgz" -o katewutao.tgz'
-            # print(command)
-            if not update_sdk(command, public_path):
-                command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version}-public.tgz" -o katewutao.tgz'
-                update_sdk(command, public_path)
         elif "windows" in platform.platform().lower():
-            lidar_util_name="innovusion_lidar_util.exe"
-            get_pcd_name="get_pcd.exe"
-            client_name="inno_pc_client.exe"
+            for filename in util_names.keys():
+                util_names[filename]=f"{filename}.exe"
             command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version_no_platform}-mingw64-public.tgz" -o katewutao.tgz'
-            if not update_sdk(command, public_path):
-                command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version}-mingw64-public.tgz" -o katewutao.tgz'
-                update_sdk(command, public_path)
         else:
             return
-        
-        client_path_down=find_path(client_name,public_path)
-        client_path_current=f"./lidar_util/{client_name}"
-
-        get_pcd_path_down=find_path(get_pcd_name,public_path)
-        get_pcd_current=f"./lidar_util/{get_pcd_name}"
-        
-        util_path_down=find_path(lidar_util_name,public_path)
-        util_current=f"./lidar_util/{lidar_util_name}"
-
-        if not os.path.exists(os.path.dirname(get_pcd_current)):
-            os.makedirs(os.path.dirname(get_pcd_current))
-        if os.path.exists(client_path_current):
-            os.remove(client_path_current)
-        if os.path.exists(get_pcd_current):
-            os.remove(get_pcd_current)
-        if os.path.exists(util_current):
-            os.remove(util_current)
-        if client_path_down!=None:
-            shutil.copyfile(client_path_down,client_path_current)
-        else:
-            print("client not exist")
-        if get_pcd_path_down!=None:
-            shutil.copyfile(get_pcd_path_down,get_pcd_current)
-        else:
-            print("get_pcd not exist")
-        if util_path_down!=None:
-            shutil.copyfile(util_path_down,util_current)
-        else:
-            print("lidar util not exist")
+        if not update_sdk(command, public_path):
+            print("download sdk fail")
+            return
+        if not os.path.exists(util_folder):
+            os.makedirs(util_folder)
+        for filename in util_names.keys():
+            filename=util_names[filename]
+            down_path=find_path(filename,public_path)
+            util_save_path=os.path.join(util_folder,filename)
+            if down_path!=None:
+                if os.path.exists(util_save_path):
+                    os.remove(util_save_path)
+                shutil.copyfile(down_path,util_save_path)
+            else:
+                print(f"find {filename} failed")
         if "linux" in platform.platform().lower():
-            os.system(f"echo demo|sudo -S chmod 777 {client_path_current}")
-            os.system(f"echo demo|sudo -S chmod 777 {get_pcd_current}")
-            os.system(f"echo demo|sudo -S chmod 777 {util_current}")
+            for filename in util_names.keys():
+                filename=util_names[filename]
+                os.system(f'echo demo|sudo -S chmod 777 "{os.path.join(util_folder,filename)}"')
         write_sdk_version(sdk_version)
         if rm_sdk:
             shutil.rmtree(public_path)
