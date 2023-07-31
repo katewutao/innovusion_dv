@@ -104,14 +104,22 @@ def write_sdk_version(sdk_version):
     with open(sdk_version_file,"w") as f:
         f.write(str1)
 
+def find_path(file_name,folder):
+    for root,_,files in os.walk(folder):
+        for file in files:
+            if file==file_name:
+                return os.path.join(root,file)
+    return None
 
-def down_sdk(ip):
-    sdk_version = get_sdk_version(ip)
+
+def down_sdk(ip,sdk_version=None,rm_sdk=True):
+    if sdk_version==None:
+        sdk_version = get_sdk_version(ip)
     if sdk_version!=load_sdk_version():
         ret=re.search("(.*)?-arm", sdk_version)
         if ret:
             sdk_version_no_platform=ret.group(1)
-        public_path = './scripts/common/sdk'
+        public_path = './sdk'
         #download public
         if "linux" in platform.platform().lower():
             lidar_util_name="innovusion_lidar_util"
@@ -133,34 +141,44 @@ def down_sdk(ip):
         else:
             return
         
-        client_path_down=os.path.join(public_path,"apps/pcs/",client_name)
+        client_path_down=find_path(client_name,public_path)
         client_path_current=f"./lidar_util/{client_name}"
 
-        get_pcd_path_down=os.path.join(public_path,"apps/example/",get_pcd_name)
+        get_pcd_path_down=find_path(get_pcd_name,public_path)
         get_pcd_current=f"./lidar_util/{get_pcd_name}"
         
-        util_path_down=os.path.join(public_path,"apps/lidar_util",lidar_util_name) 
+        util_path_down=find_path(lidar_util_name,public_path)
         util_current=f"./lidar_util/{lidar_util_name}"
 
         if not os.path.exists(os.path.dirname(get_pcd_current)):
             os.makedirs(os.path.dirname(get_pcd_current))
-        if os.path.exists(client_path_down):
-            if os.path.exists(client_path_current):
-                os.remove(client_path_current)
-            if os.path.exists(get_pcd_current):
-                os.remove(get_pcd_current)
-            if os.path.exists(util_current):
-                os.remove(util_current)
+        if os.path.exists(client_path_current):
+            os.remove(client_path_current)
+        if os.path.exists(get_pcd_current):
+            os.remove(get_pcd_current)
+        if os.path.exists(util_current):
+            os.remove(util_current)
+        if client_path_down!=None:
             shutil.copyfile(client_path_down,client_path_current)
+        else:
+            print("client not exist")
+        if get_pcd_path_down!=None:
             shutil.copyfile(get_pcd_path_down,get_pcd_current)
+        else:
+            print("get_pcd not exist")
+        if util_path_down!=None:
             shutil.copyfile(util_path_down,util_current)
-            if "linux" in platform.platform().lower():
-                os.system(f"echo demo|sudo -S chmod 777 {client_path_current}")
-                os.system(f"echo demo|sudo -S chmod 777 {get_pcd_current}")
-                os.system(f"echo demo|sudo -S chmod 777 {util_current}")
-            write_sdk_version(sdk_version)
+        else:
+            print("lidar util not exist")
+        if "linux" in platform.platform().lower():
+            os.system(f"echo demo|sudo -S chmod 777 {client_path_current}")
+            os.system(f"echo demo|sudo -S chmod 777 {get_pcd_current}")
+            os.system(f"echo demo|sudo -S chmod 777 {util_current}")
+        write_sdk_version(sdk_version)
+        if rm_sdk:
             shutil.rmtree(public_path)
             
             
 if __name__=="__main__":
-    down_sdk("172.168.1.10")
+    down_sdk("172.168.1.10","release-2.11.0-new-mapping-test-13-arm")
+    # down_sdk("172.168.1.10")
