@@ -49,3 +49,6 @@ Thumbs.db
 *.mov
 *.wmv
 *.img
+python_log/
+lidar_util/
+sdk_version.txt
