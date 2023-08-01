@@ -19,7 +19,7 @@ def main_close(args):
         conf["frame"]["frame_ID"]="7f9"
         conf["frame"]["payload"]="000000"
         conf["frame"]["payload_len"]=3
-        conf["frame"]["send_count"]=1
+        conf["frame"]["send_count"]=5
     if not conf:
         return
     try:
