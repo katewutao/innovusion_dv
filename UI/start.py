@@ -474,7 +474,8 @@ class MonitorFault(QThread):
     @time_limited(1)
     def get_cmd_print(self,fault_log_path):
         stdout=self.cmd.stdout.readline()
-        ret=re.search("(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.+?\s([A-Z_0-9]+).+?has\sbeen\s(set|heal)",stdout)
+        fault_key="(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.*\s([A-Z]+[A-Z_0-9]+).+(?:has|have)\sbeen\s(set|heal)"
+        ret=re.search(fault_key,stdout)
         if ret:
             str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(2)} has been {ret.group(3)}"
             with open(fault_log_path,"a") as f:
