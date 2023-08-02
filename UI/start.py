@@ -30,7 +30,6 @@ from threading import Thread
 import sys
 from utils import *
 sys.path.append(".")
-Logger(os.path.join("./python_log",get_current_date()+".log"))
 
 
 pow_status=[0,0]
@@ -48,6 +47,15 @@ def _async_raise(tid, exctype):
         # and you should call it again with exc=NULL to revert the effect"""
         ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
+ 
+log_folder="./python_log"
+if not os.path.exists(log_folder):
+    os.makedirs(log_folder)
+log_file=os.path.join(log_folder,get_current_date()+".log")
+rewrite_print=print
+def print(*arg,**kwarg):
+    rewrite_print(*arg,**kwarg)
+    rewrite_print(*arg,**kwarg,file=open(log_file,"a"))
  
  
 def stop_thread(thread):
