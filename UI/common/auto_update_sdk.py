@@ -111,7 +111,6 @@ def find_path(file_name,folder):
                 return os.path.join(root,file)
     return None
 
-
 def down_sdk(ip,sdk_version=None,rm_sdk=True):
     if sdk_version==None:
         sdk_version = get_sdk_version(ip)
