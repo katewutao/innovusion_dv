@@ -639,7 +639,7 @@ class TestMain(QThread):
                 print(f"[{datetime.datetime.now()}] set {power_one_time[2]}V")
                 voltage=pow.PowerStatus()[0]
                 print(f"[{datetime.datetime.now()}] voltage is {voltage}")
-                if abs(voltage-power_one_time[2])<0.1:
+                if abs(voltage-power_one_time[2])<0.3:
                     break
             except:
                 current_timestamp=time.time()
