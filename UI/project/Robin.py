@@ -24,6 +24,11 @@ search_keys={
     "db_vbias_fb": "db_info.*?db_vbias_fb.*?(-?\d+\.?\d*)",
     "db_vbias_set": "db_info.*?db_vbias_set.*?(-?\d+\.?\d*)",
     
+    "error_content": '''content(?:'|"):(?:"|')(.+?)"''',
+    "error_code": '''err_code(?:'|"):(-?\d+\.?\d*)''',
+    "error_level": '''error_info.*?level(?:'|"):(?:"|')(.+?)(?:"|')''',
+    "error_type": '''error_info.*?type(?:'|"):(?:"|')(.+?)(?:"|')''',
+    
     "laser_5V": "laser_info.*?laser_5V.*?(-?\d+\.?\d*)",
     "laser_pg": "laser_info.*?laser_pg.*?(-?\d+\.?\d*)",
     "trig_rate": "laser_info.*?trig_rate.*?(-?\d+\.?\d*)",
