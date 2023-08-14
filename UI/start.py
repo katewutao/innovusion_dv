@@ -53,9 +53,11 @@ if not os.path.exists(log_folder):
     os.makedirs(log_folder)
 log_file=os.path.join(log_folder,get_current_date()+".log")
 rewrite_print=print
-def print(*arg,**kwarg):
-    rewrite_print(*arg,**kwarg)
-    rewrite_print(*arg,**kwarg,file=open(log_file,"a"))
+def print(*args, **kwargs):
+    current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    msg = ' '.join(map(str, args))  # Convert all arguments to strings and join them with spaces
+    rewrite_print(f"[{current_date}] {msg}", **kwargs)
+    rewrite_print(f"[{current_date}] {msg}", **kwargs, file=open(log_file, "a"))
  
  
 def stop_thread(thread):
@@ -82,7 +84,7 @@ def time_limited(timeout):
             if t.error:
                 raise t.error
             if t.is_alive():
-                # print(f"[{datetime.datetime.now()}] {function.__name__} time out")
+                # print(" {function.__name__} time out")
                 pass
             return t.result
         return decorator2
@@ -209,10 +211,10 @@ def set_can(ip):
     cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
     res=cmd.communicate()
     if "dsp boot from can: OK" in res[0]:
-        print(f"[{datetime.datetime.now()}] {ip} set can mode success")
+        print(" {ip} set can mode success")
         return True
     else:
-        print(f"[{datetime.datetime.now()}] {ip} set can mode fail")
+        print(" {ip} set can mode fail")
         set_can(ip)
 
 
@@ -221,24 +223,24 @@ def set_power(ip):
     cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
     res=cmd.communicate()
     if "dsp boot from power: OK" in res[0]:
-        print(f"[{datetime.datetime.now()}] {ip} set power mode success")
+        print(" {ip} set power mode success")
         return True
     else:
-        print(f"[{datetime.datetime.now()}] {ip} set power mode fail")
+        print(" {ip} set power mode fail")
         set_power(ip)
 
 
 def cancle_can(ip_list,can_mode="Default"):
     os.system("python3 ./power.py")
     os.system("python3 lib/set_usbcanfd_env.py demo")
-    print(f"[{datetime.datetime.now()}] start set lidar power mode")
+    print(" start set lidar power mode")
     subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
         ping_sure(ip,0.5)
         set_power(ip)
     if can_mode=="Default":
         os.system(f"python3 can_cancle.py -c {can_mode}")
-    print(f"[{datetime.datetime.now()}] all lidar cancle can mode success")
+    print(" all lidar cancle can mode success")
     
     
 def is_empty_folder(path):
@@ -267,7 +269,7 @@ def kill_client():
         return
     command="exec ps -ef|grep inno_pc_client|grep -v grep|awk '{print $2}'|xargs kill -9"
     # print(command)
-    print(f"[{datetime.datetime.now()}] kill client")
+    print(" kill client")
     cmd=subprocess.Popen(command,shell=True)
     time.sleep(1)
     if cmd.poll() is not None:
@@ -300,29 +302,29 @@ class Power_monitor(QThread):
                 try:
                     pow=power.Power()
                 except:
-                    print(f"[{datetime.datetime.now()}] retry get power output value")
+                    print(" retry get power output value")
     
     @handle_exceptions
     def pause(self):
-        print(f"[{datetime.datetime.now()}] power monitor pause")
+        print(" power monitor pause")
         self.thread_run=False
     
     @handle_exceptions
     def resume(self):
-        print(f"[{datetime.datetime.now()}] power monitor continue")
+        print(" power monitor continue")
         self.thread_run=True
         
     @handle_exceptions
     def stop(self):
         t=time.time()
         while self.isRunning():
-            print(f"[{datetime.datetime.now()}] try finish monitor power")
+            print(" try finish monitor power")
             self.requestInterruption()
             self.wait(1000)
             if time.time()-t>3:
                 self.terminate()
                 break
-        print(f"[{datetime.datetime.now()}] finish monitor power success")
+        print(" finish monitor power success")
         
         
         
@@ -414,7 +416,7 @@ class one_lidar_record_thread(QThread):
     
     @handle_exceptions  
     def stop(self):
-        print(f"[{datetime.datetime.now()}] {self.ip} start finish record lidar status")
+        print(" {self.ip} start finish record lidar status")
         t=time.time()
         while self.isRunning():
             self.requestInterruption()
@@ -422,7 +424,7 @@ class one_lidar_record_thread(QThread):
             if time.time()-t>3:
                 self.terminate()
                 break
-        print(f"[{datetime.datetime.now()}] {self.ip} finish record thread success")
+        print(" {self.ip} finish record thread success")
 
 
 
@@ -450,9 +452,9 @@ class MonitorFault(QThread):
             if re.search("^sn\d+-(45|49|3|4).*\.inno_raw$",file):
                 try:
                     os.remove(os.path.join(folder,file))
-                    print(f"[{datetime.datetime.now()}] remove {file} success")
+                    print(" remove {file} success")
                 except:
-                    print(f"[{datetime.datetime.now()}] remove {file} failed")
+                    print(" remove {file} failed")
             if re.match(key,file):
                 return True
         return False
@@ -500,7 +502,7 @@ class MonitorFault(QThread):
                 pass
         fault_log_path=os.path.join(fault_log_path,self.ip.replace(".","_")+".txt")
         if not os.path.exists(util_path):
-            print(f"[{datetime.datetime.now()}] file {util_path} not exists!")
+            print(" file {util_path} not exists!")
             return None
         while True:
             if ping(self.ip,1) or self.isInterruptionRequested():
@@ -517,17 +519,17 @@ class MonitorFault(QThread):
         command3=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"'
         command4=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}"'
         raw_count=len(os.listdir(self.savepath))
-        print(f"[{datetime.datetime.now()}] {self.ip} inno_pc_client start boot")
+        print(" {self.ip} inno_pc_client start boot")
         last_client_fail_time=time.time()
         while True:
             if self.isInterruptionRequested():
-                # print(f"[{datetime.datetime.now()}] recieve interruption request")
+                # print(" recieve interruption request")
                 break
             if not os.path.exists(newest_path):
                 current_time=time.time()
                 if current_time-last_client_fail_time>3:
                     last_client_fail_time=current_time
-                    print(f"[{datetime.datetime.now()}] {self.ip} inno_pc_client boot failed!")
+                    print(" {self.ip} inno_pc_client boot failed!")
                 if hasattr(self,"cmd"):
                     self.cmd.kill()
                 self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
@@ -557,7 +559,7 @@ class MonitorFault(QThread):
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.2"))
             if self.check_raw(newest_path):
                 if i>=raw_count:
-                    print(f"[{datetime.datetime.now()}] record raw data to {os.path.abspath(newest_path)}")
+                    print(" record raw data to {os.path.abspath(newest_path)}")
                 i+=1
                 newest_path=self.newest_folder(self.savepath,i)
                 command2=f"curl --connect-timeout 1 localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
@@ -570,7 +572,7 @@ class MonitorFault(QThread):
     def stop(self):
         t=time.time()
         while self.isRunning():
-            print(f"[{datetime.datetime.now()}] {self.ip} try finish monitor fault")
+            print(" {self.ip} try finish monitor fault")
             self.requestInterruption()
             self.wait(1000)
             if time.time()-t>3:
@@ -584,7 +586,7 @@ class MonitorFault(QThread):
                     getattr(self,f"cmd{i}").kill()
                 except:
                     pass
-        print(f"[{datetime.datetime.now()}] {self.ip} finish monitor fualt success")
+        print(" {self.ip} finish monitor fualt success")
         
 
 
@@ -630,22 +632,22 @@ class TestMain(QThread):
         last_timestamp=time.time()
         while True:
             try:
-                print(f"[{datetime.datetime.now()}] start set voltage")
+                print(" start set voltage")
                 pow=power.Power()
-                print(f"[{datetime.datetime.now()}] init power")
+                print(" init power")
                 pow.power_on()
-                print(f"[{datetime.datetime.now()}] power on")
+                print(" power on")
                 pow.set_voltage(power_one_time[2])
-                print(f"[{datetime.datetime.now()}] set {power_one_time[2]}V")
+                print(" set {power_one_time[2]}V")
                 voltage=pow.PowerStatus()[0]
-                print(f"[{datetime.datetime.now()}] voltage is {voltage}")
+                print(" voltage is {voltage}")
                 if abs(voltage-power_one_time[2])<0.3:
                     break
             except:
                 current_timestamp=time.time()
                 if current_timestamp-last_timestamp>3:
                     last_timestamp=current_timestamp
-                    print(f"[{datetime.datetime.now()}] set power voltage failed, {power_one_time[2]}V")
+                    print(" set power voltage failed, {power_one_time[2]}V")
                 time.sleep(2)
         t=time.time()
         time_path=get_time()
@@ -656,19 +658,19 @@ class TestMain(QThread):
         self.monitors=[]
         if power_one_time[0]>2:
             for ip_num,ip in enumerate(ip_list):
-                print(f"[{datetime.datetime.now()}] start add record {ip}")
+                print(" start add record {ip}")
                 record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
                 record_thread.sigout_set_tbw_value.connect(self.set_table_value)
                 record_thread.start()
                 self.records.append(record_thread)
-                print(f"[{datetime.datetime.now()}] start add record success {ip}")
+                print(" start add record success {ip}")
                 raw_save_path=os.path.join(log_path,"raw",ip.replace(".","_"),time_path)
                 monitor_thread=MonitorFault(ip,log_path,raw_save_path,ip_num,9100+ip_num,8600+ip_num,8100+ip_num)
                 monitor_thread.sigout_fault_info.connect(self.set_fault)
                 monitor_thread.sigout_fault_heal.connect(self.heal_fault)
                 monitor_thread.start()
                 self.monitors.append(monitor_thread)
-                print(f"[{datetime.datetime.now()}] start add fault monitor success {ip}")
+                print(" start add fault monitor success {ip}")
             time.sleep(power_one_time[0]-2)
         threads=[]
         for ip in ip_list:
@@ -696,11 +698,11 @@ class TestMain(QThread):
                     pow.power_off()
                     break
                 except:
-                    print(f"[{datetime.datetime.now()}] power off failed")
+                    print(" power off failed")
                     time.sleep(2)
             self.power_monitor.resume()
         kill_client()
-        print(f"[{datetime.datetime.now()}] start sleep")
+        print(" start sleep")
         for i in range(data_num_power_off):
             temp_pow=pow_status
             for row_idx,ip in enumerate(ip_list):
@@ -720,12 +722,12 @@ class TestMain(QThread):
             os.makedirs(self.save_folder)
         kill_client()
         if self.txt_record_interval.text().strip()=="":
-            print(f"[{datetime.datetime.now()}] please input record interval time")
+            print(" please input record interval time")
             return None
         if self.txt_off_counter.text().strip()=="":
-            print(f"[{datetime.datetime.now()}] please input power off empty data number")
+            print(" please input power off empty data number")
             return None
-        print(f"[{datetime.datetime.now()}] get inno_pc_client permission")
+        print(" get inno_pc_client permission")
         os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
         
         if self.cb_lidar_mode.currentText()!="No Power":
@@ -770,19 +772,19 @@ class TestMain(QThread):
             self.records=[]
             self.monitors=[]
             for ip_num,ip in enumerate(self.ip_list):
-                print(f"[{datetime.datetime.now()}] start add record {ip}")
+                print(" start add record {ip}")
                 record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
                 record_thread.sigout_set_tbw_value.connect(self.set_table_value)
                 record_thread.start()
                 self.records.append(record_thread)
-                print(f"[{datetime.datetime.now()}] start add record success {ip}")
+                print(" start add record success {ip}")
                 raw_save_path=os.path.join(self.save_folder,"raw",ip.replace(".","_"),time_path)
                 monitor_thread=MonitorFault(ip,self.save_folder,raw_save_path,ip_num,9100+ip_num,8600+ip_num,8100+ip_num)
                 monitor_thread.sigout_fault_info.connect(self.set_fault)
                 monitor_thread.sigout_fault_heal.connect(self.heal_fault)
                 monitor_thread.start()
                 self.monitors.append(monitor_thread)
-                print(f"[{datetime.datetime.now()}] start add fault monitor success {ip}")
+                print(" start add fault monitor success {ip}")
             while True:
                 if self.isInterruptionRequested():
                     break
@@ -823,7 +825,7 @@ class TestMain(QThread):
                 pass
         t=time.time()
         while self.isRunning():
-            print(f"[{datetime.datetime.now()}] try finish test")
+            print(" try finish test")
             self.requestInterruption()
             self.wait(1000)
             if time.time()-t>3:
@@ -835,7 +837,7 @@ class TestMain(QThread):
         elif self.cb_lidar_mode.currentText()=="No Power":
             threads=[]
             time_path=get_time()
-            print(f"[{datetime.datetime.now()}] start download log")
+            print(" start download log")
             for ip in self.ip_list:
                 if ping(ip,0.5):
                     thread=threading.Thread(target=downlog,args=(ip,self.save_folder,time_path,))
@@ -843,10 +845,10 @@ class TestMain(QThread):
                     threads.append(thread)
             for temp_thread in threads:
                 temp_thread.join()
-            print(f"[{datetime.datetime.now()}] remove empty folder")
+            print(" remove empty folder")
             rm_empty_folder(self.save_folder)
             self.sigout_test_finish.emit("done")
-        print(f"[{datetime.datetime.now()}] Test has been stop")
+        print(" Test has been stop")
 
 class EmittingStream(QtCore.QObject):
     textWritten = QtCore.pyqtSignal(str)
@@ -1004,7 +1006,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     @handle_exceptions
     def power_changed(self):
-        print(f"[{datetime.datetime.now()}] current power is {self.cb_power_type.currentText()},please ensure has connect!")
+        print(" current power is {self.cb_power_type.currentText()},please ensure has connect!")
         if os.path.exists("power.py"):
             os.remove("power.py")
         shutil.copyfile(os.path.join(self.power_folder,f"power_{self.cb_power_type.currentText()}.py"),os.path.join(os.getcwd(),"power.py"))
@@ -1069,7 +1071,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def test_finish(self,str1):
         self.test_set_on()
         self.save_tbw_fault()
-        print(f"[{datetime.datetime.now()}] Test finished")
+        print(" Test finished")
     
     def test_set_off(self):
         self.cb_lidar_mode.setEnabled(False)

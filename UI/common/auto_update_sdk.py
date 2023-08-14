@@ -111,6 +111,35 @@ def find_path(file_name,folder):
                 return os.path.join(root,file)
     return None
 
+
+def down_sdk_command(util_names,public_path,command,util_folder,rm_sdk):
+    download=True
+    if not update_sdk(command, public_path):
+        print("download sdk fail")
+        return
+    if not os.path.exists(util_folder):
+        os.makedirs(util_folder)
+    for filename in util_names.keys():
+        filename=util_names[filename]
+        down_path=find_path(filename,public_path)
+        util_save_path=os.path.join(util_folder,filename)
+        if down_path!=None:
+            if os.path.exists(util_save_path):
+                os.remove(util_save_path)
+            shutil.copyfile(down_path,util_save_path)
+        else:
+            download=False
+            print(f"find {filename} failed")
+    if "linux" in platform.platform().lower():
+        for filename in util_names.keys():
+            filename=util_names[filename]
+            file_path=os.path.join(util_folder,filename)
+            if os.path.exists(file_path):
+                os.system(f'echo demo|sudo -S chmod 777 "{file_path}"')
+    if rm_sdk:
+        shutil.rmtree(public_path)
+    return download
+
 def down_sdk(ip,sdk_version=None,rm_sdk=True):
     if sdk_version==None:
         sdk_version = get_sdk_version(ip)
@@ -118,6 +147,7 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
         ret=re.search("(.*)?-arm", sdk_version)
         if ret:
             sdk_version_no_platform=ret.group(1)
+            sdk_version_client=sdk_version_no_platform.replace("release","release-client")
         public_path = './sdk'
         util_folder = "./lidar_util"
         util_names={
@@ -131,36 +161,20 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
             for filename in util_names.keys():
                 util_names[filename]=filename
             command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version_no_platform}-public.tgz" -o katewutao.tgz'
+            command_client=f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_client}/inno-lidar-sdk-{sdk_version_client}-public.tgz" -o katewutao.tgz'
         elif "windows" in platform.platform().lower():
             for filename in util_names.keys():
                 util_names[filename]=f"{filename}.exe"
             command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version_no_platform}-mingw64-public.tgz" -o katewutao.tgz'
+            command_client=f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_client}/inno-lidar-sdk-{sdk_version_client}-mingw64-public.tgz" -o katewutao.tgz'
         else:
             return
-        if not update_sdk(command, public_path):
-            print("download sdk fail")
-            return
-        if not os.path.exists(util_folder):
-            os.makedirs(util_folder)
-        for filename in util_names.keys():
-            filename=util_names[filename]
-            down_path=find_path(filename,public_path)
-            util_save_path=os.path.join(util_folder,filename)
-            if down_path!=None:
-                if os.path.exists(util_save_path):
-                    os.remove(util_save_path)
-                shutil.copyfile(down_path,util_save_path)
-            else:
-                print(f"find {filename} failed")
-        if "linux" in platform.platform().lower():
-            for filename in util_names.keys():
-                filename=util_names[filename]
-                os.system(f'echo demo|sudo -S chmod 777 "{os.path.join(util_folder,filename)}"')
-        write_sdk_version(sdk_version)
-        if rm_sdk:
-            shutil.rmtree(public_path)
-            
+        down_flag=True
+        if not down_sdk_command(util_names,public_path,command,util_folder,rm_sdk):
+            down_flag=down_sdk_command(util_names,public_path,command_client,util_folder,rm_sdk)
+        if down_flag:
+            write_sdk_version(sdk_version)
             
 if __name__=="__main__":
-    down_sdk("172.168.1.10","release-2.11.0-new-mapping-test-13-arm")
+    down_sdk("172.168.1.10","release-sdk-3.0.3-arm",False)
     # down_sdk("172.168.1.10")
