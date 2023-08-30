@@ -451,6 +451,7 @@ class USBCAN():
         conf_file.close()
         self.tx_ch = self.conf['device']['tx_ch']
         self.rx_ch = self.conf['device']['rx_ch']
+        
 
     def run_usbcan(self):
         self.usbcan = USBCANFD(**self.conf)
