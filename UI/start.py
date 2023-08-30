@@ -628,6 +628,7 @@ class TestMain(QThread):
         self.sigout_power.emit(True)
         import power
         print(f" current circle {i}")
+        t=time.time()
         self.power_monitor.pause()
         last_timestamp=time.time()
         while True:
@@ -649,7 +650,8 @@ class TestMain(QThread):
                     last_timestamp=current_timestamp
                     print(f" set power voltage failed, {power_one_time[2]}V")
                 time.sleep(2)
-        t=time.time()
+        power_on_time=time.time()
+        print(f" start monitor {power_one_time[1]}s")
         time_path=get_time()
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
@@ -671,7 +673,7 @@ class TestMain(QThread):
                 monitor_thread.start()
                 self.monitors.append(monitor_thread)
                 print(f" start add fault monitor success {ip}")
-            time.sleep(power_one_time[0]-2)
+            time.sleep(power_one_time[0]-time.time()+power_on_time)
         threads=[]
         for ip in ip_list:
             thread=threading.Thread(target=downlog,args=(ip,log_path,time_path,))
@@ -702,7 +704,7 @@ class TestMain(QThread):
                     time.sleep(2)
             self.power_monitor.resume()
         kill_client()
-        print(f" start sleep")
+        print(f" start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
         for i in range(data_num_power_off):
             temp_pow=pow_status
             for row_idx,ip in enumerate(ip_list):
