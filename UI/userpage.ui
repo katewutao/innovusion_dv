@@ -353,6 +353,11 @@
        <string>GF</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Robin</string>
+      </property>
+     </item>
     </widget>
    </widget>
    <widget class="QPushButton" name="btn_cancle_can">

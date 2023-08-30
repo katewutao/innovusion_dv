@@ -55,6 +55,7 @@ class USBCAN():
             self.conf=conf_file
         self.tx_ch = self.conf['device']['tx_ch']
         self.rx_ch = self.conf['device']['rx_ch']
+        self.cantype = self.conf['frame']['type']
 
     def run_usbcan(self, hostname=None, r=None):
         self.usbcan = usbcanfd.USBCANFD(**self.conf)
@@ -70,9 +71,17 @@ class USBCAN():
         self.usbcan.start_CAN(self.tx_ch)
         self.usbcan.start_CAN(self.rx_ch)
         
-        threading.Thread(target=self.usbcan.receive_frame_FD, args=(self.rx_ch, hostname, r)).start()
-        threading.Thread(target=self.usbcan.transmit_frame_FD, args=(self.tx_ch,)).start()
-        return True
+        if self.cantype == 'canfd':
+            threading.Thread(target=self.usbcan.receive_frame_FD, args=(self.rx_ch, hostname, r)).start()
+            threading.Thread(target=self.usbcan.transmit_frame_FD, args=(self.tx_ch,)).start()
+            return True
+        elif self.cantype == 'can':
+            threading.Thread(target=self.usbcan.receive_frame, args=(self.rx_ch,)).start()
+            threading.Thread(target=self.usbcan.transmit_frame, args=(self.tx_ch,)).start()
+            return True
+        else:
+            logger.error('Invalid CAN type.')
+            return False
 
 
     def stop_usbcan(self):
@@ -125,15 +134,23 @@ def set_dev_permision(pwd):
 def main(args):
     conf = load_conf('config/CANFD_Config.json')
     if args.can=="Default":
+        conf["frame"]["type"]="canfd"  #can or canfd
         conf["frame"]["frame_ID"]="505"
         conf["frame"]["payload"]="0011223344556677"
         conf["frame"]["payload_len"]=8
         conf["frame"]["send_count"]=-1
     elif args.can=="GF":
+        conf["frame"]["type"]="canfd"
         conf["frame"]["frame_ID"]="7f9"
         conf["frame"]["payload"]="000011"
         conf["frame"]["payload_len"]=3
         conf["frame"]["send_count"]=5
+    elif args.can=="Robin":
+        conf["frame"]["type"]="can"
+        conf["frame"]["frame_ID"]="505"
+        conf["frame"]["payload_len"]=8
+        conf["frame"]["payload"]="00"*conf["frame"]["payload_len"]
+        conf["frame"]["send_count"]=-1
     if not conf:
         return
     try:

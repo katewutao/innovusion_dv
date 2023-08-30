@@ -16,10 +16,14 @@ def main_close(args):
         os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
         return
     elif args.can=="GF":
+        conf["frame"]["type"]="canfd"
         conf["frame"]["frame_ID"]="7f9"
         conf["frame"]["payload"]="000000"
         conf["frame"]["payload_len"]=3
         conf["frame"]["send_count"]=5
+    elif args.can=="Robin":
+        os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+        return
     if not conf:
         return
     try:
