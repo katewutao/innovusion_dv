@@ -645,7 +645,7 @@ class TestMain(QThread):
                     last_timestamp=current_timestamp
                     print(f" set power voltage failed, {power_one_time[2]}V")
                 time.sleep(2)
-        print(f" start monitor {power_one_time[0]-time.time()+t}s")
+        print(f" start monitor {int(power_one_time[0]-time.time()+t)}s")
         time_path=get_time()
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
