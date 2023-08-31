@@ -208,7 +208,7 @@ def get_circle_time(dict_config):
 
 def set_can(ip):
     command=f'echo "dsp_boot_from can" | nc -nv {ip} 8001'
-    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    cmd=subprocess.Popen(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
     cmd.communicate()
     mode=get_lidar_mode(ip)
     if mode=="can":
@@ -216,12 +216,12 @@ def set_can(ip):
         return True
     else:
         print(f" {ip} set power mode fail")
-        set_power(ip)
+        set_can(ip)
 
 
 def set_power(ip):
     command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
-    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    cmd=subprocess.Popen(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
     cmd.communicate()
     mode=get_lidar_mode(ip)
     if mode=="power":
@@ -234,7 +234,7 @@ def set_power(ip):
 
 def get_lidar_mode(ip):
     command=f'echo "lidar_boot_from" | nc -nv {ip} 8001 -w1'
-    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.STDOUT,universal_newlines=True)
+    cmd=subprocess.Popen(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
     res=cmd.communicate()
     ret=re.search("(can|power)",res[0])
     if ret:
