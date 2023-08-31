@@ -650,15 +650,14 @@ class TestMain(QThread):
                     last_timestamp=current_timestamp
                     print(f" set power voltage failed, {power_one_time[2]}V")
                 time.sleep(2)
-        power_on_time=time.time()
-        print(f" start monitor {power_one_time[1]}s")
+        print(f" start monitor {power_one_time[0]-time.time()+t}s")
         time_path=get_time()
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         self.power_monitor.resume()
         self.records=[]
         self.monitors=[]
-        if power_one_time[0]>2:
+        if power_one_time[0]-time.time()+t>2:
             for ip_num,ip in enumerate(ip_list):
                 print(f" start add record {ip}")
                 record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
@@ -673,7 +672,7 @@ class TestMain(QThread):
                 monitor_thread.start()
                 self.monitors.append(monitor_thread)
                 print(f" start add fault monitor success {ip}")
-            time.sleep(power_one_time[0]-time.time()+power_on_time)
+            time.sleep(power_one_time[0]-time.time()+t)
         threads=[]
         for ip in ip_list:
             thread=threading.Thread(target=downlog,args=(ip,log_path,time_path,))
