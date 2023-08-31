@@ -217,6 +217,8 @@ def set_lidar_mode(ip,lidar_type,can_mode):
     res=cmd.communicate()
     if re.search(f"boot from.+{lidar_type}",res[0]):
         print(f" {ip} set {lidar_type} mode success")
+        if can_mode=="Robin":
+            os.system(f"curl {ip}:8010/command/?set_reboot=1")
         return True
     else:
         print(f" {ip} set {lidar_type} mode fail")
