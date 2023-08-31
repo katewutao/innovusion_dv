@@ -206,42 +206,37 @@ def get_circle_time(dict_config):
     return times
 
 
-def set_can(ip):
-    command=f'echo "dsp_boot_from can" | nc -nv {ip} 8001'
-    cmd=subprocess.Popen(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
-    cmd.communicate()
-    mode=get_lidar_mode(ip)
-    if mode=="can":
-        print(f" {ip} set power mode success")
-        return True
+def set_can(ip,can_mode):
+    if can_mode=="Robin":
+        boot_name="lidar_boot_from"
     else:
-        print(f" {ip} set power mode fail")
-        set_can(ip)
-
-
-def set_power(ip):
-    command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
-    cmd=subprocess.Popen(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
-    cmd.communicate()
-    mode=get_lidar_mode(ip)
-    if mode=="power":
-        print(f" {ip} set power mode success")
-        return True
-    else:
-        print(f" {ip} set power mode fail")
-        set_power(ip)
-
-
-def get_lidar_mode(ip):
-    command=f'echo "lidar_boot_from" | nc -nv {ip} 8001 -w1'
-    cmd=subprocess.Popen(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
+        boot_name="dsp_boot_from"
+    command=f'echo "{boot_name} can" | nc -nv {ip} 8001 -w1'
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
     res=cmd.communicate()
-    ret=re.search("(can|power)",res[0])
-    if ret:
-        return ret.group(1)
+    if re.search("boot from.+can",res[0]):
+        print(f" {ip} set can mode success")
+        return True
     else:
-        print(f" {ip} get lidar mode fail")
-        return None
+        print(f" {ip} set can mode fail")
+        set_can(ip,can_mode)
+
+
+def set_power(ip,can_mode):
+    if can_mode=="Robin":
+        boot_name="lidar_boot_from"
+    else:
+        boot_name="dsp_boot_from"
+    command=f'echo "{boot_name} power" | nc -nv {ip} 8001 -w1'
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    res=cmd.communicate()
+    if re.search("boot from.+power",res[0]):
+        print(f" {ip} set power mode success")
+        return True
+    else:
+        print(f" {ip} set power mode fail")
+        set_power(ip,can_mode)
+
 
 def cancle_can(ip_list,can_mode="Default"):
     os.system("python3 ./power.py")
@@ -250,7 +245,7 @@ def cancle_can(ip_list,can_mode="Default"):
     subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
         ping_sure(ip,0.5)
-        set_power(ip)
+        set_power(ip,can_mode)
     if can_mode in ["Default","Robin"]:
         os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f" all lidar cancle can mode success")
@@ -755,7 +750,7 @@ class TestMain(QThread):
                     down_sdk(ip)
                     get_promission(ip,float(self.txt_timeout.text()))
                     if self.cb_lidar_mode.currentText()=="CAN":
-                        set_can(ip)
+                        set_can(ip,self.can_mode)
                     break
                 except Exception as e:
                     print(e)
