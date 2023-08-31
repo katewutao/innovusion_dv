@@ -209,26 +209,39 @@ def get_circle_time(dict_config):
 def set_can(ip):
     command=f'echo "dsp_boot_from can" | nc -nv {ip} 8001'
     cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
-    res=cmd.communicate()
-    if "dsp boot from can: OK" in res[0]:
-        print(f" {ip} set can mode success")
-        return True
-    else:
-        print(f" {ip} set can mode fail")
-        set_can(ip)
-
-
-def set_power(ip):
-    command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
-    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
-    res=cmd.communicate()
-    if "dsp boot from power: OK" in res[0]:
+    cmd.communicate()
+    mode=get_lidar_mode(ip)
+    if mode=="can":
         print(f" {ip} set power mode success")
         return True
     else:
         print(f" {ip} set power mode fail")
         set_power(ip)
 
+
+def set_power(ip):
+    command=f'echo "dsp_boot_from power" | nc -nv {ip} 8001'
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
+    cmd.communicate()
+    mode=get_lidar_mode(ip)
+    if mode=="power":
+        print(f" {ip} set power mode success")
+        return True
+    else:
+        print(f" {ip} set power mode fail")
+        set_power(ip)
+
+
+def get_lidar_mode(ip):
+    command=f'echo "lidar_boot_from" | nc -nv {ip} 8001 -w1'
+    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.STDOUT,universal_newlines=True)
+    res=cmd.communicate()
+    ret=re.search("(can|power)",res[0])
+    if ret:
+        return ret.group(1)
+    else:
+        print(f" {ip} get lidar mode fail")
+        return None
 
 def cancle_can(ip_list,can_mode="Default"):
     os.system("python3 ./power.py")
@@ -238,7 +251,7 @@ def cancle_can(ip_list,can_mode="Default"):
     for ip in ip_list:
         ping_sure(ip,0.5)
         set_power(ip)
-    if can_mode=="Default":
+    if can_mode in ["Default","Robin"]:
         os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f" all lidar cancle can mode success")
     
