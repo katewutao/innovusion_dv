@@ -206,36 +206,21 @@ def get_circle_time(dict_config):
     return times
 
 
-def set_can(ip,can_mode):
+
+def set_lidar_mode(ip,lidar_type,can_mode):
     if can_mode=="Robin":
         boot_name="lidar_boot_from"
     else:
         boot_name="dsp_boot_from"
-    command=f'echo "{boot_name} can" | nc -nv {ip} 8001 -w1'
+    command=f'echo "{boot_name} {lidar_type}" | nc -nv {ip} 8001 -w1'
     cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
     res=cmd.communicate()
-    if re.search("boot from.+can",res[0]):
-        print(f" {ip} set can mode success")
+    if re.search(f"boot from.+{lidar_type}",res[0]):
+        print(f" {ip} set {lidar_type} mode success")
         return True
     else:
-        print(f" {ip} set can mode fail")
-        set_can(ip,can_mode)
-
-
-def set_power(ip,can_mode):
-    if can_mode=="Robin":
-        boot_name="lidar_boot_from"
-    else:
-        boot_name="dsp_boot_from"
-    command=f'echo "{boot_name} power" | nc -nv {ip} 8001 -w1'
-    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
-    res=cmd.communicate()
-    if re.search("boot from.+power",res[0]):
-        print(f" {ip} set power mode success")
-        return True
-    else:
-        print(f" {ip} set power mode fail")
-        set_power(ip,can_mode)
+        print(f" {ip} set {lidar_type} mode fail")
+        set_lidar_mode(ip,lidar_type,can_mode)
 
 
 def cancle_can(ip_list,can_mode="Default"):
@@ -245,7 +230,7 @@ def cancle_can(ip_list,can_mode="Default"):
     subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
         ping_sure(ip,0.5)
-        set_power(ip,can_mode)
+        set_lidar_mode(ip,"power",can_mode)
     if can_mode in ["Default","Robin"]:
         os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f" all lidar cancle can mode success")
@@ -750,7 +735,7 @@ class TestMain(QThread):
                     down_sdk(ip)
                     get_promission(ip,float(self.txt_timeout.text()))
                     if self.cb_lidar_mode.currentText()=="CAN":
-                        set_can(ip,self.can_mode)
+                        set_lidar_mode(ip,"can",self.can_mode)
                     break
                 except Exception as e:
                     print(e)
