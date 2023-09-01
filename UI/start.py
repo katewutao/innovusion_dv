@@ -468,9 +468,9 @@ class MonitorFault(QThread):
         fault_key="(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.*\s([A-Z]+[A-Z_0-9]+).+(?:has|have)\sbeen\s(set|heal)"
         ret=re.search(fault_key,stdout)
         if ret:
-            str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(2)} has been {ret.group(3)}"
+            str1=f" {self.ip} {ret.group(2)} has been {ret.group(3)}"
             with open(fault_log_path,"a") as f:
-                f.write(str1+"\n")
+                f.write(f"[{datetime.datetime.now()}]{str1}\n")
             print(str1)
             ret_fault=re.search("IN_FAULT_([A-Z_0-9]+)",ret.group(2))
             if ret_fault:
@@ -480,9 +480,9 @@ class MonitorFault(QThread):
                     self.sigout_fault_heal.emit(ret_fault.group(1),self.row_idx)
         ret=re.search("(fault_id.+)\sfrom .+isr",stdout)
         if ret:
-            str1=f"[{datetime.datetime.now()}] {self.ip} {ret.group(1)} has been set"
+            str1=f" {self.ip} {ret.group(1)} has been set"
             with open(fault_log_path,"a") as f:
-                f.write(str1+"\n")
+                f.write(f"[{datetime.datetime.now()}]{str1}\n")
             self.sigout_fault_info.emit(ret.group(1),self.row_idx)
             
     @handle_exceptions
