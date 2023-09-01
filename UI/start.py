@@ -8,7 +8,6 @@
 import os
 import sys
 import time
-import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QObject
 from PyQt5.QtGui import *
@@ -25,7 +24,7 @@ import pandas as pd
 import shutil,json,importlib
 from common.auto_update_sdk import down_sdk
 from common.excel_format import ExcelFormat
-import ctypes,inspect,select,math
+import math
 from threading import Thread
 import sys
 from utils import *
@@ -34,19 +33,6 @@ sys.path.append(".")
 
 pow_status=[0,0]
 
-def _async_raise(tid, exctype):
-    """raises the exception, performs cleanup if needed"""
-    tid = ctypes.c_long(tid)
-    if not inspect.isclass(exctype):
-        exctype = type(exctype)
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-    if res == 0:
-        raise ValueError("invalid thread id")
-    elif res != 1:
-        # """if it returns a number greater than one, you're in trouble,
-        # and you should call it again with exc=NULL to revert the effect"""
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
-        raise SystemError("PyThreadState_SetAsyncExc failed")
  
 log_folder="./python_log"
 if not os.path.exists(log_folder):
@@ -59,9 +45,6 @@ def print(*args, **kwargs):
     rewrite_print(f"[{current_date}] {msg}", **kwargs)
     rewrite_print(f"[{current_date}] {msg}", **kwargs, file=open(log_file, "a"))
  
- 
-def stop_thread(thread):
-    _async_raise(thread.ident, SystemExit)
 
 def time_limited(timeout):
     def decorator(function):
@@ -257,7 +240,6 @@ def get_time():
     times_now=time.strftime('%Y.%m.%d %H:%M:%S ',time.localtime(time.time()))
     res=times_now.strip().replace(':', '_').replace('.', '_').replace(' ', '_')
     return res
-
 
 def kill_client():
     if "windows" in platform.platform().lower():
@@ -735,6 +717,7 @@ class TestMain(QThread):
             while True:
                 try:
                     down_sdk(ip)
+                    extend_pcs_log_size("./lidar_util/innovusion_lidar_util",ip,50000)
                     get_promission(ip,float(self.txt_timeout.text()))
                     if self.cb_lidar_mode.currentText()=="CAN":
                         set_lidar_mode(ip,"can",self.can_mode)
