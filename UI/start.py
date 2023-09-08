@@ -202,6 +202,7 @@ def set_lidar_mode(ip,lidar_type,can_mode):
         print(f" {ip} set {lidar_type} mode success")
         if can_mode=="Robin":
             os.system(f"curl {ip}:8010/command/?set_reboot=1")
+            time.sleep(10)
         return True
     else:
         print(f" {ip} set {lidar_type} mode fail")
