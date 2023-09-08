@@ -27,6 +27,7 @@ from common.excel_format import ExcelFormat
 import math
 from threading import Thread
 import sys
+import builtins
 from utils import *
 sys.path.append(".")
 
@@ -34,16 +35,17 @@ sys.path.append(".")
 pow_status=[0,0]
 
  
-log_folder="./python_log"
-if not os.path.exists(log_folder):
-    os.makedirs(log_folder)
-log_file=os.path.join(log_folder,get_current_date()+".log")
-rewrite_print=print
-def print(*args, **kwargs):
-    current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-    msg = ' '.join(map(str, args))  # Convert all arguments to strings and join them with spaces
-    rewrite_print(f"[{current_date}] {msg}", **kwargs)
-    rewrite_print(f"[{current_date}] {msg}", **kwargs, file=open(log_file, "a"))
+builtins.print_origin=print
+def rewrite_print(log_path):
+    if not os.path.exists(os.path.dirname(log_path)):
+        os.makedirs(os.path.dirname(log_path))
+    def print_res(*args, **kwargs):
+        current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        msg = ' '.join(map(str, args))  # Convert all arguments to strings and join them with spaces
+        builtins.print_origin(f"[{current_date}] {msg}", **kwargs)
+        builtins.print_origin(f"[{current_date}] {msg}", **kwargs, file=open(log_path, "a"))
+    return print_res
+ 
  
 
 def time_limited(timeout):
@@ -1161,6 +1163,9 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
         
 if __name__ == '__main__':
+    log_folder="./python_log"
+    log_file=os.path.join(log_folder,get_current_date()+".log")
+    builtins.print=rewrite_print(log_file)
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
     QGuiApplication.setAttribute(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QtWidgets.QApplication(sys.argv)
