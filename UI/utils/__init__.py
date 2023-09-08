@@ -26,7 +26,7 @@ def multi_cmd(command_list,max_thread_counter):
 
 def extend_pcs_log_size(util_path,ip,size=200000):
     if not os.path.exists(util_path):
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] Can't find {util_path}")
+        print(f" Can't find {util_path}")
         return
     save_cfg_file = "1.cfg"
     save_restart_bash="restart_inno_pc_server.sh"
@@ -36,7 +36,7 @@ def extend_pcs_log_size(util_path,ip,size=200000):
     cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
     res=cmd.communicate()
     if not os.path.exists(save_cfg_file):
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] Can't get {ip} PCS_ENV")
+        print(f" Can't get {ip} PCS_ENV")
         return
     with open(save_cfg_file,"r") as f:
         pcs_env=f.read()
@@ -45,20 +45,20 @@ def extend_pcs_log_size(util_path,ip,size=200000):
     cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
     cmd.communicate()
     if not os.path.exists(save_restart_bash):
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] Can't get {ip} restart_inno_pc_server.sh")
+        print(f" Can't get {ip} restart_inno_pc_server.sh")
         return
     with open(save_restart_bash,"r") as f:
         restart_bash=f.read()
     os.remove(save_restart_bash)
     ret_bash=re.search("{(LOG_OPTION.*?)}",restart_bash)
     if not ret_bash:
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] {ip} bash not have LOG_OPTION")
+        print(f" {ip} bash not have LOG_OPTION")
         return
     ret=re.search("(LOG_OPTION.*?)\s*=.*(--log-file-max-size-k\s+\d+\.?\d*)",pcs_env)
     if ret:
         pcs_env=pcs_env.replace(ret.group(2),f"--log-file-max-size-k {size}").replace(ret.group(1),ret_bash.group(1))
     else:
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] {ip} pcs_env not have LOG_OPTION")
+        print(f" {ip} pcs_env not have LOG_OPTION")
         return
     with open(save_cfg_file,"w") as f:
         f.write(pcs_env)
@@ -66,9 +66,9 @@ def extend_pcs_log_size(util_path,ip,size=200000):
     cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
     res=cmd.communicate()
     if "succe" in res[0]:
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] {ip} extend log size {size}Kb success")
+        print(f" {ip} extend log size {size}Kb success")
     else:
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}] {ip} extend log size fail")
+        print(f" {ip} extend log size fail")
     os.remove(save_cfg_file)
     os.system(f"curl --connect-timeout 2 -s {ip}:8010/command/?set_reboot=1")
 
