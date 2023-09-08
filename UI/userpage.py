@@ -190,6 +190,7 @@ class Ui_MainWindow(object):
         font.setPointSize(11)
         self.lb_version.setFont(font)
         self.lb_version.setStyleSheet("color:rgb(0, 170, 0)")
+        self.lb_version.setAlignment(QtCore.Qt.AlignCenter)
         self.lb_version.setObjectName("lb_version")
         self.frame.raise_()
         self.txt_log.raise_()

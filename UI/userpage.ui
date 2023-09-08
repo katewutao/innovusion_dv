@@ -587,6 +587,9 @@
     <property name="text">
      <string>SW_version:</string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
    </widget>
    <zorder>frame</zorder>
    <zorder>txt_log</zorder>

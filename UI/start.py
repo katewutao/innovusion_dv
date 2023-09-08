@@ -880,7 +880,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         QMainWindow.__init__(self)
         userpage.Ui_MainWindow.__init__(self)
         self.setupUi(self)
-        self.lb_version.setText(f"Version:{get_tags()}")
+        self.lb_version.setText(f"Version:  {get_tags()}")
         
         self.project_folder="./project"
         self.test_folder="./test_config"
