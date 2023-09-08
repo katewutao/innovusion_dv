@@ -87,7 +87,7 @@ def handle_exceptions(func):
                 result = func(instance, **kwargs)
             return result
         except Exception as e:
-            traceback.print_exc()
+            print(traceback.format_exc())
             print(f"Error occurred while executing {func.__name__}: {e}")
             return None
     return wrapper
