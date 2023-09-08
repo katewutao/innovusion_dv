@@ -236,6 +236,44 @@ def rm_empty_folder(path):
                 shutil.rmtree(root)
             except:
                 pass
+            
+def get_tags():
+    cmd = subprocess.Popen("git describe --tags", shell=True,
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    time.sleep(0.8)
+    if not cmd.poll():
+        res = cmd.stdout.read()
+        if "fatal" not in res:
+            return res.strip("\n")
+    tags_folder = "./.git/refs/tags"
+    if not os.path.exists(tags_folder):
+        return ""
+    tags = os.listdir(tags_folder)
+    if len(tags) == 0:
+        return ""
+    modify_time = [[tag, os.path.getmtime(
+        os.path.join(tags_folder, tag))] for tag in tags]
+    modify_time = sorted(modify_time, key=lambda x: x[1], reverse=True)
+    tag = modify_time[0][0]
+    if not os.path.exists(os.path.join(tags_folder, tag)):
+        return ""
+    with open(os.path.join(tags_folder, tag), "r") as f:
+        tag_content = f.read()
+    head_folder = "./.git/HEAD"
+    if not os.path.exists(head_folder):
+        return ""
+    with open(head_folder, "r") as f:
+        head_content = f.read()
+    ret = re.search("ref:\s?(.+)$", head_content)
+    if not ret:
+        return tag
+    else:
+        with open(os.path.join("./.git", ret.group(1)), "r") as f:
+            branch_content = f.read()
+        if branch_content == tag_content:
+            return tag
+    return f"{tag}-g{branch_content[:7]}"
+            
 
 def get_time():
     times_now=time.strftime('%Y.%m.%d %H:%M:%S ',time.localtime(time.time()))
@@ -842,10 +880,12 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         QMainWindow.__init__(self)
         userpage.Ui_MainWindow.__init__(self)
         self.setupUi(self)
+        self.lb_version.setText(f"Version:{get_tags()}")
         
         self.project_folder="./project"
         self.test_folder="./test_config"
         self.power_folder="./power"
+
 
         self.cb_project.currentIndexChanged.connect(self.project_changed)
         self.cb_test_name.currentIndexChanged.connect(self.test_name_changed)

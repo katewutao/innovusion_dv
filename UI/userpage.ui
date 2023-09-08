@@ -566,6 +566,28 @@
      <string/>
     </property>
    </widget>
+   <widget class="QLabel" name="lb_version">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>200</y>
+      <width>641</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Adobe 黑体 Std R</family>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color:rgb(0, 170, 0)</string>
+    </property>
+    <property name="text">
+     <string>SW_version:</string>
+    </property>
+   </widget>
    <zorder>frame</zorder>
    <zorder>txt_log</zorder>
    <zorder>label_4</zorder>
@@ -585,6 +607,7 @@
    <zorder>label_12</zorder>
    <zorder>lb_power</zorder>
    <zorder>lb_power_status</zorder>
+   <zorder>lb_version</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_record_start">
