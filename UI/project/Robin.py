@@ -108,9 +108,9 @@ def one_record(ip,save_log,SN,CustomerSN):
     command = f'{command_add}curl --connect-timeout 2 -s http://{ip}:8088/get-lidar-status'
     res = get_command_result(command,save_log)
     if res=="":
-        print(f"[{datetime.datetime.now()}] {ip} can't connect")
+        print(f"{ip} can't connect")
         # return None
-    temp = [f" {datetime.datetime.now()}",SN,CustomerSN]
+    temp = [f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}",SN,CustomerSN]
     temp+=extract(search_keys, res)
     return temp
 
