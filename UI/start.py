@@ -504,6 +504,7 @@ class MonitorFault(QThread):
         ret=re.search("(fault_id.+)\sfrom .+isr",stdout)
         if ret:
             str1=f" {self.ip} {ret.group(1)} has been set"
+            print(str1)
             with open(fault_log_path,"a") as f:
                 f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]{str1}\n")
             self.sigout_fault_info.emit(ret.group(1),self.row_idx)
