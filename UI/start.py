@@ -1081,6 +1081,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     @handle_exceptions
     def test_main(self):
         self.pgb_test.setValue(0)
+        print(f"Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s")
         self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_set_empty.connect(self.set_table_value)
