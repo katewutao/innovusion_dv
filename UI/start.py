@@ -773,8 +773,17 @@ class TestMain(QThread):
         if self.cb_lidar_mode.currentText()=="CAN":
             os.system("python3 lib/set_usbcanfd_env.py demo")
         if self.cb_lidar_mode.currentText()!="No Power":
+            import power
             self.power_monitor=Power_monitor()
             self.power_monitor.start()
+            while True:
+                try:
+                    pow=power.Power()
+                    pow.power_off()
+                    break
+                except:
+                    print(f"power off failed")
+                    time.sleep(2)
             i=1
             for time_one in self.times:
                 self.sigout_schedule.emit(i,len(self.times))
@@ -783,7 +792,6 @@ class TestMain(QThread):
             self.power_monitor.stop()
             if self.cb_lidar_mode.currentText()=="CAN":
                 cancle_can(self.ip_list,self.can_mode)
-            import power
             pow=power.Power()
             pow.power_off()
             rm_empty_folder(self.save_folder)
