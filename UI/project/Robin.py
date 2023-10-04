@@ -87,15 +87,10 @@ def csv_write(file, lis):
 
 
 def get_command_result(command,save_log):
-    cmd = subprocess.Popen(command, shell=True,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try: 
-        cmd.wait(2)
-        res = str(cmd.stdout.read())
-    except:
-        res=""
+    cmd = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+    res = cmd.communicate()
     cmd.kill()
-    return res
+    return res[0]
 
 
 
@@ -106,7 +101,10 @@ def one_record(ip,save_log,SN,CustomerSN):
     else:
         command_add=""
     command = f'{command_add}curl --connect-timeout 2 -s http://{ip}:8088/get-lidar-status'
-    res = get_command_result(command,save_log)
+    try:
+        res = get_command_result(command,save_log)
+    except:
+        res=""
     if res=="":
         print(f"{ip} can't connect")
         # return None
