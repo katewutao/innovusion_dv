@@ -487,7 +487,10 @@ class MonitorFault(QThread):
 
     @time_limited(1)
     def get_cmd_print(self,fault_log_path):
-        stdout=self.cmd.stdout.readline()
+        try:
+            stdout=self.cmd.stdout.readline()
+        except:
+            return
         fault_key="(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.*\s([A-Z]+[A-Z_0-9]+).+(?:has|have)\sbeen\s(set|heal)"
         ret=re.search(fault_key,stdout)
         if ret:
