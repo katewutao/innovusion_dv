@@ -150,13 +150,16 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
             sdk_version_client=sdk_version_no_platform.replace("release","release-client")
         public_path = './sdk'
         util_folder = "./lidar_util"
-        util_names={
-            "innovusion_lidar_util":"",
-            # "get_pcd":"",
-            "inno_pc_client":"",
-            # "inno_pc_server":"",
-            # "get_cali_data":"",
-            }
+        util_names={"inno_pc_client":"",}
+        if os.getenv("project")=="Robin":
+            util_names={"inno_pc_client":"",}
+        else:
+            util_names={
+                "innovusion_lidar_util":"",
+                "get_pcd":"",
+                "inno_pc_client":"",
+                "inno_pc_server":"",
+                }
         if "linux" in platform.platform().lower():
             for filename in util_names.keys():
                 util_names[filename]=filename

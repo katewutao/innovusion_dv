@@ -1041,6 +1041,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     @handle_exceptions
     def power_changed(self):
         print(f"current power is {self.cb_power_type.currentText()},please ensure has connect!")
+        os.environ["power_type"]=self.cb_power_type.currentText()
         if os.path.exists("power.py"):
             os.remove("power.py")
         shutil.copyfile(os.path.join(self.power_folder,f"power_{self.cb_power_type.currentText()}.py"),os.path.join(os.getcwd(),"power.py"))
@@ -1054,6 +1055,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             self.cb_can_mode.setEnabled(True)
         else:
             self.cb_can_mode.setEnabled(False)
+        os.environ["lidar_mode"]=self.cb_lidar_mode.currentText()
             
     
     def power_status(self,mode):
@@ -1065,6 +1067,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     @handle_exceptions
     def test_name_changed(self):
         if self.cb_test_name.currentText().strip()!="":
+            os.environ["test_name"]=self.cb_test_name.currentText()
             mata_class=importlib.import_module(f"{self.test_folder.strip('.').strip('/')}.{self.cb_test_name.currentText()}")
             self.test_config=mata_class.config
             self.save_folder=self.cb_test_name.currentText()
@@ -1072,6 +1075,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     def project_changed(self):
         if self.cb_project.currentText().strip()!="":
+            os.environ["project"]=self.cb_project.currentText()
             mata_class=importlib.import_module(f"{self.project_folder.strip('.').strip('/')}.{self.cb_project.currentText()}")
             self.record_header=mata_class.record_header
             self.csv_write_func=mata_class.csv_write
