@@ -795,8 +795,14 @@ class TestMain(QThread):
             self.power_monitor.stop()
             if self.cb_lidar_mode.currentText()=="CAN":
                 cancle_can(self.ip_list,self.can_mode)
-            pow=power.Power()
-            pow.power_off()
+            while True:
+                try:
+                    pow=power.Power()
+                    pow.power_off()
+                    break
+                except:
+                    print(f"power off failed")
+                    time.sleep(2)
             rm_empty_folder(self.save_folder)
             self.sigout_test_finish.emit("done")
         else:
