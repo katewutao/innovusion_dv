@@ -572,7 +572,10 @@ class MonitorFault(QThread):
                 except:
                     self.cmd4.kill()
                 continue
-            self.get_cmd_print(fault_log_path)
+            try:
+                self.get_cmd_print(fault_log_path)
+            except:
+                pass
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log"))
