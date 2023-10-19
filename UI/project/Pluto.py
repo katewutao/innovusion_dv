@@ -15,6 +15,7 @@ import os
 import pandas as pd
 import subprocess
 import datetime,platform
+from utils import *
 
 
 
@@ -68,40 +69,14 @@ def extract(search_keys, st):
                     res.append("NaN")
     return res
 
-def csv_write(file, lis):
-    if not os.path.exists(file):
-        str1 = ""
-    else:
-        str1 = '\n'
-    for i in range(len(lis)):
-        str1+=f'{lis[i]},'
-    str1=str1[:-1]
-    with open(file, 'a', newline='\n') as f:
-        f.write(str1)
-
-
-def get_command_result(command,save_log):
-    cmd = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-    res = cmd.communicate()
-    cmd.kill()
-    return res[0]
-
 
 
 def one_record(ip,save_log,SN,CustomerSN):
     global search_keys
-    if "windows" not in platform.platform().lower():
-        command_add="exec "
-    else:
-        command_add=""
-    command = f'{command_add}curl --connect-timeout 2 -s http://{ip}:8088/get-all-status'
-    try:
-        res = get_command_result(command,save_log)
-    except:
-        res=""
+    command = f'http://{ip}:8088/get-all-status'
+    res = get_curl_result(command,1.5)[0]
     if res=="":
         print(f"{ip} can't connect")
-    #     return None
     temp = [f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}",SN,CustomerSN,"","",""]
     temp+=extract(search_keys, res)
     return temp
