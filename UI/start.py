@@ -208,7 +208,7 @@ def set_lidar_mode(ip,lidar_type,can_mode):
         return True
     else:
         print(f"{ip} set {lidar_type} mode fail")
-        set_lidar_mode(ip,lidar_type,can_mode)
+        return False
 
 
 def cancle_can(ip_list,can_mode="Default"):
@@ -218,7 +218,9 @@ def cancle_can(ip_list,can_mode="Default"):
     subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
         ping_sure(ip,0.5)
-        set_lidar_mode(ip,"power",can_mode)
+        while True:
+            if set_lidar_mode(ip,"power",can_mode):
+                break
     if can_mode in ["Default","Robin"]:
         os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f"all lidar cancle can mode success")
@@ -376,20 +378,20 @@ class one_lidar_record_thread(QThread):
                     customerid=ret.group(1)
                     break
         except Exception as e:
-            print(e)
-            customerid=self.get_customerid()
+            customerid=None
         return customerid 
 
 
     def get_sn(self):
-        command=f"curl {self.ip}:8010/command/?get_sn"
+        if "windows" not in platform.platform().lower():
+            command_add="exec "
+        else:
+            command_add=""
+        command=f"{command_add}curl --connect-timeout 2 -s {self.ip}:8010/command/?get_sn"
         cmd = subprocess.Popen(command, shell=True,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True)
-        
         res=cmd.communicate()
         SN=res[0]
-        if SN=="":
-            return self.get_sn()
         return SN 
 
     def csv_write(self,file, lis):
@@ -415,8 +417,14 @@ class one_lidar_record_thread(QThread):
             file = open(save_csv, 'w', newline='\n')
             file.write(self.record_header)
             file.close()
-        SN=self.get_sn()
-        CustomerSN=self.get_customerid()
+        while True:
+            SN=self.get_sn()
+            if SN!="":
+                break
+        while True:
+            CustomerSN=self.get_customerid()
+            if CustomerSN!=None:
+                break
         global pow_status
         while True:
             if self.isInterruptionRequested():
@@ -764,11 +772,17 @@ class TestMain(QThread):
             ping_sure(ip,0.5)
             while True:
                 try:
-                    down_sdk(ip)
+                    down_count=0
+                    while True:
+                        if down_sdk(ip) or down_count>10:
+                            break
+                        down_count+=1
                     extend_pcs_log_size("./lidar_util/innovusion_lidar_util",ip,50000)
                     get_promission(ip,float(self.txt_timeout.text()))
                     if self.cb_lidar_mode.currentText()=="CAN":
-                        set_lidar_mode(ip,"can",self.can_mode)
+                        while True:
+                            if set_lidar_mode(ip,"can",self.can_mode):
+                                break
                     break
                 except Exception as e:
                     print(e)
