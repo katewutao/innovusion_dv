@@ -730,11 +730,12 @@ class TestMain(QThread):
             return None
         print(f"get inno_pc_client permission")
         os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
-        
         if self.cb_lidar_mode.currentText()!="No Power":
-            # while not init_power():
-            #     pass
             os.system("python3 ./power.py")
+        if self.cb_lidar_mode.currentText()=="CAN":
+            os.system("python3 lib/set_usbcanfd_env.py demo")
+            os.system(f'exec python3 can_cancle.py -c {self.can_mode}')
+            subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         for idx,ip in enumerate(self.ip_list):
             ping_sure(ip,0.5)
             while True:
@@ -756,9 +757,7 @@ class TestMain(QThread):
             record_file=os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv')
             if not os.path.exists(record_file):
                 with open(record_file,"w",newline="\n") as f:
-                    f.write(self.record_header)
-        if self.cb_lidar_mode.currentText()=="CAN":
-            os.system("python3 lib/set_usbcanfd_env.py demo")
+                    f.write(self.record_header)    
         if self.cb_lidar_mode.currentText()!="No Power":
             import power
             self.power_monitor=Power_monitor()
@@ -771,6 +770,7 @@ class TestMain(QThread):
                 except:
                     print(f"power off failed")
                     time.sleep(2)
+            os.system(f'python3 can_cancle.py -c {self.can_mode}')
             i=1
             for time_one in self.times:
                 self.sigout_schedule.emit(i,len(self.times))
