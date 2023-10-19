@@ -148,6 +148,9 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
         if ret:
             sdk_version_no_platform=ret.group(1)
             sdk_version_client=sdk_version_no_platform.replace("release","release-client")
+        else:
+            print(f"{ip} can't find sdk version")
+            return False
         public_path = './sdk'
         util_folder = "./lidar_util"
         util_names={"inno_pc_client":"",}
@@ -171,13 +174,13 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
             command = f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_no_platform}/inno-lidar-sdk-{sdk_version_no_platform}-mingw64-public.tgz" -o katewutao.tgz'
             command_client=f'curl "https://s3-us-west-2.amazonaws.com/iv-release/release/TAG/{sdk_version_client}/inno-lidar-sdk-{sdk_version_client}-mingw64-public.tgz" -o katewutao.tgz'
         else:
-            return
+            return False
         down_flag=True
         if not down_sdk_command(util_names,public_path,command,util_folder,rm_sdk):
             down_flag=down_sdk_command(util_names,public_path,command_client,util_folder,rm_sdk)
         if down_flag:
             write_sdk_version(sdk_version)
-            
+        return True
 if __name__=="__main__":
     down_sdk("172.168.1.10","release-sdk-3.0.3-arm",False)
     # down_sdk("172.168.1.10")
