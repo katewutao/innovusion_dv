@@ -556,9 +556,9 @@ class MonitorFault(QThread):
         i=1
         newest_path=self.newest_folder(self.savepath,i)
         command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port 8010 udp-port {self.lidarudpport} --tcp-port {self.lidarport}'
-        command2=f'http://127.0.0.1:{self.lidarport}/command/?set_raw_data_save_path="{newest_path}"'
-        command3=f'http://127.0.0.1:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff'
-        command4=f'http://127.0.0.1:{self.lidarport}/command/?set_save_raw_data={self.lisenport}'
+        command2=f'http://localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}'
+        command3=f'http://localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff'
+        command4=f'http://localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}'
         raw_count=len(os.listdir(self.savepath))
         print(f"{self.ip} inno_pc_client start boot")
         last_client_fail_time=time.time()
