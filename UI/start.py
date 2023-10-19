@@ -203,7 +203,9 @@ def set_lidar_mode(ip,lidar_type,can_mode):
     if re.search(f"boot from.+{lidar_type}",res[0]):
         print(f"{ip} set {lidar_type} mode success")
         if can_mode=="Robin":
-            os.system(f"curl {ip}:8010/command/?set_reboot=1")
+            while True:
+                if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
+                    break
             time.sleep(10)
         return True
     else:
@@ -381,19 +383,6 @@ class one_lidar_record_thread(QThread):
             customerid=None
         return customerid 
 
-
-    def get_sn(self):
-        if "windows" not in platform.platform().lower():
-            command_add="exec "
-        else:
-            command_add=""
-        command=f"{command_add}curl --connect-timeout 2 -s {self.ip}:8010/command/?get_sn"
-        cmd = subprocess.Popen(command, shell=True,
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True)
-        res=cmd.communicate()
-        SN=res[0]
-        return SN 
-
     def csv_write(self,file, lis):
         if not os.path.exists(file):
             str1 = ""
@@ -418,8 +407,9 @@ class one_lidar_record_thread(QThread):
             file.write(self.record_header)
             file.close()
         while True:
-            SN=self.get_sn()
-            if SN!="":
+            sn_res=get_curl_result(f"http://{self.ip}:8010/command/?get_sn",1)
+            if sn_res[1]:
+                sn=sn_res[0]
                 break
         while True:
             CustomerSN=self.get_customerid()
@@ -430,7 +420,7 @@ class one_lidar_record_thread(QThread):
             if self.isInterruptionRequested():
                 break
             t=time.time()
-            temp=self.record_func(self.ip,save_log,SN,CustomerSN)
+            temp=self.record_func(self.ip,save_log,sn,CustomerSN)
             if isinstance(temp,type(None)):
                 continue
             temp+=pow_status
@@ -519,7 +509,28 @@ class MonitorFault(QThread):
             with open(fault_log_path,"a") as f:
                 f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]{str1}\n")
             self.sigout_fault_info.emit(ret.group(1),self.row_idx)
-            
+    
+    @handle_exceptions
+    def reboot_cmd(self,command1,command2,command3,command4):
+        if hasattr(self,"cmd"):
+            self.cmd.kill()
+        self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
+        time.sleep(1)
+        while True:
+            res=get_curl_result(command2,1)
+            if res[1]:
+                break
+        while True:
+            res=get_curl_result(command3,1)
+            if res[1]:
+                break
+        while True:
+            res=get_curl_result(command4,1)
+            if res[1]:
+                break
+        
+    
+    
     @handle_exceptions
     def run(self):
         util_dir="lidar_util"
@@ -545,45 +556,26 @@ class MonitorFault(QThread):
         i=1
         newest_path=self.newest_folder(self.savepath,i)
         command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port 8010 udp-port {self.lidarudpport} --tcp-port {self.lidarport}'
-        command2=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}"'
-        command3=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff"'
-        command4=f'curl --connect-timeout 1 "localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}"'
+        command2=f'http://127.0.0.1:{self.lidarport}/command/?set_raw_data_save_path="{newest_path}"'
+        command3=f'http://127.0.0.1:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff'
+        command4=f'http://127.0.0.1:{self.lidarport}/command/?set_save_raw_data={self.lisenport}'
         raw_count=len(os.listdir(self.savepath))
         print(f"{self.ip} inno_pc_client start boot")
         last_client_fail_time=time.time()
         while True:
             if self.isInterruptionRequested():
-                # print(f"recieve interruption request")
                 break
             if not os.path.exists(newest_path):
                 current_time=time.time()
                 if current_time-last_client_fail_time>3:
                     last_client_fail_time=current_time
                     print(f"{self.ip} inno_pc_client boot failed!")
-                if hasattr(self,"cmd"):
-                    self.cmd.kill()
-                self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
-                time.sleep(1)
-                self.cmd2=subprocess.Popen(command2,shell=True)
-                self.cmd3=subprocess.Popen(command3,shell=True)
-                self.cmd4=subprocess.Popen(command4,shell=True)
-                try:
-                    self.cmd2.wait(0.5)
-                except:
-                    self.cmd2.kill()
-                try:
-                    self.cmd3.wait(0.5)
-                except:
-                    self.cmd3.kill()
-                try:
-                    self.cmd4.wait(0.5)
-                except:
-                    self.cmd4.kill()
+                self.reboot_cmd(command1,command2,command3,command4)
                 continue
             try:
                 self.get_cmd_print(fault_log_path)
             except:
-                pass
+                self.reboot_cmd(command1,command2,command3,command4)
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log"))
@@ -595,11 +587,15 @@ class MonitorFault(QThread):
                     print(f"record raw data to {os.path.abspath(newest_path)}")
                 i+=1
                 newest_path=self.newest_folder(self.savepath,i)
-                command2=f"curl --connect-timeout 1 localhost:{self.lidarport}/command/?set_raw_data_save_path='{newest_path}'"
-                self.cmd2=subprocess.Popen(command2,shell=True)
-                self.cmd3=subprocess.Popen(command3,shell=True)
-                self.cmd2.wait()
-                self.cmd3.wait()
+                command2=f'http://127.0.0.1:{self.lidarport}/command/?set_raw_data_save_path="{newest_path}"'
+                while True:
+                    res=get_curl_result(command2,1)
+                    if res[1]:
+                        break
+                while True:
+                    res=get_curl_result(command3,1)
+                    if res[1]:
+                        break
     
     @handle_exceptions
     def stop(self):

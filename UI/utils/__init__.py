@@ -1,4 +1,5 @@
 import platform,subprocess,os,sys,datetime,re
+import requests
 
 def kill_subprocess(cmd):
     if "windows" in platform.platform().lower():
@@ -70,29 +71,30 @@ def extend_pcs_log_size(util_path,ip,size=200000):
     else:
         print(f"{ip} extend log size fail")
     os.remove(save_cfg_file)
-    os.system(f"curl --connect-timeout 2 -s {ip}:8010/command/?set_reboot=1")
+    while True:
+        if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
+            break
 
 
-class Logger(object):
-    def __init__(self, fileN='Default.log'):
-        self.terminal = sys.stdout
-        sys.stdout = self
-        file_folder = os.path.dirname(fileN)
-        if not os.path.exists(file_folder):
-            os.makedirs(file_folder)
-        self.log = open(fileN, 'w')
-
-    def write(self, message):
-        '''print实际相当于sys.stdout.write'''
-        self.terminal.write(message)
-        self.log.write(message)
-
-    def reset(self):
-        self.log.close()
-        sys.stdout = self.terminal
-
-    def flush(self):
-        pass
+def get_curl_result(command,timeout=0.2):
+    excute_flag=False
+    try:
+        request=requests.get(command,timeout=timeout)
+        res=request.text
+        request.close()
+        excute_flag=True
+    except Exception as e:
+        res=""
+    return res,excute_flag
+    
+def csv_write(file, list1):
+    if not os.path.exists(file):
+        str1 = ""
+    else:
+        str1 = '\n'
+    str1+=",".join(map(str,list1))
+    with open(file, 'a', newline='\n') as f:
+        f.write(str1)
 
 def get_current_date():
     start_time=f"{datetime.datetime.now()}"
