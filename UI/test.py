@@ -17,5 +17,4 @@ def get_curl_result(command,timeout=0.2):
         res=""
     return res,excute_flag
 
-while True:
-    get_curl_result('http://127.0.0.1:8088/command/?set_faults_save_raw=ffffffffffffffff')
+get_curl_result('http://127.0.0.1:8600/command/?set_raw_data_save_path="./100"')
