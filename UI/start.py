@@ -451,7 +451,7 @@ class MonitorFault(QThread):
         super(MonitorFault,self).__init__()
         self.ip=ip
         self.faultpath=faultpath
-        self.savepath=savepath
+        self.savepath=os.path.abspath(savepath)
         self.lidarport=lidarport
         self.lidarudpport=lidarudpport
         self.lisenport=lisenport
