@@ -383,17 +383,6 @@ class one_lidar_record_thread(QThread):
             customerid=None
         return customerid 
 
-    def csv_write(self,file, lis):
-        if not os.path.exists(file):
-            str1 = ""
-        else:
-            str1 = '\n'
-        for i in range(len(lis)):
-            str1+=f'{lis[i]},'
-        str1=str1[:-1]
-        with open(file, 'a', newline='\n') as f:
-            f.write(str1)
-
     @handle_exceptions
     def run(self):
         while True:
@@ -424,7 +413,7 @@ class one_lidar_record_thread(QThread):
             if isinstance(temp,type(None)):
                 continue
             temp+=pow_status
-            self.csv_write(save_csv, temp)
+            csv_write(save_csv, temp)
             self.sigout_set_tbw_value.emit(temp,self.row_idx)
             sleep_time=self.interval-time.time()+t
             if sleep_time>0:
@@ -485,10 +474,7 @@ class MonitorFault(QThread):
 
     @time_limited(1)
     def get_cmd_print(self,fault_log_path):
-        try:
-            stdout=self.cmd.stdout.readline()
-        except:
-            return
+        stdout=self.cmd.stdout.readline()
         fault_key="(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.*\s([A-Z]+[A-Z_0-9]+).+(?:has|have)\sbeen\s(set|heal)"
         ret=re.search(fault_key,stdout)
         if ret:
@@ -516,18 +502,9 @@ class MonitorFault(QThread):
             self.cmd.kill()
         self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
         time.sleep(1)
-        while True:
-            res=get_curl_result(command2,1)
-            if res[1]:
-                break
-        while True:
-            res=get_curl_result(command3,1)
-            if res[1]:
-                break
-        while True:
-            res=get_curl_result(command4,1)
-            if res[1]:
-                break
+        get_curl_result(command2,1)
+        get_curl_result(command3,1)
+        get_curl_result(command4,1)
         
     
     
@@ -587,15 +564,9 @@ class MonitorFault(QThread):
                     print(f"record raw data to {os.path.abspath(newest_path)}")
                 i+=1
                 newest_path=self.newest_folder(self.savepath,i)
-                command2=f'http://127.0.0.1:{self.lidarport}/command/?set_raw_data_save_path="{newest_path}"'
-                while True:
-                    res=get_curl_result(command2,1)
-                    if res[1]:
-                        break
-                while True:
-                    res=get_curl_result(command3,1)
-                    if res[1]:
-                        break
+                command2=f'http://localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}'
+                get_curl_result(command2,1)
+                get_curl_result(command3,1)
     
     @handle_exceptions
     def stop(self):
