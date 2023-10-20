@@ -495,18 +495,19 @@ class MonitorFault(QThread):
             with open(fault_log_path,"a") as f:
                 f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]{str1}\n")
             self.sigout_fault_info.emit(ret.group(1),self.row_idx)
+        return stdout
     
     @handle_exceptions
     def reboot_cmd(self,command1,command2,command3,command4):
         if hasattr(self,"cmd"):
             self.cmd.kill()
+        time.sleep(3)
+        print(f"{self.ip} inno_pc_client start boot")
         self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
         time.sleep(1)
         get_curl_result(command2,1)
         get_curl_result(command3,1)
         get_curl_result(command4,1)
-        
-    
     
     @handle_exceptions
     def run(self):
@@ -549,9 +550,15 @@ class MonitorFault(QThread):
                     print(f"{self.ip} inno_pc_client boot failed!")
                 self.reboot_cmd(command1,command2,command3,command4)
                 continue
+            cmd_run_flag=False
             try:
-                self.get_cmd_print(fault_log_path)
+                res=self.get_cmd_print(fault_log_path)
+                if res!="":
+                    cmd_run_flag=True
             except:
+                pass
+            if not cmd_run_flag:
+                print(f"{self.ip} inno_pc_client is stop")
                 self.reboot_cmd(command1,command2,command3,command4)
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
