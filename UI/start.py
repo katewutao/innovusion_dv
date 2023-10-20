@@ -2,7 +2,7 @@
 #  * @author katewutao
 #  * @email [kate.wu@cn.innovuison.com]
 #  * @create date 2023-05-05 10:12:54
-#  * @modify date 2023-05-17 10:12:54
+#  * @modify date 2023-10-20 13:30:48
 #  * @desc [description]
 #  */
 import os
@@ -101,6 +101,11 @@ def downlog(ip,log_path,time_path):
     cmd2=subprocess.Popen(command2,shell=True)
     cmd1.wait()
     cmd2.wait()
+    for root,_,files in os.walk(save_path):
+        for file in files:
+            ret=re.search("\.txt",file)
+            if not ret:
+                os.remove(os.path.join(root,file))
 
 def ping(ip,time_interval):
     if 'windows' not in platform.platform().lower():
@@ -495,7 +500,7 @@ class MonitorFault(QThread):
             with open(fault_log_path,"a") as f:
                 f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]{str1}\n")
             self.sigout_fault_info.emit(ret.group(1),self.row_idx)
-        return stdout
+        return stdout.strip("\n")
     
     @handle_exceptions
     def reboot_cmd(self,command1,command2,command3,command4):
@@ -514,12 +519,19 @@ class MonitorFault(QThread):
         util_dir="lidar_util"
         util_path=os.path.join(util_dir,"inno_pc_client")
         fault_log_path=os.path.join(self.faultpath,"fault")
+        client_log_path=os.path.join(self.faultpath,"client_log")
         if not os.path.exists(fault_log_path):
             try:
                 os.makedirs(fault_log_path)
             except:
                 pass
+        if not os.path.exists(client_log_path):
+            try:
+                os.makedirs(client_log_path)
+            except:
+                pass
         fault_log_path=os.path.join(fault_log_path,self.ip.replace(".","_")+".txt")
+        client_log_path=os.path.join(client_log_path,f"{self.ip}.txt")
         if not os.path.exists(util_path):
             print(f"file {util_path} not exists!")
             return None
@@ -553,8 +565,11 @@ class MonitorFault(QThread):
             cmd_run_flag=False
             try:
                 res=self.get_cmd_print(fault_log_path)
-                if res!="":
+                if self.cmd.poll()==None:
                     cmd_run_flag=True
+                    if res!=None:
+                        with open(client_log_path,"a") as f:
+                            f.write(f"{res}\n")
             except:
                 pass
             if not cmd_run_flag:
