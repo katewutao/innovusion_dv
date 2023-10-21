@@ -602,12 +602,6 @@ class MonitorFault(QThread):
                 break
         if hasattr(self,"cmd"):
             self.cmd.kill()
-        for i in range(2,5):
-            if hasattr(self,f"cmd{i}"):
-                try:
-                    getattr(self,f"cmd{i}").kill()
-                except:
-                    pass
         print(f"{self.ip} finish monitor fualt success")
         
 
