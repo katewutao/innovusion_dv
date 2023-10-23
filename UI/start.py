@@ -92,21 +92,6 @@ def handle_exceptions(func):
             return None
     return wrapper
 
-def downlog(ip,log_path,time_path):
-    save_path=os.path.join(log_path,"log",ip.replace('.','_'),time_path)
-    os.makedirs(save_path)
-    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
-    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt '{save_path}'"
-    cmd1=subprocess.Popen(command1,shell=True)
-    cmd2=subprocess.Popen(command2,shell=True)
-    cmd1.wait()
-    cmd2.wait()
-    for root,_,files in os.walk(save_path):
-        for file in files:
-            ret=re.search("\.txt",file)
-            if not ret:
-                os.remove(os.path.join(root,file))
-
 def ping(ip,time_interval):
     if 'windows' not in platform.platform().lower():
         cmd=subprocess.Popen(f'exec ping -c 1 {ip}',shell=True,
@@ -131,6 +116,24 @@ def ping(ip,time_interval):
             return False
         else:
             return True
+
+def downlog(ip,log_path,time_path):
+    save_path=os.path.join(log_path,"log",ip.replace('.','_'),time_path)
+    os.makedirs(save_path)
+    if not ping(ip,0.5):
+        print(f"{ip} is not connect, download log failed") 
+        return
+    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
+    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt '{save_path}'"
+    cmd1=subprocess.Popen(command1,shell=True)
+    cmd2=subprocess.Popen(command2,shell=True)
+    cmd1.wait()
+    cmd2.wait()
+    for root,_,files in os.walk(save_path):
+        for file in files:
+            ret=re.search("\.txt",file)
+            if not ret:
+                os.remove(os.path.join(root,file))
 
 
 def list_in_str(key_list,str1):
