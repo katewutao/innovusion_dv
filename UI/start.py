@@ -444,14 +444,16 @@ class one_lidar_record_thread(QThread):
 class MonitorFault(QThread):
     sigout_fault_info = pyqtSignal(str,int)
     sigout_fault_heal = pyqtSignal(str,int)
-    def __init__(self,ip,faultpath,savepath,row_idx,lidarport,lidarudpport,lisenport):
+    def __init__(self,ip,faultpath,savepath,row_idx,lidar_udp_port,udp_port,tcp_port,raw_port,lidar_port=8010):
         super(MonitorFault,self).__init__()
         self.ip=ip
         self.faultpath=faultpath
         self.savepath=os.path.abspath(savepath)
-        self.lidarport=lidarport
-        self.lidarudpport=lidarudpport
-        self.lisenport=lisenport
+        self.lidar_udp_port=lidar_udp_port
+        self.udp_port=udp_port
+        self.tcp_port=tcp_port
+        self.raw_port=raw_port
+        self.lidar_port=lidar_port
         self.row_idx=row_idx
         
     def newest_folder(self,A,B):
@@ -548,22 +550,20 @@ class MonitorFault(QThread):
                 pass
         i=1
         newest_path=self.newest_folder(self.savepath,i)
-        command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port 8010 --lidar-udp-port 8010 udp-port {self.lidarudpport} --tcp-port {self.lidarport}'
-        command2=f'http://localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}'
-        command3=f'http://localhost:{self.lidarport}/command/?set_faults_save_raw=ffffffffffffffff'
-        command4=f'http://localhost:{self.lidarport}/command/?set_save_raw_data={self.lisenport}'
+        command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port {self.lidar_port} --lidar-udp-port {self.lidar_udp_port} udp-port {self.udp_port} --tcp-port {self.tcp_port}'
+        command2=f'http://localhost:{self.tcp_port}/command/?set_raw_data_save_path={newest_path}'
+        command3=f'http://localhost:{self.tcp_port}/command/?set_faults_save_raw=ffffffffffffffff'
+        command4=f'http://localhost:{self.tcp_port}/command/?set_save_raw_data={self.raw_port}'
         raw_count=len(os.listdir(self.savepath))
         print(f"{self.ip} inno_pc_client start boot")
-        last_client_fail_time=time.time()
         while True:
             if self.isInterruptionRequested():
                 break
             if not os.path.exists(newest_path):
-                current_time=time.time()
-                if current_time-last_client_fail_time>3:
-                    last_client_fail_time=current_time
-                    print(f"{self.ip} inno_pc_client boot failed!")
-                self.reboot_cmd(command1,command2,command3,command4)
+                if hasattr(self,"cmd") and self.cmd.poll()==None:
+                    get_curl_result(command2,1)
+                else:
+                    self.reboot_cmd(command1,command2,command3,command4)
                 continue
             cmd_run_flag=False
             try:
@@ -589,7 +589,7 @@ class MonitorFault(QThread):
                     print(f"record raw data to {os.path.abspath(newest_path)}")
                 i+=1
                 newest_path=self.newest_folder(self.savepath,i)
-                command2=f'http://localhost:{self.lidarport}/command/?set_raw_data_save_path={newest_path}'
+                command2=f'http://localhost:{self.tcp_port}/command/?set_raw_data_save_path={newest_path}'
                 get_curl_result(command2,1)
                 get_curl_result(command3,1)
     
@@ -685,7 +685,7 @@ class TestMain(QThread):
                 self.records.append(record_thread)
                 print(f"start add record success {ip}")
                 raw_save_path=os.path.join(log_path,"raw",ip.replace(".","_"),time_path)
-                monitor_thread=MonitorFault(ip,log_path,raw_save_path,ip_num,9100+ip_num,8600+ip_num,8100+ip_num)
+                monitor_thread=MonitorFault(ip,log_path,raw_save_path,ip_num,9600+ip_num,9100+ip_num,8600+ip_num,8100+ip_num,8010)
                 monitor_thread.sigout_fault_info.connect(self.set_fault)
                 monitor_thread.sigout_fault_heal.connect(self.heal_fault)
                 monitor_thread.start()
@@ -820,7 +820,7 @@ class TestMain(QThread):
                 self.records.append(record_thread)
                 print(f"start add record success {ip}")
                 raw_save_path=os.path.join(self.save_folder,"raw",ip.replace(".","_"),time_path)
-                monitor_thread=MonitorFault(ip,self.save_folder,raw_save_path,ip_num,9100+ip_num,8600+ip_num,8100+ip_num)
+                monitor_thread=MonitorFault(ip,self.save_folder,raw_save_path,ip_num,9600+ip_num,9100+ip_num,8600+ip_num,8100+ip_num,8010)
                 monitor_thread.sigout_fault_info.connect(self.set_fault)
                 monitor_thread.sigout_fault_heal.connect(self.heal_fault)
                 monitor_thread.start()
