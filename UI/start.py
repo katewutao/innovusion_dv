@@ -120,7 +120,7 @@ def ping(ip,time_interval):
 def downlog(ip,log_path,time_path):
     save_path=os.path.join(log_path,"log",ip.replace('.','_'),time_path)
     os.makedirs(save_path)
-    if not ping(ip,0.5):
+    if not ping(ip,1):
         print(f"{ip} is not connect, download log failed") 
         return
     command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
