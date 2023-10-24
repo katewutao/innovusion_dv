@@ -86,6 +86,18 @@ def get_curl_result(command,timeout=0.2):
     except Exception as e:
         res=""
     return res,excute_flag
+
+def download_file(url,filename):
+    print(f"download {filename} start")
+    try:
+        response = requests.get(url)
+    except:
+        print(f"download {filename} failed")
+        return
+    response.raise_for_status()
+    with open(filename,"wb") as f:
+        f.write(response.content)
+    print(f"download {filename} success")
     
 def csv_write(file, list1):
     if not os.path.exists(file):

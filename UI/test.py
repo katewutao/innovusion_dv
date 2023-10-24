@@ -26,8 +26,20 @@ def ping(ip,time_interval):
         print(e)
     return False
 
+def download_file(url,filename):
+    print(f"download {filename} start")
+    try:
+        response = requests.get(url)
+    except:
+        print(f"download {filename} failed")
+        return
+    response.raise_for_status()
+    with open(filename,"wb") as f:
+        f.write(response.content)
+    print(f"download {filename} success")
 
-print(ping("172.168.1.10",1))
+# print(ping("172.168.1.10",1))
+download_file("http://172.168.1.10:8010/capture/?type=raw_raw&duration=1","1.raw")
 
 
 # lidar_util/inno_pc_client" --lidar-ip 10.42.0.91 --lidar-port 8010 --lidar-udp-port 9600 --udp-port 9100 --tcp-port 8600
