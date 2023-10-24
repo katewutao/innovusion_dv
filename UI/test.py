@@ -17,7 +17,17 @@ def get_curl_result(command,timeout=0.2):
         res=""
     return res,excute_flag
 
-get_curl_result('http://127.0.0.1:8600/command/?set_raw_data_save_path="./100"')
+def ping(ip,time_interval):
+    try:
+        respon=requests.get(f"http://{ip}",timeout=time_interval)
+        if respon.status_code==200:
+            return True
+    except Exception as e:
+        print(e)
+    return False
+
+
+print(ping("172.168.1.10",1))
 
 
 # lidar_util/inno_pc_client" --lidar-ip 10.42.0.91 --lidar-port 8010 --lidar-udp-port 9600 --udp-port 9100 --tcp-port 8600

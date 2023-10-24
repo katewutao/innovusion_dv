@@ -21,6 +21,7 @@ import datetime
 import traceback
 import inspect
 import pandas as pd
+import requests
 import shutil,json,importlib
 from common.auto_update_sdk import down_sdk
 from common.excel_format import ExcelFormat
@@ -92,30 +93,16 @@ def handle_exceptions(func):
             return None
     return wrapper
 
+
 def ping(ip,time_interval):
-    if 'windows' not in platform.platform().lower():
-        cmd=subprocess.Popen(f'exec ping -c 1 {ip}',shell=True,
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(time_interval)
-        if cmd.poll() is not None:
-            res = cmd.stdout.read().decode('utf-8')
-        else:
-            res = ''
-        cmd.kill()
-        if "100%" in res or res=='':
-            return False
-        else:
+    try:
+        respon=requests.get(f"http://{ip}",timeout=time_interval)
+        if respon.status_code==200:
             return True
-    else:
-        cmd=subprocess.Popen(f'ping -n 1 -w 100 {ip}',shell=True,
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        cmd.wait()
-        res = cmd.stdout.read()
-        cmd.kill()
-        if b"100%" in res:
-            return False
-        else:
-            return True
+    except:
+        pass
+    return False
+    
 
 def downlog(ip,log_path,time_path):
     save_path=os.path.join(log_path,"log",ip.replace('.','_'),time_path)
