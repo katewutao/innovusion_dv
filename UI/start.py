@@ -376,7 +376,15 @@ class one_lidar_record_thread(QThread):
         customerid = 'null'
         command = 'mfg_rd "CustomerSN"\n'
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((self.ip, 8002))
+        try:
+            s.connect((self.ip, 8002))
+        except:
+            print(f"{self.ip} 8002 not connect")
+            try:
+                s.connect((self.ip, 8001))
+            except:
+                print(f"{self.ip} 8001 not connect")
+                return ""
         s.settimeout(1)
         s.sendall(command.encode())
         try:
@@ -462,14 +470,14 @@ class MonitorFault(QThread):
 
     def check_raw(self,folder):
         file_list=os.listdir(folder)
-        key="sn\d+-\d+.*\.inno_raw$"
+        key="^.*\.inno_raw$"  #"sn\d*-\d+.*\.inno_raw$"
         for file in file_list:
-            if re.search("^sn\d+-(45|49|3|4).*\.inno_raw$",file):
-                try:
-                    os.remove(os.path.join(folder,file))
-                    print(f"remove {file} success")
-                except:
-                    print(f"remove {file} failed")
+            # if re.search("^sn\d+-(45|49|3|4).*\.inno_raw$",file):
+            #     try:
+            #         os.remove(os.path.join(folder,file))
+            #         print(f"remove {file} success")
+            #     except:
+            #         print(f"remove {file} failed")
             if re.match(key,file):
                 return True
         return False
@@ -550,7 +558,7 @@ class MonitorFault(QThread):
                 pass
         i=1
         newest_path=self.newest_folder(self.savepath,i)
-        command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port {self.lidar_port} --lidar-udp-port {self.lidar_udp_port} udp-port {self.udp_port} --tcp-port {self.tcp_port}'
+        command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port {self.lidar_port} --lidar-udp-port {self.lidar_udp_port} --udp-port {self.udp_port} --tcp-port {self.tcp_port}'
         command2=f'http://localhost:{self.tcp_port}/command/?set_raw_data_save_path={newest_path}'
         command3=f'http://localhost:{self.tcp_port}/command/?set_faults_save_raw=ffffffffffffffff'
         command4=f'http://localhost:{self.tcp_port}/command/?set_save_raw_data={self.raw_port}'
