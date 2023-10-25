@@ -34,7 +34,7 @@ sys.path.append(".")
 
 
 pow_status=[0,0]
-
+spec_df = pd.DataFrame(columns=["LL", "UL"])
  
 builtins.print_origin=print
 def rewrite_print(log_path):
@@ -46,6 +46,31 @@ def rewrite_print(log_path):
         builtins.print_origin(f"[{current_date}] {msg}", **kwargs)
         builtins.print_origin(f"[{current_date}] {msg}", **kwargs, file=open(log_path, "a"))
     return print_res
+ 
+ 
+def set_tbw_value(tbw_obj):
+    def set_value(values,row_idx):
+        global spec_df
+        ip = tbw_obj.item(row_idx, 0).text()
+        for idx,value in enumerate(values):
+            column_name=tbw_obj.horizontalHeaderItem(idx).text()
+            new_item=QtWidgets.QTableWidgetItem(f"{value}")
+            # new_item.setForeground(QtGui.QColor(0,0,0))
+            new_item.setBackground(QtGui.QColor(255,255,255))
+            ret=re.search("^-?\d+\.?\d*$",str(value))
+            if ret:
+                value_float=float(value)
+                if column_name in spec_df.index:
+                    if not pd.isna(spec_df.loc[column_name,"LL"]) and value_float<spec_df.loc[column_name,"LL"]:
+                        print(f"{ip} {column_name} is {value_float},below LL {spec_df.loc[column_name,'LL']}")
+                        # new_item.setForeground(QtGui.QColor(255,0,0))
+                        new_item.setBackground(QtGui.QColor(255,0,0))
+                    elif not pd.isna(spec_df.loc[column_name,"UL"]) and value_float>spec_df.loc[column_name,"UL"]:
+                        print(f"{ip} {column_name} is {value_float},above UL {spec_df.loc[column_name,'UL']}")
+                        # new_item.setForeground(QtGui.QColor(255,0,0))
+                        new_item.setBackground(QtGui.QColor(255,0,0))
+            tbw_obj.setItem(row_idx,idx+1,new_item)
+    return set_value
  
  
 
@@ -609,19 +634,18 @@ class MonitorFault(QThread):
 
 class TestMain(QThread):
     sigout_test_finish = pyqtSignal(str)
-    sigout_set_empty=pyqtSignal(list,int)
+    sigout_lidar_info=pyqtSignal(list,int)
     sigout_schedule=pyqtSignal(int,int)
     sigout_set_fault=pyqtSignal(str,int)
     sigout_heal_fault=pyqtSignal(str,int)
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,can_mode,ip_list,record_folder,record_header,times,set_table_value,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
+    def __init__(self,can_mode,ip_list,record_folder,record_header,times,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
         super(TestMain,self).__init__()
         self.csv_write_func=csv_write_func
         self.txt_record_interval=txt_record_interval
         self.cb_lidar_mode=cb_lidar_mode
-        self.set_table_value=set_table_value
         self.save_folder=record_folder
         self.ip_list=ip_list
         self.txt_timeout=txt_timeout
@@ -631,6 +655,8 @@ class TestMain(QThread):
         self.record_func=record_func
         self.can_mode=can_mode
     
+    def send_lidar_info(self,list1,row_idx):
+        self.sigout_lidar_info.emit(list1,row_idx)
     
     def set_fault(self,fault,row_idx):
         self.sigout_set_fault.emit(fault,row_idx)
@@ -676,7 +702,7 @@ class TestMain(QThread):
             for ip_num,ip in enumerate(ip_list):
                 print(f"start add record {ip}")
                 record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
-                record_thread.sigout_set_tbw_value.connect(self.set_table_value)
+                record_thread.sigout_set_tbw_value.connect(self.send_lidar_info)
                 record_thread.start()
                 self.records.append(record_thread)
                 print(f"start add record success {ip}")
@@ -726,7 +752,7 @@ class TestMain(QThread):
                     temp=[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]+[-100]*(self.record_header.count(",")-2)+temp_pow
                 else:
                     temp=[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]+[-100]*(self.record_header.count(","))
-                self.sigout_set_empty.emit(temp,row_idx)
+                self.sigout_lidar_info.emit(temp,row_idx)
                 self.csv_write_func(os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv'),temp)
             t0=(power_one_time[0]+power_one_time[1]-(time.time()-t))/(data_num_power_off-i)
             if t0>0:
@@ -811,7 +837,7 @@ class TestMain(QThread):
             for ip_num,ip in enumerate(self.ip_list):
                 print(f"start add record {ip}")
                 record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
-                record_thread.sigout_set_tbw_value.connect(self.set_table_value)
+                record_thread.sigout_set_tbw_value.connect(self.send_lidar_info)
                 record_thread.start()
                 self.records.append(record_thread)
                 print(f"start add record success {ip}")
@@ -977,10 +1003,6 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                 self.tbw_data.setItem(i,j,QtWidgets.QTableWidgetItem(cell_value))
         
     
-    def set_table_value(self,values,row_idx):
-        for idx,value in enumerate(values):
-            self.tbw_data.setItem(row_idx,idx+1,QtWidgets.QTableWidgetItem(f"{value}"))
-    
     @handle_exceptions
     def report_fault(self,fault,row_idx):
         self.set_fault(fault,row_idx)
@@ -1102,9 +1124,9 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def test_main(self):
         self.pgb_test.setValue(0)
         print(f"Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s")
-        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.set_table_value,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
+        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
-        self.test.sigout_set_empty.connect(self.set_table_value)
+        self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
         self.test.sigout_schedule.connect(self.set_schedule)
         self.test.sigout_heal_fault.connect(self.heal_fault)
         self.test.sigout_set_fault.connect(self.report_fault)
