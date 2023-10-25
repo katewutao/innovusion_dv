@@ -16,44 +16,46 @@ import subprocess
 import shutil
 import json
 import platform
+import requests
 
 
-def ping(ip, time_interval):
-    if 'linux' in sys.platform:
-        cmd = subprocess.Popen(f'echo "demo"|sudo -S ping -c 1 {ip}',
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-        time.sleep(time_interval)
-        if cmd.poll() is not None:
-            res = cmd.stdout.read().decode('utf-8')
-        else:
-            res = ''
-        cmd.kill()
-        if "100%" in res or res == '':
-            return False
-        else:
+def get_curl_result(command,timeout=1):
+    excute_flag=False
+    try:
+        request=requests.get(command,timeout=timeout)
+        res=request.text
+        request.close()
+        excute_flag=True
+    except Exception as e:
+        res=""
+    return res,excute_flag
+
+def download_file(url,filename):
+    print(f"download {filename} start")
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except:
+        print(f"download {filename} failed")
+        return
+    with open(filename,"wb") as f:
+        f.write(response.content)
+    print(f"download {filename} success")
+
+
+def ping(ip,time_interval):
+    try:
+        respon=requests.get(f"http://{ip}",timeout=time_interval)
+        if respon.status_code==200:
             return True
-    else:
-        cmd = subprocess.Popen(f'echo "demo"|sudo -S ping -n 1 -w 100 {ip}',
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-        cmd.wait()
-        res = cmd.stdout.read()
-        cmd.kill()
-        if b"100%" in res:
-            return False
-        else:
-            return True
-
+    except:
+        pass
+    return False
 
 def get_sdk_version(ip):
-    command = f'curl "http://{ip}:8010/command/?get_sdk_version"'
-    cmd = os.popen(command)
-    res = cmd.read()
-    # key = '(release-[0-9.]+-rc[0-9a-zA-Z]+)'
     key = '(release-.*)'
+    command = f'http://{ip}:8010/command/?get_sdk_version'
+    res,_=get_curl_result(command)
     ret = re.search(key, res)
     if ret:
         return ret.group(1)

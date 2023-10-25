@@ -153,6 +153,7 @@ def ping_sure(ip,interval_time):
     print(f' lidar {ip} has connected')    
     
 def get_promission(ip,time_out):
+    print(f"{ip} get premission")
     if 'windows' not in platform.platform().lower():
         import pexpect as pect
     else:
