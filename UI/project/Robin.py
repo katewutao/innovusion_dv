@@ -79,7 +79,7 @@ def extract(search_keys, str1):
 def one_record(ip,save_log,SN,CustomerSN):
     global search_keys
     command = f'http://{ip}:8088/get-lidar-status'
-    res = get_curl_result(command,1.5)[0]
+    res = get_curl_result(command,3.5)[0]
     if res=="":
         print(f"{ip} can't connect")
         # return None
