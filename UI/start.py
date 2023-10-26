@@ -476,6 +476,8 @@ class MonitorFault(QThread):
         self.raw_port=raw_port
         self.lidar_port=lidar_port
         self.row_idx=row_idx
+        self.raw_list = {}
+        self.max_raw = 10
         
     def newest_folder(self,A,B):
         newest_path=os.path.join(A,str(B))
@@ -485,13 +487,14 @@ class MonitorFault(QThread):
         file_list=os.listdir(folder)
         key="^.*\.inno_raw$"  #"sn\d*-\d+.*\.inno_raw$"
         for file in file_list:
-            # if re.search("^sn\d+-(45|49|3|4).*\.inno_raw$",file):
-            #     try:
-            #         os.remove(os.path.join(folder,file))
-            #         print(f"remove {file} success")
-            #     except:
-            #         print(f"remove {file} failed")
             if re.match(key,file):
+                self.raw_list[file] = self.raw_list.get(file, 0) + 1
+                if self.raw_list[file]>self.max_raw:
+                    try:
+                        os.remove(os.path.join(folder,file))
+                        print(f"{file} count {self.raw_list[file]},remove success")
+                    except:
+                        print(f"{file} count {self.raw_list[file]},remove failed")
                 return True
         return False
 
