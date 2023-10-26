@@ -492,9 +492,9 @@ class MonitorFault(QThread):
                 if self.raw_list[file]>self.max_raw:
                     try:
                         os.remove(os.path.join(folder,file))
-                        print(f"{file} count {self.raw_list[file]},remove success")
+                        print(f"{self.ip} {file} count {self.raw_list[file]},remove success")
                     except:
-                        print(f"{file} count {self.raw_list[file]},remove failed")
+                        print(f"{self.ip} {file} count {self.raw_list[file]},remove failed")
                 return True
         return False
 
