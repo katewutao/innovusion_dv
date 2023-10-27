@@ -18,13 +18,23 @@ sys_command=[
     'systemctl restart systemd-timesyncd.service',
     'sudo apt-get install open-vm-tools',
     'sudo apt-get install open-vm-tools-desktop',
+    'sudo apt-get install libssl-dev openssl',
+    'sudo apt-get install libhdf5-dev',
+    'sudo apt-get install libxcb-xinerama0',
 ]
 
 
 pip_command=[
-    'pip3 install pyserial -i https://mirrors.aliyun.com/pypi/simple/',
-    'pip3 install modbus_tk -i https://mirrors.aliyun.com/pypi/simple/',
-    'pip3 install pexpect -i https://mirrors.aliyun.com/pypi/simple/',
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ openpyxl",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pandas",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyserial",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ modbus_tk",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pyqt5==5.15.8",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pexpect",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlrd",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlsxwriter",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ redis",
+    "pip3 install -i https://mirrors.aliyun.com/pypi/simple/ requests",
 ]
 
 

@@ -18,11 +18,10 @@ IT新装纯Ubantu系统须安装一下包：
  sudo apt-get install libssl-dev openssl
  sudo apt-get install git
  sudo apt install python3-pip
- sudo pip3 install pyserial -i https://mirrors.aliyun.com/pypi/simple/
- sudo pip3 install modbus_tk -i https://mirrors.aliyun.com/pypi/simple/
- sudo pip3 install pandas -i https://mirrors.aliyun.com/pypi/simple/
  sudo apt install curl
  sudo apt install sshpass
+ sudo apt-get install libhdf5-dev
+ sudo apt-get install libxcb-xinerama0
 
  
  下载代码,网络不好时取消多试几次
@@ -45,6 +44,7 @@ pip3 install -i https://mirrors.aliyun.com/pypi/simple/ pexpect
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlrd
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ xlsxwriter
 pip3 install -i https://mirrors.aliyun.com/pypi/simple/ redis
+pip3 install -i https://mirrors.aliyun.com/pypi/simple/ requests
 
 
 如果pyqt5安装失败，可能是本地没有安装qt，尝试:
