@@ -505,7 +505,27 @@ class MonitorFault(QThread):
                 os.remove(log_path)
             except:
                 pass
-
+    
+    @time_limited(1)
+    def download_fw_pcs(self):
+        print(f"{self.ip} download fw and pcs")
+        command_fw=f"http://{self.ip}:8675/lidar-log.txt"
+        command_pcs=f"http://{self.ip}:8675/inno_pc_server.txt"
+        try:
+            response = requests.get(command_fw)
+            response.raise_for_status()
+            res_fw=str(response.content)[2:-1]
+        except:
+            res_fw=""
+        try:
+            response = requests.get(command_pcs)
+            response.raise_for_status()
+            res_pcs=str(response.content)[2:-1]
+        except:
+            res_pcs=""
+        res = (res_fw+res_pcs)
+        return res.replace("\\n","\n")
+        
     @time_limited(1)
     def get_cmd_print(self,fault_log_path):
         stdout=self.cmd.stdout.readline()
@@ -580,6 +600,7 @@ class MonitorFault(QThread):
         command4=f'http://localhost:{self.tcp_port}/command/?set_save_raw_data={self.raw_port}'
         raw_count=len(os.listdir(self.savepath))
         print(f"{self.ip} inno_pc_client start boot")
+        is_first_write=True
         while True:
             if self.isInterruptionRequested():
                 break
@@ -596,6 +617,9 @@ class MonitorFault(QThread):
                     cmd_run_flag=True
                     if res!=None:
                         with open(client_log_path,"a") as f:
+                            if is_first_write:
+                                f.write(self.download_fw_pcs())
+                                is_first_write=False
                             f.write(f"{res}\n")
             except:
                 pass

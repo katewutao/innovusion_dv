@@ -1,5 +1,7 @@
 import subprocess
 import requests
+import pandas as pd
+
 def get_command_result(command):
     cmd = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
     res = cmd.communicate()
@@ -38,8 +40,31 @@ def download_file(url,filename):
         f.write(response.content)
     print(f"download {filename} success")
 
+
+def download_fw_pcs(ip):
+    command_fw=f"http://{ip}:8675/lidar-log.txt"
+    command_pcs=f"http://{ip}:8675/inno_pc_server.txt"
+    try:
+        response = requests.get(command_fw)
+        response.raise_for_status()
+        res_fw=str(response.content)[2:-1]
+    except:
+        res_fw=""
+    try:
+        response = requests.get(command_pcs)
+        response.raise_for_status()
+        res_pcs=str(response.content)[2:-1]
+    except:
+        res_pcs=""
+    res = (res_fw+res_pcs).split("\\n")
+    return res
+    
+
+download_fw_pcs("172.168.1.10")
+
+
 # print(ping("172.168.1.10",1))
-download_file("http://172.168.1.10:8010/capture/?type=raw_raw&duration=1","1.raw")
+# download_file("http://172.168.1.10:8010/capture/?type=raw_raw&duration=1","1.raw")
 
 
 # lidar_util/inno_pc_client" --lidar-ip 10.42.0.91 --lidar-port 8010 --lidar-udp-port 9600 --udp-port 9100 --tcp-port 8600
