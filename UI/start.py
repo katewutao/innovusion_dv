@@ -802,7 +802,6 @@ class TestMain(QThread):
             os.system("python3 ./power.py")
         if self.cb_lidar_mode.currentText()=="CAN":
             os.system("python3 lib/set_usbcanfd_env.py demo")
-            os.system(f'exec python3 can_cancle.py -c {self.can_mode}')
             subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         for idx,ip in enumerate(self.ip_list):
             ping_sure(ip,3)
