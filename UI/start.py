@@ -120,13 +120,14 @@ def handle_exceptions(func):
 
 
 def ping(ip,time_interval):
+    res = False
     try:
         respon=requests.get(f"http://{ip}",timeout=time_interval)
-        if respon.status_code==200:
-            return True
+        respon.close()
+        res = True
     except:
         pass
-    return False
+    return res
     
 
 def downlog(ip,log_path,time_path):

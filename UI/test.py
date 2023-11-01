@@ -20,13 +20,14 @@ def get_curl_result(command,timeout=0.2):
     return res,excute_flag
 
 def ping(ip,time_interval):
+    res = False
     try:
         respon=requests.get(f"http://{ip}",timeout=time_interval)
-        if respon.status_code==200:
-            return True
+        respon.close()
+        res = True
     except Exception as e:
         print(e)
-    return False
+    return res
 
 def download_file(url,filename):
     print(f"download {filename} start")
@@ -60,7 +61,7 @@ def download_fw_pcs(ip):
     return res
     
 
-download_fw_pcs("172.168.1.10")
+print(ping("172.168.1.10",1))
 
 
 # print(ping("172.168.1.10",1))
