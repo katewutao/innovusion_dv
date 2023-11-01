@@ -79,7 +79,7 @@ def extend_pcs_log_size(util_path,ip,size=200000):
 def get_curl_result(command,timeout=0.2):
     excute_flag=False
     try:
-        request=requests.get(command,timeout=timeout)
+        request=requests.get(command,timeout=timeout,)
         res=request.text
         request.close()
         excute_flag=True

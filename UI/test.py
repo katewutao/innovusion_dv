@@ -1,6 +1,7 @@
 import subprocess
 import requests
 import pandas as pd
+import time
 
 def get_command_result(command):
     cmd = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
@@ -21,13 +22,22 @@ def get_curl_result(command,timeout=0.2):
 
 def ping(ip,time_interval):
     res = False
+    respon=None
     try:
         respon=requests.get(f"http://{ip}",timeout=time_interval)
-        respon.close()
         res = True
-    except Exception as e:
-        print(e)
+    except requests.exceptions.ConnectionError:
+        print("sleep 1s")
+        time.sleep(1)
+    if respon:
+        respon.close()
     return res
+
+def ping_sure(ip,interval_time):
+    while True:
+        if ping(ip,interval_time):
+            break
+    print(f' lidar {ip} has connected')  
 
 def download_file(url,filename):
     print(f"download {filename} start")
@@ -61,7 +71,7 @@ def download_fw_pcs(ip):
     return res
     
 
-print(ping("172.168.1.10",1))
+print(ping_sure("172.168.1.1",1))
 
 
 # print(ping("172.168.1.10",1))

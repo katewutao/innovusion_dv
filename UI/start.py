@@ -121,12 +121,17 @@ def handle_exceptions(func):
 
 def ping(ip,time_interval):
     res = False
+    respon=None
     try:
         respon=requests.get(f"http://{ip}",timeout=time_interval)
-        respon.close()
         res = True
-    except Exception as e:
-        print(e)
+    except requests.exceptions.ConnectTimeout:
+        pass
+    except requests.exceptions.ConnectionError:
+        print(f"{ip} check ping too much, sleep 3s")
+        time.sleep(3)
+    if respon:
+        respon.close()
     return res
     
 
@@ -415,7 +420,7 @@ class one_lidar_record_thread(QThread):
     @handle_exceptions
     def run(self):
         while True:
-            if ping(self.ip,1) or self.isInterruptionRequested():
+            if ping(self.ip,3) or self.isInterruptionRequested():
                 break
         ip_name=self.ip.replace('.', '_')
         save_log=os.path.join(self.record_folder,f"testlog_{ip_name}.txt")
@@ -585,7 +590,7 @@ class MonitorFault(QThread):
             print(f"file {util_path} not exists!")
             return None
         while True:
-            if ping(self.ip,1) or self.isInterruptionRequested():
+            if ping(self.ip,3) or self.isInterruptionRequested():
                 break
         if not os.path.exists(self.savepath):
             try:
