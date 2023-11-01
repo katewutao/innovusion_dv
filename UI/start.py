@@ -173,7 +173,7 @@ def init_power():
 def ping_sure(ip,interval_time):
     flag=ping(ip,interval_time)
     while not flag:
-        print(f' please connect lidar {ip}')
+        print(f'please connect lidar {ip}')
         flag=ping(ip,interval_time)
     print(f' lidar {ip} has connected')    
     
@@ -240,7 +240,7 @@ def cancle_can(ip_list,can_mode="Default"):
     print(f"start set lidar power mode")
     subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
-        ping_sure(ip,0.5)
+        ping_sure(ip,3)
         while True:
             if set_lidar_mode(ip,"power",can_mode):
                 break
@@ -805,7 +805,7 @@ class TestMain(QThread):
             os.system(f'exec python3 can_cancle.py -c {self.can_mode}')
             subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         for idx,ip in enumerate(self.ip_list):
-            ping_sure(ip,0.5)
+            ping_sure(ip,3)
             while True:
                 try:
                     down_count=0
