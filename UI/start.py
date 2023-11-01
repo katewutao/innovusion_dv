@@ -125,8 +125,8 @@ def ping(ip,time_interval):
         respon=requests.get(f"http://{ip}",timeout=time_interval)
         respon.close()
         res = True
-    except:
-        pass
+    except Exception as e:
+        print(e)
     return res
     
 
@@ -172,10 +172,9 @@ def init_power():
     
     
 def ping_sure(ip,interval_time):
-    flag=ping(ip,interval_time)
-    while not flag:
-        print(f'please connect lidar {ip}')
-        flag=ping(ip,interval_time)
+    while True:
+        if ping(ip,interval_time):
+            break
     print(f' lidar {ip} has connected')    
     
 def get_promission(ip,time_out):
