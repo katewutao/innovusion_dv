@@ -230,7 +230,7 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Lidar Mode"))
         self.btn_start.setText(_translate("MainWindow", "Test Start"))
         self.label_3.setText(_translate("MainWindow", "Test Log:"))
-        self.label_2.setText(_translate("MainWindow", "Innovusion DV Test Tool"))
+        self.label_2.setText(_translate("MainWindow", "Seyond DV Test Tool"))
         self.label_5.setText(_translate("MainWindow", "Lidar Status"))
         self.label_6.setText(_translate("MainWindow", "Test Name"))
         self.label_7.setText(_translate("MainWindow", "Power Off Empty Data"))

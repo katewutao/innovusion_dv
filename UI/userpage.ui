@@ -90,7 +90,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Innovusion DV Test Tool</string>
+     <string>Seyond DV Test Tool</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
