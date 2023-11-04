@@ -180,6 +180,8 @@ def ping_sure(ip,interval_time):
     while True:
         if ping(ip,interval_time):
             break
+        else:
+            print(f"{ip} is not connect")
     print(f' lidar {ip} has connected')    
     
 def get_promission(ip,time_out):
