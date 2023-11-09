@@ -2,6 +2,10 @@ import subprocess
 import requests
 import pandas as pd
 import time
+import re
+import builtins
+import os
+import datetime
 
 def get_command_result(command):
     cmd = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
@@ -9,6 +13,20 @@ def get_command_result(command):
     cmd.kill()
     return res[0]
 
+
+builtins.print_origin=print
+def rewrite_print():
+    def print_res(*args, **kwargs):
+        current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        msg = ' '.join(map(str, args))  # Convert all arguments to strings and join them with spaces
+        builtins.print_origin(f"[{current_date}] {msg}", **kwargs)
+    return print_res
+
+def set_reboot(ip):
+    command = f"http://{ip}:8010/command/?set_reboot=1"
+    get_curl_result(command,1)
+
+    
 def get_curl_result(command,timeout=0.2):
     excute_flag=False
     try:
@@ -37,6 +55,8 @@ def ping_sure(ip,interval_time):
     while True:
         if ping(ip,interval_time):
             break
+        else:
+            print(f"{ip} not connect")
     print(f' lidar {ip} has connected')  
 
 def download_file(url,filename):
@@ -67,11 +87,31 @@ def download_fw_pcs(ip):
         res_pcs=str(response.content)[2:-1]
     except:
         res_pcs=""
-    res = (res_fw+res_pcs).split("\\n")
+    res = (res_fw).split("\\n")
     return res
     
+if __name__=="__main__":
+    builtins.print=rewrite_print()
+    ip = "172.168.1.10"
+    i=0
+    while True:
+        i+=1
+        print("start reboot")
+        ping_sure(ip,1)
+        set_reboot(ip)
+        time.sleep(60)
+        log = download_fw_pcs(ip)
+        with open(f"lidar-log{i}.txt","w") as f:
+            f.write("\n".join(log))
+        stop_flag = False
+        for line in log:
+            if re.search("fault id.*from.*26[7|8]",line):
+                stop_flag = True
+                break
+        if stop_flag:
+            break
+    print("fault has set,test stop")
 
-print(ping_sure("172.168.1.1",1))
 
 
 # print(ping("172.168.1.10",1))
