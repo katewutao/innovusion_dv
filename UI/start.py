@@ -820,6 +820,7 @@ class TestMain(QThread):
                             break
                         down_count+=1
                     extend_pcs_log_size("./lidar_util/innovusion_lidar_util",ip,50000)
+                    open_broadcast("./lidar_util/innovusion_lidar_util",ip)
                     get_promission(ip,float(self.txt_timeout.text()))
                     if self.cb_lidar_mode.currentText()=="CAN":
                         while True:
@@ -828,6 +829,7 @@ class TestMain(QThread):
                     break
                 except Exception as e:
                     print(e)
+            reboot_lidar(ip)
             record_file=os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv')
             if not os.path.exists(record_file):
                 with open(record_file,"w",newline="\n") as f:

@@ -71,6 +71,45 @@ def extend_pcs_log_size(util_path,ip,size=200000):
     else:
         print(f"{ip} extend log size fail")
     os.remove(save_cfg_file)
+    
+
+
+
+def open_broadcast(util_path,ip):
+    if not os.path.exists(util_path):
+        print(f"Can't find {util_path}")
+        return
+    save_cfg_file = "1.cfg"
+    command=f'"{util_path}" {ip} download_internal_file PCS_ENV "{save_cfg_file}"'
+    if os.path.exists(save_cfg_file):
+        os.remove(save_cfg_file)
+    cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+    res=cmd.communicate()
+    if not os.path.exists(save_cfg_file):
+        print(f"Can't get {ip} PCS_ENV")
+        return
+    with open(save_cfg_file,"r") as f:
+        pcs_env=f.read()
+    pcs_env_lines = pcs_env.split("\n")
+    pcs_env = ""
+    for pcs_env_line in pcs_env_lines:
+        ret=re.search("(UDP_IP=.+)",pcs_env_line)
+        if not ret and pcs_env_line != "":
+            pcs_env = pcs_env + pcs_env_line + "\n"
+    with open(save_cfg_file,"w") as f:
+        f.write(pcs_env)
+    command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
+    cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+    res=cmd.communicate()
+    if "succe" in res[0]:
+        print(f"{ip} set broadcast success")
+    else:
+        print(f"{ip} set broadcast fail")
+    os.remove(save_cfg_file)
+    
+
+def reboot_lidar(ip):
+    print(f"reboot lidar {ip}")
     while True:
         if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
             break
@@ -115,4 +154,5 @@ def get_current_date():
     return start_time
 
 if __name__=="__main__":
-    extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
+    # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
+    open_broadcast("./lidar_util/innovusion_lidar_util","172.168.1.10")
