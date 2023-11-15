@@ -603,7 +603,6 @@ class MonitorFault(QThread):
         command3=f'http://localhost:{self.tcp_port}/command/?set_faults_save_raw=ffffffffffffffff'
         command4=f'http://localhost:{self.tcp_port}/command/?set_save_raw_data={self.raw_port}'
         raw_count=len(os.listdir(self.savepath))
-        print(f"{self.ip} inno_pc_client start boot")
         is_first_write=True
         while True:
             if self.isInterruptionRequested():
