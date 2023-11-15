@@ -231,10 +231,7 @@ def set_lidar_mode(ip,lidar_type,can_mode):
     if re.search(f"boot from.+{lidar_type}",res[0]):
         print(f"{ip} set {lidar_type} mode success")
         if can_mode=="Robin":
-            while True:
-                if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
-                    break
-            time.sleep(10)
+            reboot_lidar(ip)
         return True
     else:
         print(f"{ip} set {lidar_type} mode fail")
@@ -833,7 +830,7 @@ class TestMain(QThread):
             record_file=os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv')
             if not os.path.exists(record_file):
                 with open(record_file,"w",newline="\n") as f:
-                    f.write(self.record_header)    
+                    f.write(self.record_header)  
         if self.cb_lidar_mode.currentText()!="No Power":
             import power
             self.power_monitor=Power_monitor()

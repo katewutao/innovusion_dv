@@ -1,4 +1,4 @@
-import platform,subprocess,os,sys,datetime,re
+import platform,subprocess,os,sys,datetime,re,time
 import requests
 
 def kill_subprocess(cmd):
@@ -113,7 +113,7 @@ def reboot_lidar(ip):
     while True:
         if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
             break
-
+    time.sleep(10)
 
 def get_curl_result(command,timeout=0.2):
     excute_flag=False
