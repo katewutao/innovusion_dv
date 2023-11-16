@@ -386,35 +386,6 @@ class one_lidar_record_thread(QThread):
         self.row_idx=row_idx
         self.record_header=record_header
         self.record_func=record_func 
-    
-
-    def get_customerid(self):
-        import socket
-        customerid = 'null'
-        command = 'mfg_rd "CustomerSN"\n'
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.connect((self.ip, 8002))
-        except:
-            print(f"{self.ip} 8002 not connect")
-            try:
-                s.connect((self.ip, 8001))
-            except:
-                print(f"{self.ip} 8001 not connect")
-                return ""
-        s.settimeout(1)
-        s.sendall(command.encode())
-        try:
-            data=s.recv(1024)
-            lst = data.decode('ascii').split('\n')
-            for s in lst:
-                ret=re.search('CustomerSN.*?:\s*[\'|"](.+)[\'|"]',s)
-                if ret:
-                    customerid=ret.group(1)
-                    break
-        except Exception as e:
-            customerid=None
-        return customerid 
 
     @handle_exceptions
     def run(self):
@@ -434,7 +405,7 @@ class one_lidar_record_thread(QThread):
                 sn=sn_res[0]
                 break
         while True:
-            CustomerSN=self.get_customerid()
+            CustomerSN=get_customerid(self.ip)
             if CustomerSN!=None:
                 break
         global pow_status

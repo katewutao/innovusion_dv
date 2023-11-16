@@ -1,5 +1,5 @@
 import platform,subprocess,os,sys,datetime,re,time
-import requests
+import requests,socket
 
 def kill_subprocess(cmd):
     if "windows" in platform.platform().lower():
@@ -153,6 +153,51 @@ def get_current_date():
     start_time=f"{ret[0].zfill(4)}{ret[1].zfill(2)}{ret[2].zfill(2)}T{ret[3].zfill(2)}{ret[4].zfill(2)}{ret[5].zfill(2)}"
     return start_time
 
+
+def send_tcp(command,ip,port=8001):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5)
+    res = ""
+    try:
+        sock.connect((ip, port))
+    except:
+        print(f"connect {ip} {port} fail")
+        sock.close()
+        return res
+    sock.sendall(command.encode())
+    first_recv = True
+    while True:
+        try:
+            response = sock.recv(1024).decode()
+        except:
+            break
+        if first_recv:
+            first_recv = False
+            sock.settimeout(3)
+        res += response
+        if response=="":
+            break
+    sock.close()
+    return res
+
+def get_customerid(ip):
+    customerid = 'null'
+    command = 'mfg_rd "CustomerSN"'
+    s = send_tcp(command,ip,8001)
+    if s == "":
+        s = send_tcp(command,ip,8002)
+    ret=re.search('CustomerSN.*?:\s*[\'|"](.+)[\'|"]',s)
+    if ret:
+        customerid=ret.group(1)
+    return customerid
+
+
 if __name__=="__main__":
     # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
-    open_broadcast("./lidar_util/innovusion_lidar_util","172.168.1.10")
+    # open_broadcast("./lidar_util/innovusion_lidar_util","172.168.1.10")
+    # command = 'mfg_rd "CustomerSN"'
+    # t= time.time()
+    # s = send_tcp(command,"172.168.1.10",8088)
+    # print(time.time()-t)
+    res = send_tcp('apd_scanning',"172.168.1.10")
+    print(res)
