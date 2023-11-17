@@ -763,6 +763,12 @@ class TestMain(QThread):
     def run(self):
         if not os.path.exists(self.save_folder):
             os.makedirs(self.save_folder)
+        util_dir="lidar_util"
+        if "linux" in platform.platform().lower():
+            util_name="innovusion_lidar_util"
+        elif "windows" in platform.platform().lower():
+            util_name="innovusion_lidar_util.exe"
+        util_path=os.path.join(util_dir,util_name)
         kill_client()
         if self.txt_record_interval.text().strip()=="":
             print(f"please input record interval time")
@@ -786,8 +792,8 @@ class TestMain(QThread):
                         if down_sdk(ip) or down_count>10:
                             break
                         down_count+=1
-                    extend_pcs_log_size("./lidar_util/innovusion_lidar_util",ip,50000)
-                    open_broadcast("./lidar_util/innovusion_lidar_util",ip)
+                    extend_pcs_log_size(util_path,ip,50000)
+                    open_broadcast(util_path,ip)
                     get_promission(ip,float(self.txt_timeout.text()))
                     if self.cb_lidar_mode.currentText()=="CAN":
                         while True:
