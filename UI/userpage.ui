@@ -591,6 +591,25 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <widget class="QLabel" name="lb_test_time">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>590</y>
+      <width>651</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color:rgb(0, 85, 255)</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
    <zorder>frame</zorder>
    <zorder>txt_log</zorder>
    <zorder>label_4</zorder>
@@ -611,6 +630,7 @@
    <zorder>lb_power</zorder>
    <zorder>lb_power_status</zorder>
    <zorder>lb_version</zorder>
+   <zorder>lb_test_time</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_record_start">

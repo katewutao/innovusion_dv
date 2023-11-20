@@ -25,6 +25,28 @@ def multi_cmd(command_list,max_thread_counter):
     for cmd in cmds:
         cmd.wait()
 
+class TimeConvert(object):
+    @classmethod
+    def time2hms(cls,str1):
+        ret=re.search("^(\d+)$",str(str1))
+        time_s=int(ret.group(1))
+        h=time_s//3600
+        m=time_s%3600//60
+        s=time_s%60
+        h=str(h).zfill(2)
+        m=str(m).zfill(2)
+        s=str(s).zfill(2)
+        return f"{h}:{m}:{s}"
+    
+    @classmethod
+    def hms2time(cls,str1):
+        ret=re.search("^(\d+):(\d+):(\d+)$",str1)
+        s=int(ret.group(1))*3600+int(ret.group(2))*60+int(ret.group(3))
+        return s
+
+
+
+
 def extend_pcs_log_size(util_path,ip,size=200000):
     if not os.path.exists(util_path):
         print(f"Can't find {util_path}")

@@ -942,7 +942,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.test_folder="./test_config"
         self.power_folder="./power"
 
-
+        self.timer = QTimer()
+        
         self.cb_project.currentIndexChanged.connect(self.project_changed)
         self.cb_test_name.currentIndexChanged.connect(self.test_name_changed)
         self.cb_power_type.currentIndexChanged.connect(self.power_changed)
@@ -978,6 +979,15 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.cursor=self.txt_log.textCursor()
         self.txt_log.moveCursor(self.cursor.End) 
         QtWidgets.QApplication.processEvents()
+    
+    
+    @handle_exceptions
+    def update_test_time(self):
+        time_s=TimeConvert.hms2time(self.lb_test_time.text())
+        time_s+=1
+        hms=TimeConvert.time2hms(time_s)
+        self.lb_test_time.setText(hms)
+    
     
     @handle_exceptions
     def init_table(self,row_counter,columns):
@@ -1133,8 +1143,20 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     @handle_exceptions
     def test_main(self):
+        if self.txt_off_counter.text().strip()=="":  #setReadOnly(True)
+            print(f"please input power off empty data number")
+            return        
+        if self.txt_record_interval.text().strip()=="":  #setReadOnly(True)
+            print(f"please input record interval time")
+            return
+        if self.txt_timeout.text().strip()=="":  #setReadOnly(True)
+            print(f"please input timeout")
+            return
         self.pgb_test.setValue(0)
         self.test_set_off()
+        self.lb_test_time.setText("00:00:00")
+        self.timer.start(1000)
+        self.timer.timeout.connect(self.update_test_time)
         print(f"Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s")
         self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
@@ -1145,10 +1167,11 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.test.sigout_power.connect(self.power_status)
         self.test.start()
         
-    
     def test_finish(self,str1):
         self.test_set_on()
         self.save_tbw_fault()
+        self.timer.stop()
+        self.timer.timeout.disconnect(self.update_test_time)
         print(f"Test finished")
     
     def test_set_off(self):
