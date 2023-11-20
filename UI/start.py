@@ -714,8 +714,11 @@ class TestMain(QThread):
                 monitor_thread.start()
                 self.monitors.append(monitor_thread)
                 print(f"start add fault monitor success {ip}")
-            time.sleep(power_one_time[0]-time.time()+t)
+            sleep_time = power_one_time[0]-time.time()+t
+            if sleep_time > 0:
+                time.sleep(sleep_time)
         threads=[]
+        print("start download lidar log")
         for ip in ip_list:
             thread=threading.Thread(target=downlog,args=(ip,log_path,time_path,))
             thread.start()
