@@ -1167,12 +1167,14 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.test.sigout_set_fault.connect(self.report_fault)
         self.test.sigout_power.connect(self.power_status)
         self.test.start()
-        
+    
+    @handle_exceptions
     def test_finish(self,str1):
         self.test_set_on()
         self.save_tbw_fault()
-        self.timer.stop()
-        self.timer.timeout.disconnect(self.update_test_time)
+        if hasattr(self,"timer"):
+            self.timer.stop()
+            self.timer.timeout.disconnect(self.update_test_time)
         print(f"Test finished")
     
     def test_set_off(self):
@@ -1212,7 +1214,11 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     @handle_exceptions
     def test_stop(self):
-        self.test.stop()
+        if hasattr(self,"test"):
+            self.test.stop()
+        if hasattr(self,"timer"):
+            self.timer.stop()
+            self.timer.timeout.disconnect(self.update_test_time)
         self.test_set_on()
     
     @handle_exceptions
