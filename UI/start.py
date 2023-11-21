@@ -692,14 +692,15 @@ class TestMain(QThread):
                     last_timestamp=current_timestamp
                     print(f"set power voltage failed, {power_one_time[2]}V")
                 time.sleep(2)
-        print(f"start monitor {int(power_one_time[0]-time.time()+t)}s")
+        sleep_time = int(power_one_time[0]-time.time()+t)
+        print(f"start monitor {sleep_time}s")
         time_path=get_time()
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         self.power_monitor.resume()
         self.records=[]
         self.monitors=[]
-        if power_one_time[0]-time.time()+t>2:
+        if sleep_time>2:
             for ip_num,ip in enumerate(ip_list):
                 print(f"start add record {ip}")
                 record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
@@ -717,20 +718,20 @@ class TestMain(QThread):
             sleep_time = power_one_time[0]-time.time()+t
             if sleep_time > 0:
                 time.sleep(sleep_time)
-        threads=[]
-        print("start download lidar log")
-        for ip in ip_list:
-            thread=threading.Thread(target=downlog,args=(ip,log_path,time_path,))
-            thread.start()
-            threads.append(thread)
-        for temp_thread in threads:
-            temp_thread.join()
-        for monitor in self.monitors:
-            if monitor.isRunning():
-                monitor.stop()
-        for record in self.records:
-            if record.isRunning():
-                record.stop()
+            threads=[]
+            print("start download lidar log")
+            for ip in ip_list:
+                thread=threading.Thread(target=downlog,args=(ip,log_path,time_path,))
+                thread.start()
+                threads.append(thread)
+            for temp_thread in threads:
+                temp_thread.join()
+            for monitor in self.monitors:
+                if monitor.isRunning():
+                    monitor.stop()
+            for record in self.records:
+                if record.isRunning():
+                    record.stop()
         self.sigout_power.emit(False)
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can.kill()
