@@ -143,6 +143,7 @@ def down_sdk_command(util_names,public_path,command,util_folder,rm_sdk):
     return download
 
 def down_sdk(ip,sdk_version=None,rm_sdk=True):
+    print(f"{ip} start download sdk, please wait")
     if sdk_version==None:
         sdk_version = get_sdk_version(ip)
     if sdk_version!=load_sdk_version():

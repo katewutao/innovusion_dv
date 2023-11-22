@@ -543,7 +543,7 @@ class MonitorFault(QThread):
         util_dir="lidar_util"
         util_path=os.path.join(util_dir,"inno_pc_client")
         fault_log_path=os.path.join(self.faultpath,"fault")
-        client_log_folder=os.path.join(self.faultpath,"client_log")
+        client_log_folder=os.path.join(self.faultpath,"client_log",self.ip)
         if not os.path.exists(fault_log_path):
             try:
                 os.makedirs(fault_log_path)
@@ -555,7 +555,7 @@ class MonitorFault(QThread):
             except:
                 pass
         fault_log_path=os.path.join(fault_log_path,self.ip.replace(".","_")+".txt")
-        client_log_path=os.path.join(client_log_folder,f"{self.ip}_{get_current_date()}.txt")
+        client_log_path=os.path.join(client_log_folder,f"{get_current_date()}.txt")
         if not os.path.exists(util_path):
             print(f"file {util_path} not exists!")
             return None
@@ -567,15 +567,16 @@ class MonitorFault(QThread):
                 os.makedirs(self.savepath)
             except:
                 pass
-        i=1
-        newest_path=self.newest_folder(self.savepath,i)
+            
+        is_first_write=True
+        log_lines_counter = 0
+        raw_idx = 1
+        newest_path=self.newest_folder(self.savepath,raw_idx)
         command1=f'exec "{util_path}" --lidar-ip {self.ip} --lidar-port {self.lidar_port} --lidar-udp-port {self.lidar_udp_port} --udp-port {self.udp_port} --tcp-port {self.tcp_port}'
         command2=f'http://localhost:{self.tcp_port}/command/?set_raw_data_save_path={newest_path}'
         command3=f'http://localhost:{self.tcp_port}/command/?set_faults_save_raw=ffffffffffffffff'
         command4=f'http://localhost:{self.tcp_port}/command/?set_save_raw_data={self.raw_port}'
         raw_count=len(os.listdir(self.savepath))
-        is_first_write=True
-        log_lines_counter = 0
         while True:
             if self.isInterruptionRequested():
                 break
@@ -599,7 +600,7 @@ class MonitorFault(QThread):
                         log_lines_counter = log_lines_counter + 1
                         if log_lines_counter == 50000:
                             log_lines_counter = 0
-                            client_log_path=os.path.join(client_log_folder,f"{self.ip}_{get_current_date()}.txt")      
+                            client_log_path=os.path.join(client_log_folder,f"{get_current_date()}.txt")      
             except:
                 pass
             if not cmd_run_flag:
@@ -612,10 +613,10 @@ class MonitorFault(QThread):
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.1"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log.2"))
             if self.check_raw(newest_path):
-                if i>=raw_count:
+                if raw_idx >= raw_count:
                     print(f"record raw data to {os.path.abspath(newest_path)}")
-                i+=1
-                newest_path=self.newest_folder(self.savepath,i)
+                raw_idx += 1
+                newest_path=self.newest_folder(self.savepath,raw_idx)
                 command2=f'http://localhost:{self.tcp_port}/command/?set_raw_data_save_path={newest_path}'
                 get_curl_result(command2,1)
                 get_curl_result(command3,1)
