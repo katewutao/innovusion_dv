@@ -543,19 +543,19 @@ class MonitorFault(QThread):
         util_dir="lidar_util"
         util_path=os.path.join(util_dir,"inno_pc_client")
         fault_log_path=os.path.join(self.faultpath,"fault")
-        client_log_path=os.path.join(self.faultpath,"client_log")
+        client_log_folder=os.path.join(self.faultpath,"client_log")
         if not os.path.exists(fault_log_path):
             try:
                 os.makedirs(fault_log_path)
             except:
                 pass
-        if not os.path.exists(client_log_path):
+        if not os.path.exists(client_log_folder):
             try:
-                os.makedirs(client_log_path)
+                os.makedirs(client_log_folder)
             except:
                 pass
         fault_log_path=os.path.join(fault_log_path,self.ip.replace(".","_")+".txt")
-        client_log_path=os.path.join(client_log_path,f"{self.ip}_{get_current_date()}.txt")
+        client_log_path=os.path.join(client_log_folder,f"{self.ip}_{get_current_date()}.txt")
         if not os.path.exists(util_path):
             print(f"file {util_path} not exists!")
             return None
@@ -575,6 +575,7 @@ class MonitorFault(QThread):
         command4=f'http://localhost:{self.tcp_port}/command/?set_save_raw_data={self.raw_port}'
         raw_count=len(os.listdir(self.savepath))
         is_first_write=True
+        log_lines_counter = 0
         while True:
             if self.isInterruptionRequested():
                 break
@@ -595,6 +596,10 @@ class MonitorFault(QThread):
                                 f.write(self.download_fw_pcs())
                                 is_first_write=False
                             f.write(f"{res}\n")
+                        log_lines_counter = log_lines_counter + 1
+                        if log_lines_counter == 50000:
+                            log_lines_counter = 0
+                            client_log_path=os.path.join(client_log_folder,f"{self.ip}_{get_current_date()}.txt")      
             except:
                 pass
             if not cmd_run_flag:
