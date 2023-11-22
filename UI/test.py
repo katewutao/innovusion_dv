@@ -44,9 +44,11 @@ def ping(ip,time_interval):
     try:
         respon=requests.get(f"http://{ip}",timeout=time_interval)
         res = True
+    except requests.exceptions.ConnectTimeout:
+        pass
     except requests.exceptions.ConnectionError:
-        print("sleep 1s")
-        time.sleep(1)
+        print(f"{ip} check ping too much, sleep 3s")
+        time.sleep(3)
     if respon:
         respon.close()
     return res
@@ -93,24 +95,7 @@ def download_fw_pcs(ip):
 if __name__=="__main__":
     builtins.print=rewrite_print()
     ip = "172.168.1.10"
-    i=0
-    while True:
-        i+=1
-        print("start reboot")
-        ping_sure(ip,1)
-        set_reboot(ip)
-        time.sleep(60)
-        log = download_fw_pcs(ip)
-        with open(f"lidar-log{i}.txt","w") as f:
-            f.write("\n".join(log))
-        stop_flag = False
-        for line in log:
-            if re.search("fault id.*from.*26[7|8]",line):
-                stop_flag = True
-                break
-        if stop_flag:
-            break
-    print("fault has set,test stop")
+    ping_sure(ip,0.2)
 
 
 

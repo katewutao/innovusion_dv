@@ -555,7 +555,7 @@ class MonitorFault(QThread):
             except:
                 pass
         fault_log_path=os.path.join(fault_log_path,self.ip.replace(".","_")+".txt")
-        client_log_path=os.path.join(client_log_path,f"{self.ip}.txt")
+        client_log_path=os.path.join(client_log_path,f"{self.ip}_{get_current_date()}.txt")
         if not os.path.exists(util_path):
             print(f"file {util_path} not exists!")
             return None
