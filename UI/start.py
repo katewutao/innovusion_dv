@@ -203,19 +203,38 @@ def get_promission(ip,time_out):
 
 def get_circle_time(dict_config):
     times=[]
-    for key in dict_config.keys():
-        temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*):?(\d+\.?\d*)?",key)
-        for i in range(len(temp_times)):
-            temp_times[i]=list(temp_times[i])
-            for j in range(len(temp_times[i])):
-                if j!=2:
-                    temp_times[i][j]=float(temp_times[i][j])*60
-                else:
-                    if temp_times[i][j]!="":
-                        temp_times[i][j]=float(temp_times[i][j])
+    if isinstance(dict_config,dict):
+        for key in dict_config.keys():
+            temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*):?(\d+\.?\d*)?",key)
+            for i in range(len(temp_times)):
+                temp_times[i]=list(temp_times[i])
+                for j in range(len(temp_times[i])):
+                    if j!=2:
+                        temp_times[i][j]=float(temp_times[i][j])*60
                     else:
-                        temp_times[i][j]=14
-        times+=temp_times*dict_config[key]
+                        if temp_times[i][j]!="":
+                            temp_times[i][j]=float(temp_times[i][j])
+                        else:
+                            temp_times[i][j]=14
+            times+=temp_times*dict_config[key]
+    elif isinstance(dict_config,str):
+        dict_config=dict_config.split("\n")
+        for one_line in dict_config:
+            temp_times=re.findall("(\d+\.?\d*):(\d+\.?\d*):?(\d+\.?\d*)?",one_line)
+            temp_circle=re.search('''(".+"|'.+').*?(\d+)''',one_line)
+            if len(temp_times)>0 and temp_circle:
+                circle = int(temp_circle.group(2))
+                for i in range(len(temp_times)):
+                    temp_times[i]=list(temp_times[i])
+                    for j in range(len(temp_times[i])):
+                        if j!=2:
+                            temp_times[i][j]=float(temp_times[i][j])*60
+                        else:
+                            if temp_times[i][j]!="":
+                                temp_times[i][j]=float(temp_times[i][j])
+                            else:
+                                temp_times[i][j]=14
+                times+=temp_times*circle        
     return times
 
 

@@ -6,6 +6,7 @@ import re
 import builtins
 import os
 import datetime
+from start import get_circle_time
 
 def get_command_result(command):
     cmd = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
@@ -93,6 +94,9 @@ def download_fw_pcs(ip):
     return res.replace("\\n","\n")
     
 if __name__=="__main__":
+    # import importlib
+    # a= importlib.import_module("test_config.K19-1")
+    # get_circle_time(a.config["time_dict"])
     builtins.print=rewrite_print()
     ip = "172.168.1.10"
     print(download_fw_pcs(ip))
