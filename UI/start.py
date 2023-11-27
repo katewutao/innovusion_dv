@@ -492,17 +492,19 @@ class MonitorFault(QThread):
         command_fw=f"http://{self.ip}:8675/lidar-log.txt"
         command_pcs=f"http://{self.ip}:8675/inno_pc_server.txt"
         try:
-            response = requests.get(command_fw)
+            response = requests.get(command_fw,timeout=3)
             response.raise_for_status()
             res_fw=str(response.content)[2:-1]
         except:
-            res_fw=""
+            print(f"{self.ip} download fw log failed")
+            return ""
         try:
-            response = requests.get(command_pcs)
+            response = requests.get(command_pcs,timeout=3)
             response.raise_for_status()
             res_pcs=str(response.content)[2:-1]
         except:
-            res_pcs=""
+            print(f"{self.ip} download pcs log failed")
+            return res_fw.replace("\\n","\n")
         res = (res_fw+res_pcs)
         return res.replace("\\n","\n")
         
@@ -599,8 +601,13 @@ class MonitorFault(QThread):
                     if res!=None:
                         with open(client_log_path,"a") as f:
                             if is_first_write:
-                                f.write(self.download_fw_pcs())
-                                is_first_write=False
+                                fw_pcs = self.download_fw_pcs()
+                                if fw_pcs!="":
+                                    f.write(fw_pcs)
+                                    is_first_write=False
+                                else:
+                                    self.reboot_cmd(command1,command2,command3,command4)
+                                    continue
                             f.write(f"{res}\n")
                         log_lines_counter = log_lines_counter + 1
                         if log_lines_counter == 50000:

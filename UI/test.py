@@ -78,24 +78,24 @@ def download_fw_pcs(ip):
     command_fw=f"http://{ip}:8675/lidar-log.txt"
     command_pcs=f"http://{ip}:8675/inno_pc_server.txt"
     try:
-        response = requests.get(command_fw)
+        response = requests.get(command_fw,timeout=1)
         response.raise_for_status()
         res_fw=str(response.content)[2:-1]
     except:
         res_fw=""
     try:
-        response = requests.get(command_pcs)
+        response = requests.get(command_pcs,timeout=1)
         response.raise_for_status()
         res_pcs=str(response.content)[2:-1]
     except:
         res_pcs=""
-    res = (res_fw).split("\\n")
-    return res
+    res = (res_fw+res_pcs)
+    return res.replace("\\n","\n")
     
 if __name__=="__main__":
     builtins.print=rewrite_print()
     ip = "172.168.1.10"
-    ping_sure(ip,0.2)
+    print(download_fw_pcs(ip))
 
 
 
