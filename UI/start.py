@@ -1171,8 +1171,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         if self.txt_timeout.text().strip()=="":  #setReadOnly(True)
             print(f"please input timeout")
             return
+        self.btn_start.setEnabled(False)
         self.pgb_test.setValue(0)
-        self.test_set_off()
         self.lb_test_time.setText("00:00:00")
         self.timer.start(1000)
         self.timer.timeout.connect(self.update_test_time)
@@ -1185,6 +1185,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.test.sigout_set_fault.connect(self.report_fault)
         self.test.sigout_power.connect(self.power_status)
         self.test.start()
+        self.test_set_off()
     
     @handle_exceptions
     def test_finish(self,str1):
@@ -1192,7 +1193,10 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.save_tbw_fault()
         if hasattr(self,"timer"):
             self.timer.stop()
-            self.timer.timeout.disconnect(self.update_test_time)
+            try:
+                self.timer.timeout.disconnect(self.update_test_time)
+            except:
+                pass
         print(f"Test finished")
     
     def test_set_off(self):
@@ -1232,11 +1236,15 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     @handle_exceptions
     def test_stop(self):
+        self.btn_stop.setEnabled(False)
         if hasattr(self,"test"):
             self.test.stop()
         if hasattr(self,"timer"):
             self.timer.stop()
-            self.timer.timeout.disconnect(self.update_test_time)
+            try:
+                self.timer.timeout.disconnect(self.update_test_time)
+            except:
+                pass
         self.test_set_on()
     
     @handle_exceptions
