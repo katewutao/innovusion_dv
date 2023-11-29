@@ -507,7 +507,6 @@ class MonitorFault(QThread):
             except:
                 pass
     
-    @time_limited(1)
     def download_fw_pcs(self):
         print(f"{self.ip} download fw and pcs")
         command_fw=f"http://{self.ip}:8675/lidar-log.txt"
