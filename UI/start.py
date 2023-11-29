@@ -365,6 +365,7 @@ class Power_monitor(QThread):
                 if isinstance(temp,list) and len(temp)==2 and re.search("^\d+\.?\d*$",str(temp[0])) and re.search("^\d+\.?\d*$",str(temp[1])):
                     pow_status=temp
                 else:
+                    time.sleep(3)
                     print("power status get failed")
             except:
                 time.sleep(3)
@@ -374,6 +375,7 @@ class Power_monitor(QThread):
                 except:
                     time.sleep(5)
                     print(f"retry get power output value")
+            time.sleep(0.2)
     
     @handle_exceptions
     def pause(self):
