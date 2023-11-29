@@ -529,9 +529,11 @@ class MonitorFault(QThread):
         res = (res_fw+res_pcs)
         return res.replace("\\n","\n")
         
-    @time_limited(1)
     def get_cmd_print(self,fault_log_path):
-        stdout=self.cmd.stdout.readline()
+        try:
+            stdout=self.cmd.stdout.readline()
+        except:
+            return None
         fault_key="(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.*\s([A-Z]+[A-Z_0-9]+).+(?:has|have)\sbeen\s(set|heal)"
         ret=re.search(fault_key,stdout)
         if ret:
@@ -618,8 +620,8 @@ class MonitorFault(QThread):
             try:
                 res=self.get_cmd_print(fault_log_path)
                 if self.cmd.poll()==None:
-                    cmd_run_flag=True
                     if res!=None:
+                        cmd_run_flag=True
                         with open(client_log_path,"a") as f:
                             if is_first_write:
                                 fw_pcs = self.download_fw_pcs()
@@ -633,11 +635,14 @@ class MonitorFault(QThread):
                         log_lines_counter = log_lines_counter + 1
                         if log_lines_counter == 50000:
                             log_lines_counter = 0
-                            client_log_path=os.path.join(client_log_folder,f"{get_current_date()}.txt")      
+                            client_log_path=os.path.join(client_log_folder,f"{get_current_date()}.txt")
+                    else:
+                        print(f"{self.ip} inno_pc_client can't read outline")
+                else:
+                    print(f"{self.ip} inno_pc_client is stop")      
             except:
                 pass
             if not cmd_run_flag:
-                print(f"{self.ip} inno_pc_client is stop")
                 self.reboot_cmd(command1,command2,command3,command4)
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
