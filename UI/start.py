@@ -127,9 +127,11 @@ def ping(ip,time_interval):
         res = True
     except requests.exceptions.ConnectTimeout:
         pass
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError or requests.exceptions.ReadTimeout:
         print(f"{ip} check ping too much, sleep 3s")
         time.sleep(3)
+    except:
+        pass
     if respon:
         respon.close()
     return res
