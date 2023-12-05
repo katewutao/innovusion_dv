@@ -141,17 +141,27 @@ def downlog(ip,log_path,time_path):
     if not ping(ip,1):
         print(f"{ip} is not connect, download log failed") 
         return
-    command1=f"sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
-    command2=f"sshpass -p 4920lidar scp -rp root@{ip}:/mnt '{save_path}'"
+    command1=f"exec sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
+    command2=f"exec sshpass -p 4920lidar scp -rp root@{ip}:/mnt '{save_path}'"
     cmd1=subprocess.Popen(command1,shell=True)
     cmd2=subprocess.Popen(command2,shell=True)
-    cmd1.wait()
-    cmd2.wait()
+    try:
+        cmd1.wait(3)
+    except:
+        cmd1.kill()
+        print(f"{ip} download tmp timeout")
+    try:
+        cmd2.wait(3)
+    except:
+        cmd2.kill()
+        print(f"{ip} download mnt timeout")
+    kill_subprocess(f"scp -rp root@{ip}")
     for root,_,files in os.walk(save_path):
         for file in files:
             ret=re.search("\.txt",file)
-            if not ret:
+            if not ret or ".md" in file:
                 os.remove(os.path.join(root,file))
+    print(f"{ip} download log success")
 
 
 def list_in_str(key_list,str1):
@@ -769,9 +779,11 @@ class TestMain(QThread):
                 threads.append(thread)
             for temp_thread in threads:
                 temp_thread.join()
+            print("start stop monitor fault")
             for monitor in self.monitors:
                 if monitor.isRunning():
                     monitor.stop()
+            print("start stop record")
             for record in self.records:
                 if record.isRunning():
                     record.stop()
