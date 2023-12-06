@@ -24,7 +24,7 @@ import pandas as pd
 import requests
 import shutil,json,importlib
 from common.auto_update_sdk import down_sdk
-from common.excel_format import ExcelFormat
+from utils.excel_format import ExcelFormat
 import math
 from threading import Thread
 import sys
@@ -898,6 +898,11 @@ class TestMain(QThread):
                     print(f"power off failed")
                     time.sleep(2)
             rm_empty_folder(self.save_folder)
+            print("start analyze log")
+            command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
+            print(command)
+            cmd = subprocess.Popen(command,shell=True)
+            cmd.wait()
             self.sigout_test_finish.emit("done")
         else:
             time_path=get_time()
@@ -979,6 +984,11 @@ class TestMain(QThread):
                 temp_thread.join()
             print(f"remove empty folder")
             rm_empty_folder(self.save_folder)
+            print("start analyze log")
+            command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
+            print(command)
+            cmd = subprocess.Popen(command,shell=True)
+            cmd.wait()
             self.sigout_test_finish.emit("done")
         print(f"Test has been stop")
 

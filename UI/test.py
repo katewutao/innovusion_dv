@@ -47,9 +47,11 @@ def ping(ip,time_interval):
         res = True
     except requests.exceptions.ConnectTimeout:
         pass
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError or requests.exceptions.ReadTimeout:
         print(f"{ip} check ping too much, sleep 3s")
         time.sleep(3)
+    except:
+        pass
     if respon:
         respon.close()
     return res
@@ -94,12 +96,8 @@ def download_fw_pcs(ip):
     return res.replace("\\n","\n")
     
 if __name__=="__main__":
-    import importlib
-    a= importlib.import_module("test_config.K19-1")
-    res = get_circle_time(a.config["time_dict"])
-    builtins.print=rewrite_print()
     ip = "172.168.1.10"
-    print(download_fw_pcs(ip))
+    print(ping_sure(ip,1))
 
 
 
