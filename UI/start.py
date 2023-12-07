@@ -571,12 +571,20 @@ class MonitorFault(QThread):
     def reboot_cmd(self,command1,command2,command3,command4):
         if hasattr(self,"cmd"):
             self.cmd.kill()
-        time.sleep(3)
+        time.sleep(1)
         print(f"{self.ip} inno_pc_client start boot")
+        if self.isInterruptionRequested():
+            return
         self.cmd=subprocess.Popen(command1,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,universal_newlines=True)
         time.sleep(1)
+        if self.isInterruptionRequested():
+            return
         get_curl_result(command2,1)
+        if self.isInterruptionRequested():
+            return
         get_curl_result(command3,1)
+        if self.isInterruptionRequested():
+            return
         get_curl_result(command4,1)
     
     @handle_exceptions
@@ -655,6 +663,7 @@ class MonitorFault(QThread):
                 pass
             if not cmd_run_flag:
                 self.reboot_cmd(command1,command2,command3,command4)
+                continue
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_out"))
             self.delete_util_log(os.path.join(util_dir,f"{self.ip}_err"))
             self.delete_util_log(os.path.join(util_dir,"inno_pc_client.log"))
