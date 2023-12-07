@@ -548,7 +548,7 @@ class MonitorFault(QThread):
         fault_key="(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{0,3}).+?fault_manager.cpp.*\s([A-Z]+[A-Z_0-9]+).+(?:has|have)\sbeen\s(set|heal)"
         ret=re.search(fault_key,stdout)
         if ret:
-            str1=f" {self.ip} {ret.group(2)} has been {ret.group(3)}"
+            str1=f"{self.ip} {ret.group(2)} has been {ret.group(3)}"
             with open(fault_log_path,"a") as f:
                 f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]{str1}\n")
             print(str1)
@@ -560,7 +560,7 @@ class MonitorFault(QThread):
                     self.sigout_fault_heal.emit(ret_fault.group(1),self.row_idx)
         ret=re.search("(fault_id.+)\sfrom .+isr",stdout)
         if ret:
-            str1=f" {self.ip} {ret.group(1)} has been set"
+            str1=f"{self.ip} {ret.group(1)} has been set"
             print(str1)
             with open(fault_log_path,"a") as f:
                 f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}]{str1}\n")
@@ -1234,7 +1234,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.lb_test_time.setText("00:00:00")
         self.timer.start(1000)
         self.timer.timeout.connect(self.update_test_time)
-        print(f"Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s")
+        print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s")
         self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
