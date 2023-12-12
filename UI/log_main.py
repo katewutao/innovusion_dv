@@ -13,6 +13,15 @@ import os
 from utils.excel_format import ExcelFormat
 import time
 import platform
+import builtins
+
+builtins.print_origin=print
+def print_res(*args, **kwargs):
+    current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    msg = ' '.join(map(str, args))  # Convert all arguments to strings and join them with spaces
+    builtins.print_origin(f"[{current_date}] {msg}", **kwargs)
+builtins.print=print_res
+
 
 fw_file_name="fw.txt"
 pcs_file_name="pcs.txt"

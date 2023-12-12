@@ -838,7 +838,7 @@ class TestMain(QThread):
             util_name="innovusion_lidar_util"
         elif "windows" in platform.platform().lower():
             util_name="innovusion_lidar_util.exe"
-        util_path=os.path.join(util_dir,util_name)
+        self.util_path=os.path.join(util_dir,util_name)
         kill_client()
         if self.txt_record_interval.text().strip()=="":
             print(f"please input record interval time")
@@ -862,8 +862,8 @@ class TestMain(QThread):
                         if down_sdk(ip) or down_count>10:
                             break
                         down_count+=1
-                    extend_pcs_log_size(util_path,ip,50000)
-                    open_broadcast(util_path,ip)
+                    extend_pcs_log_size(self.util_path,ip,50000)
+                    open_broadcast(self.util_path,ip,9600+idx)
                     get_promission(ip,float(self.txt_timeout.text()))
                     if self.cb_lidar_mode.currentText()=="CAN":
                         while True:
@@ -897,7 +897,9 @@ class TestMain(QThread):
                 i+=1 
             self.power_monitor.stop()
             if self.cb_lidar_mode.currentText()=="CAN":
+                os.system(f'python3 can_run.py -c {self.can_mode}')
                 cancle_can(self.ip_list,self.can_mode)
+                os.system(f'python3 can_cancle.py -c {self.can_mode}')
             while True:
                 try:
                     pow=power.Power()
@@ -912,7 +914,7 @@ class TestMain(QThread):
             print(command)
             cmd = subprocess.Popen(command,shell=True)
             cmd.wait()
-            self.sigout_test_finish.emit("done")
+            self.sigout_test_finish.emit(self.util_path)
         else:
             time_path=get_time()
             self.records=[]
@@ -998,7 +1000,7 @@ class TestMain(QThread):
             print(command)
             cmd = subprocess.Popen(command,shell=True)
             cmd.wait()
-            self.sigout_test_finish.emit("done")
+            self.sigout_test_finish.emit(self.util_path)
         print(f"Test has been stop")
 
 class EmittingStream(QtCore.QObject):
@@ -1246,7 +1248,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.test_set_off()
     
     @handle_exceptions
-    def test_finish(self,str1):
+    def test_finish(self,util_path):
         self.test_set_on()
         self.save_tbw_fault()
         if hasattr(self,"timer"):
@@ -1255,6 +1257,30 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                 self.timer.timeout.disconnect(self.update_test_time)
             except:
                 pass
+        print(f"recover udp port")
+        if self.cb_power_type.currentText()!="No Power":
+            import power
+            while True:
+                try:
+                    pow=power.Power()
+                    pow.power_on()
+                    break
+                except:
+                    print(f"power on failed")
+                    time.sleep(2)
+        for idx,ip in enumerate(self.ip_list):
+            ping_sure(ip,3)
+            open_broadcast(util_path,ip,8010)
+        if self.cb_power_type.currentText()!="No Power":
+            import power
+            while True:
+                try:
+                    pow=power.Power()
+                    pow.power_off()
+                    break
+                except:
+                    print(f"power off failed")
+                    time.sleep(2)
         print(f"Test finished")
     
     def test_set_off(self):

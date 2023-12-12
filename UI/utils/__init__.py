@@ -97,7 +97,7 @@ def extend_pcs_log_size(util_path,ip,size=200000):
 
 
 
-def open_broadcast(util_path,ip):
+def open_broadcast(util_path,ip,udp_port=8010):
     if not os.path.exists(util_path):
         print(f"Can't find {util_path}")
         return
@@ -113,11 +113,13 @@ def open_broadcast(util_path,ip):
     with open(save_cfg_file,"r") as f:
         pcs_env=f.read()
     pcs_env_lines = pcs_env.split("\n")
-    pcs_env = ""
+    pcs_env = "UDP_IP=etho\n"
     for pcs_env_line in pcs_env_lines:
-        ret=re.search("(UDP_IP=.+)",pcs_env_line)
+        ret=re.search("(UDP_PORT.+)=(\d+)",pcs_env_line)
         if not ret and pcs_env_line != "":
-            pcs_env = pcs_env + pcs_env_line + "\n"
+            pcs_env += f"{pcs_env_line}\n"
+        elif ret:
+            pcs_env += f"{ret.group(1)}={udp_port}\n"
     with open(save_cfg_file,"w") as f:
         f.write(pcs_env)
     command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
