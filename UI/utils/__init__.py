@@ -113,7 +113,7 @@ def open_broadcast(util_path,ip,udp_port=8010):
     with open(save_cfg_file,"r") as f:
         pcs_env=f.read()
     pcs_env_lines = pcs_env.split("\n")
-    pcs_env = "UDP_IP=etho\n"
+    pcs_env = "UDP_IP=eth0\n"
     for pcs_env_line in pcs_env_lines:
         ret=re.search("(UDP_PORT.+)=(\d+)",pcs_env_line)
         if not ret and pcs_env_line != "":
@@ -129,7 +129,7 @@ def open_broadcast(util_path,ip,udp_port=8010):
         print(f"{ip} set broadcast success")
     else:
         print(f"{ip} set broadcast fail")
-    os.remove(save_cfg_file)
+    # os.remove(save_cfg_file)
     
 
 def reboot_lidar(ip):
