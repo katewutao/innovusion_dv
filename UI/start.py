@@ -1249,7 +1249,6 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     @handle_exceptions
     def test_finish(self,util_path):
-        self.test_set_on()
         self.save_tbw_fault()
         if hasattr(self,"timer"):
             self.timer.stop()
@@ -1258,7 +1257,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             except:
                 pass
         print(f"recover udp port")
-        if self.cb_power_type.currentText()!="No Power":
+        if self.cb_lidar_mode.currentText()!="No Power":
             import power
             while True:
                 try:
@@ -1271,7 +1270,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         for idx,ip in enumerate(self.ip_list):
             ping_sure(ip,3)
             open_broadcast(util_path,ip,8010)
-        if self.cb_power_type.currentText()!="No Power":
+        if self.cb_lidar_mode.currentText()!="No Power":
             import power
             while True:
                 try:
@@ -1281,6 +1280,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                 except:
                     print(f"power off failed")
                     time.sleep(2)
+        self.test_set_on()
         print(f"Test finished")
     
     def test_set_off(self):
