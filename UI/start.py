@@ -279,7 +279,6 @@ def cancle_can(ip_list,can_mode="Default"):
         while True:
             if set_lidar_mode(ip,"power",can_mode):
                 break
-        reboot_lidar(ip)
     os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f"all lidar cancle can mode success")
     
@@ -899,9 +898,11 @@ class TestMain(QThread):
             if self.cb_lidar_mode.currentText()=="CAN":
                 cancle_can(self.ip_list,self.can_mode)
             while True:
+                print("power off")
                 try:
                     pow=power.Power()
                     pow.power_off()
+                    time.sleep(20)
                     break
                 except:
                     print(f"power off failed")
