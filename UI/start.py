@@ -247,7 +247,7 @@ def get_circle_time(dict_config):
                             else:
                                 temp_times[i][j]=14
                 times+=temp_times*circle        
-    return times172.
+    return times
 
 
 
