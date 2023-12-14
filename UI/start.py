@@ -247,7 +247,7 @@ def get_circle_time(dict_config):
                             else:
                                 temp_times[i][j]=14
                 times+=temp_times*circle        
-    return times
+    return times172.
 
 
 
@@ -279,6 +279,7 @@ def cancle_can(ip_list,can_mode="Default"):
         while True:
             if set_lidar_mode(ip,"power",can_mode):
                 break
+        reboot_lidar(ip)
     os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f"all lidar cancle can mode success")
     
@@ -1255,6 +1256,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                 pass
         print(f"recover udp port")
         if self.cb_lidar_mode.currentText()!="No Power":
+            print("power on")
             import power
             while True:
                 try:
@@ -1268,6 +1270,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             ping_sure(ip,3)
             open_broadcast(util_path,ip,8010)
         if self.cb_lidar_mode.currentText()!="No Power":
+            print("power off")
             import power
             while True:
                 try:
