@@ -897,7 +897,7 @@ class TestMain(QThread):
                 i+=1 
             self.power_monitor.stop()
             if self.cb_lidar_mode.currentText()=="CAN":
-                os.system(f'python3 can_run.py -c {self.can_mode}')
+                subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
                 cancle_can(self.ip_list,self.can_mode)
                 os.system(f'python3 can_cancle.py -c {self.can_mode}')
             while True:
