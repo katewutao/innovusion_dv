@@ -24,9 +24,9 @@ def main_close(args):
     elif args.can=="Robin":
         os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
         return
-    elif args.can=="switch": #TODO
+    elif args.can=="switch":
         conf["frame"]["type"]="can"
-        conf["frame"]["frame_ID"]="505"
+        conf["frame"]["frame_ID"]="701"
         conf["frame"]["payload_len"]=8
         conf["frame"]["payload"]="00"*conf["frame"]["payload_len"]
         conf["frame"]["send_count"]=1

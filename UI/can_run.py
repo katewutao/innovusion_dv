@@ -151,11 +151,11 @@ def main(args):
         conf["frame"]["payload_len"]=8
         conf["frame"]["payload"]="00"*conf["frame"]["payload_len"]
         conf["frame"]["send_count"]=-1
-    elif args.can=="switch": #TODO
+    elif args.can=="switch": 
         conf["frame"]["type"]="can"
-        conf["frame"]["frame_ID"]="505"
+        conf["frame"]["frame_ID"]="701"
         conf["frame"]["payload_len"]=8
-        conf["frame"]["payload"]="00"*conf["frame"]["payload_len"]
+        conf["frame"]["payload"]="01"*conf["frame"]["payload_len"]
         conf["frame"]["send_count"]=1
         conf["device"]["tx_ch"]=1
     if not conf:

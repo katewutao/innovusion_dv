@@ -758,6 +758,8 @@ class TestMain(QThread):
         sleep_time = int(power_one_time[0]-time.time()+t)
         print(f"start monitor {sleep_time}s")
         time_path=get_time()
+        if os.getenv("relay")=="True":
+            os.system("python3 can_run.py -c switch")
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         self.power_monitor.resume()
@@ -813,6 +815,8 @@ class TestMain(QThread):
                     print(f"power off failed")
                     time.sleep(2)
             self.power_monitor.resume()
+        if os.getenv("relay")=="True":
+            os.system("python3 can_cancle.py -c switch")
         kill_client()
         print(f"start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
         for i in range(data_num_power_off):
@@ -1059,6 +1063,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         QtWidgets.QApplication.processEvents()
     
     
+    
+    
     @handle_exceptions
     def update_test_time(self):
         time_s=TimeConvert.hms2time(self.lb_test_time.text())
@@ -1235,7 +1241,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.lb_test_time.setText("00:00:00")
         self.timer.start(1000)
         self.timer.timeout.connect(self.update_test_time)
-        print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s")
+        print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s,Relay:{self.relay.isChecked()},Timeout:{self.txt_timeout.text()}s")
+        os.environ["relay"]=str(self.relay.isChecked())
         self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
