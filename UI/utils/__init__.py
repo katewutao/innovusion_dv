@@ -25,6 +25,20 @@ def multi_cmd(command_list,max_thread_counter):
     for cmd in cmds:
         cmd.wait()
 
+def str2timestamp(str1):
+    str1=str(str1)
+    import re
+    key='(\d{4}(.+?)\d{1,2}(.+?)\d{1,2}(.+?)\d{1,2}(.+?)\d{1,2}(.+?)\d{1,2})(\.?\d*)'
+    ret=re.search(key,str1)
+    if ret:
+        deci=0
+        if len(ret.group(7))>1:
+            deci=float('0'+ret.group(7))
+        if '1970' not in ret.group(1):
+            return time.mktime(time.strptime(ret.group(1), f'%Y{ret.group(2)}%m{ret.group(3)}%d{ret.group(4)}%H{ret.group(5)}%M{ret.group(6)}%S'))+deci
+        else:
+            return 0
+    return 0
 class TimeConvert(object):
     @classmethod
     def time2hms(cls,str1):
@@ -180,9 +194,10 @@ def get_current_date():
     return start_time
 
 
-def send_tcp(command,ip,port=8001):
+def send_tcp(command,ip,port=8001,wait=False):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(5)
+    if wait:
+        sock.settimeout(5)
     res = ""
     try:
         sock.connect((ip, port))
@@ -191,18 +206,24 @@ def send_tcp(command,ip,port=8001):
         sock.close()
         return res
     sock.sendall(command.encode())
-    first_recv = True
-    while True:
+    if wait:
+        first_recv = True
+        while True:
+            try:
+                response = sock.recv(1024).decode()
+            except:
+                break
+            if first_recv:
+                first_recv = False
+                sock.settimeout(3)
+            res += response
+            if response=="":
+                break
+    else:
         try:
-            response = sock.recv(1024).decode()
+            res = sock.recv(1024).decode()
         except:
-            break
-        if first_recv:
-            first_recv = False
-            sock.settimeout(3)
-        res += response
-        if response=="":
-            break
+            pass
     sock.close()
     return res
 
@@ -225,5 +246,16 @@ if __name__=="__main__":
     # t= time.time()
     # s = send_tcp(command,"172.168.1.10",8088)
     # print(time.time()-t)
-    res = send_tcp('apd_scanning',"172.168.1.10")
-    print(res)
+    
+    
+    command = "http://172.168.1.10:8010/command/?get_sdk_version"
+    
+    while True:
+        res = []
+        res.append(send_tcp('scanh_tran STR051ND',"172.168.1.10",8001))
+        res.append(send_tcp('scanh_tran STR052ND',"172.168.1.10",8001))
+        res.append(send_tcp('scanh_tran STR053ND',"172.168.1.10",8001))
+        res.append(send_tcp('scanh_tran STR054ND',"172.168.1.10",8001))
+        res.append(send_tcp('scanh_tran STR055ND',"172.168.1.10",8001))
+        res.append(send_tcp('scanh_tran STR056ND',"172.168.1.10",8001))
+        print(datetime.datetime.now(),res)

@@ -410,8 +410,116 @@ class Power_monitor(QThread):
                 break
         print(f"finish monitor power success")
         
-        
-        
+class DSP_info_thread(QThread):#TODO
+    def __init__(self,ip,record_folder):
+        super(DSP_info_thread,self).__init__()
+        self.ip=ip
+        self.save_folder = os.path.join(record_folder,"DSP")
+        self.search_keys = {
+            "timestamp":"",
+            "Galvo RMS current":"",
+            "Galvo frame counter":"",
+            "Galvo position control error":"",
+            "Galvo zero position offset value":"",
+            "Galvo LED DAC value":"",
+            "Galvo sensor intensity":""
+        }
+        self.read_keys = {
+            "Galvo RMS current":"scanh_tran STR051ND",
+            "Galvo frame counter":"scanh_tran STR052ND",
+            "Galvo position control error":"scanh_tran STR053ND",
+            "Galvo zero position offset value":"scanh_tran STR054ND",
+            "Galvo LED DAC value":"scanh_tran STR055ND",
+            "Galvo sensor intensity":"scanh_tran STR056ND"
+        }
+        self.command = f"http://{ip}" # API time interval = socket time interval, so not using API
+    
+    def extract_keys(self,res):
+        re_list = []
+        lens = []
+        for item in self.search_keys.items():
+            if item[1]=="":
+                re_list.append(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+            else:
+                ret = re.findall(item[1],res)
+                lens.append(len(ret))
+                if lens[-1]>0:
+                    re_list.append(ret)
+                else:
+                    print(f"{self.ip} dsp return not exist {item[0]}")
+                    return []
+        if max(lens)!=min(lens):
+            print(f"{self.ip} dsp return format error")
+            return []
+        return list(zip(*re_list))
+    
+    def get_socket_result(self):
+        res_list = [f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]
+        for item in self.read_keys.items():
+            res = send_tcp(item[1],self.ip,8001,False)
+            if res == "":
+                res = "NaN"
+            res_list.append(res.strip("\n"))
+        return res_list
+    
+    @handle_exceptions
+    def run(self):
+        if not os.path.exists(self.save_folder):
+            try:
+                os.makedirs(self.save_folder)
+            except:
+                pass
+        self.record_file = os.path.join(self.save_folder,f"{self.ip.replace('.','_')}.csv")
+        if not os.path.exists(self.record_file):
+            csv_write(self.record_file,["timestamp"]+list(self.read_keys.keys()))
+        while True:
+            if ping(self.ip,3) or self.isInterruptionRequested():
+                break
+        while True:
+            if self.isInterruptionRequested():
+                break
+            res_list = self.get_socket_result()
+            csv_write(self.record_file,res_list)
+    
+    
+    @handle_exceptions
+    def run_api(self): #using API
+        if not os.path.exists(self.save_folder):
+            try:
+                os.makedirs(self.save_folder)
+            except:
+                pass
+        self.record_file = os.path.join(self.save_folder,f"{self.ip.replace('.','_')}.csv")
+        if not os.path.exists(self.record_file):
+            csv_write(self.record_file,[item for item in self.search_keys])
+        last_time = -999
+        while True:
+            if self.isInterruptionRequested():
+                break
+            res, flag = get_curl_result(self.command)
+            if flag:
+                re_list = self.extract_keys(res)
+                current_max_time = last_time
+                for item in re_list:
+                    current_time = str2timestamp(item[0])
+                    current_max_time = max(current_time,current_max_time)
+                    if current_time>last_time:
+                        csv_write(self.record_file,item)
+    
+    
+    @handle_exceptions
+    def stop(self):
+        print(f"{self.ip} start finish Dsp status")
+        t=time.time()
+        while self.isRunning():
+            self.requestInterruption()
+            self.wait(1000)
+            if time.time()-t>6:
+                self.terminate()
+                break
+        print(f"{self.ip} finish Dsp success")
+    
+    
 class one_lidar_record_thread(QThread):
     sigout_set_tbw_value = pyqtSignal(list,int)
     
@@ -765,6 +873,7 @@ class TestMain(QThread):
         self.power_monitor.resume()
         self.records=[]
         self.monitors=[]
+        self.dsps=[]
         if sleep_time>2:
             for ip_num,ip in enumerate(ip_list):
                 print(f"start add record {ip}")
@@ -780,6 +889,11 @@ class TestMain(QThread):
                 monitor_thread.start()
                 self.monitors.append(monitor_thread)
                 print(f"start add fault monitor success {ip}")
+                if os.getenv("dsp")=="True":
+                    dsp_thread=DSP_info_thread(ip,self.save_folder)
+                    dsp_thread.start()
+                    self.dsps.append(dsp_thread)
+                    print(f"start add dsp success {ip}")
             sleep_time = power_one_time[0]-time.time()+t
             if sleep_time > 0:
                 time.sleep(sleep_time)
@@ -799,6 +913,10 @@ class TestMain(QThread):
             for record in self.records:
                 if record.isRunning():
                     record.stop()
+            print("start dsp record")
+            for dsp_thread in self.dsps:
+                if dsp_thread.isRunning():
+                    dsp_thread.stop()
         self.sigout_power.emit(False)
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can.kill()
@@ -922,6 +1040,7 @@ class TestMain(QThread):
             time_path=get_time()
             self.records=[]
             self.monitors=[]
+            self.dsps=[]
             for ip_num,ip in enumerate(self.ip_list):
                 print(f"start add record {ip}")
                 record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
@@ -936,6 +1055,11 @@ class TestMain(QThread):
                 monitor_thread.start()
                 self.monitors.append(monitor_thread)
                 print(f"start add fault monitor success {ip}")
+                if os.getenv("dsp")=="True":
+                    dsp_thread=DSP_info_thread(ip,self.save_folder)
+                    dsp_thread.start()
+                    self.dsps.append(dsp_thread)
+                    print(f"start add dsp success {ip}")
             while True:
                 if self.isInterruptionRequested():
                     break
@@ -957,6 +1081,12 @@ class TestMain(QThread):
                     monitor.stop()
                 except:
                     pass
+        if hasattr(self,"dsps"):
+            for dsp in self.dsps:
+                try:
+                    dsp.stop()
+                except:
+                    pass
         if self.cb_lidar_mode.currentText()=="CAN":
             if hasattr(self,"cmd_can"):
                 try:
@@ -968,7 +1098,6 @@ class TestMain(QThread):
                     self.kill_cmd_can.kill()
                 except:
                     pass
-            
         if hasattr(self,"power_monitor"):
             try:
                 self.power_monitor.stop()
@@ -1241,8 +1370,9 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.lb_test_time.setText("00:00:00")
         self.timer.start(1000)
         self.timer.timeout.connect(self.update_test_time)
-        print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s,Relay:{self.relay.isChecked()},Timeout:{self.txt_timeout.text()}s")
+        print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s,Relay:{self.relay.isChecked()},DSP:{self.dsp.isChecked()},Timeout:{self.txt_timeout.text()}s")
         os.environ["relay"]=str(self.relay.isChecked())
+        os.environ["dsp"]=str(self.dsp.isChecked())
         self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))

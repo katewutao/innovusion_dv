@@ -96,9 +96,18 @@ def download_fw_pcs(ip):
     return res.replace("\\n","\n")
     
 if __name__=="__main__":
-    ip = "172.168.1.10"
-    print(ping_sure(ip,1))
-
+    search_keys = {
+            "Galvo RMS current":"",
+            "Galvo frame counter":"",
+            "Galvo position control error":"",
+            "Galvo zero position offset value":"",
+            "Galvo LED DAC value":"",
+            "Galvo sensor intensity":""
+        }
+    for item in search_keys.items():
+        print(item)
+    list1 = search_keys.keys()
+    print(",".join(map(str,list1)))
 
 
 # print(ping("172.168.1.10",1))
