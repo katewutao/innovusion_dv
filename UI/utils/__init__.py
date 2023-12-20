@@ -252,10 +252,12 @@ if __name__=="__main__":
     
     while True:
         res = []
-        res.append(send_tcp('scanh_tran STR051ND',"172.168.1.10",8001))
-        res.append(send_tcp('scanh_tran STR052ND',"172.168.1.10",8001))
-        res.append(send_tcp('scanh_tran STR053ND',"172.168.1.10",8001))
-        res.append(send_tcp('scanh_tran STR054ND',"172.168.1.10",8001))
-        res.append(send_tcp('scanh_tran STR055ND',"172.168.1.10",8001))
-        res.append(send_tcp('scanh_tran STR056ND',"172.168.1.10",8001))
+        res.append(send_tcp('scanh_tran STR051ND',"172.168.1.10",8001).strip("\n"))
+        res.append(send_tcp('scanh_tran STR052ND',"172.168.1.10",8001).strip("\n"))
+        res.append(send_tcp('scanh_tran STR053ND',"172.168.1.10",8001).strip("\n"))
+        res.append(send_tcp('scanh_tran STR054ND',"172.168.1.10",8001).strip("\n"))
+        res.append(send_tcp('scanh_tran STR055ND',"172.168.1.10",8001).strip("\n"))
+        res.append(send_tcp('scanh_tran STR056ND',"172.168.1.10",8001).strip("\n"))
+        res.append(send_tcp('scanh_tran STR108ND',"172.168.1.10",8001).strip("\n"))
+        res.append(send_tcp('scanh_tran STR109ND',"172.168.1.10",8001).strip("\n"))
         print(datetime.datetime.now(),res)

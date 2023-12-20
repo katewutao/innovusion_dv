@@ -430,7 +430,9 @@ class DSP_info_thread(QThread):#TODO
             "Galvo position control error":"scanh_tran STR053ND",
             "Galvo zero position offset value":"scanh_tran STR054ND",
             "Galvo LED DAC value":"scanh_tran STR055ND",
-            "Galvo sensor intensity":"scanh_tran STR056ND"
+            "Galvo sensor intensity":"scanh_tran STR056ND",
+            "Events 108":"scanh_tran STR108ND",
+            "Events 109":"scanh_tran STR109ND",
         }
         self.command = f"http://{ip}" # API time interval = socket time interval, so not using API
     
