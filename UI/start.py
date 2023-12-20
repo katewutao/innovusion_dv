@@ -1432,6 +1432,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.txt_timeout.setEnabled(False)
         self.btn_start.setEnabled(False)
         self.btn_cancle_can.setEnabled(False)
+        self.relay.setEnabled(False)
+        self.dsp.setEnabled(False)
         self.btn_stop.setEnabled(True)
     
     def test_set_on(self):
@@ -1447,6 +1449,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.txt_timeout.setEnabled(True)
         self.btn_start.setEnabled(True)
         self.btn_cancle_can.setEnabled(True)
+        self.relay.setEnabled(True)
+        self.dsp.setEnabled(True)
         self.btn_stop.setEnabled(False)
     
     @handle_exceptions
