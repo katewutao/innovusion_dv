@@ -30,7 +30,7 @@ def main_close(args):
         conf["frame"]["payload_len"]=8
         conf["frame"]["payload"]="00"*conf["frame"]["payload_len"]
         conf["frame"]["send_count"]=1
-        conf['frame']['Baud rate']=125
+        conf['frame']['Baud rate']=250
         conf["device"]["tx_ch"]=1
     if not conf:
         return
