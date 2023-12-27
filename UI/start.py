@@ -974,6 +974,8 @@ class TestMain(QThread):
         if self.cb_lidar_mode.currentText()!="No Power":
             os.system("python3 ./power.py")
         if self.cb_lidar_mode.currentText()=="CAN":
+            if os.getenv("relay")=="True":
+                os.system("python3 can_run.py -c switch")
             os.system("python3 lib/set_usbcanfd_env.py demo")
             subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         for idx,ip in enumerate(self.ip_list):
