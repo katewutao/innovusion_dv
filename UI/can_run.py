@@ -177,9 +177,9 @@ def main(args):
             return
 
     # Block
-    tcp_server(conf)
+    # tcp_server(conf)
 
-    usbcan.stop_usbcan()
+    # usbcan.stop_usbcan()
     
 
 if __name__ == "__main__":
