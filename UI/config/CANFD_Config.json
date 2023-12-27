@@ -18,7 +18,8 @@
         "payload": "000000",
         "send_count": 1,
         "send_interval": 640,
-        "frame_count": 1
+        "frame_count": 1,
+        "Baud rate": 500
     },
 
     "device": {

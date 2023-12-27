@@ -56,6 +56,7 @@ class USBCAN():
         self.tx_ch = self.conf['device']['tx_ch']
         self.rx_ch = self.conf['device']['rx_ch']
         self.cantype = self.conf['frame']['type']
+        self.baud_rate = self.conf['frame']['Baud rate']
 
     def run_usbcan(self, hostname=None, r=None):
         self.usbcan = usbcanfd.USBCANFD(**self.conf)
@@ -66,8 +67,8 @@ class USBCAN():
         self.usbcan.reset_CAN(self.rx_ch)
         self.usbcan.set_reference(self.tx_ch)
         self.usbcan.set_reference(self.rx_ch)
-        self.usbcan.init_CAN(self.tx_ch)
-        self.usbcan.init_CAN(self.rx_ch)
+        self.usbcan.init_CAN(self.tx_ch,self.baud_rate)
+        self.usbcan.init_CAN(self.rx_ch,self.baud_rate)
         self.usbcan.start_CAN(self.tx_ch)
         self.usbcan.start_CAN(self.rx_ch)
         
@@ -157,6 +158,7 @@ def main(args):
         conf["frame"]["payload_len"]=8
         conf["frame"]["payload"]="01"*conf["frame"]["payload_len"]
         conf["frame"]["send_count"]=1
+        conf['frame']['Baud rate']=125
         conf["device"]["tx_ch"]=1
     if not conf:
         return

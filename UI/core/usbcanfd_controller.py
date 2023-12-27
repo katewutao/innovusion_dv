@@ -198,7 +198,7 @@ class USBCANFD(object):
     def set_value(self):
         set_ret = usbcanfd_lib.VCI_SetValue(self.device_handle, self.attribute_path, self.attribute_value)
 
-    def init_CAN(self, channel):
+    def init_CAN(self, channel, baud_rate=500):
         """
         """
         # CH_init = ZCANInit()
@@ -216,19 +216,33 @@ class USBCANFD(object):
         # CH_init.bset.brp = 2
 
         CH_init = ZCANInit()
-        CH_init.clk = 60000000  # USBCANFD-200U clock is 60MHz
-        CH_init.mode = 0  # 工作模式，0 表示正常模式（相当于正常节点），1 表示只听模式（只接收，不影响总线）
-        CH_init.aset.tseg1 = 10
-        CH_init.aset.tseg2 = 2
-        CH_init.aset.sjw = 2
-        CH_init.aset.smp = 0  # smp is sample point, not involved in baudrate calculation
-        CH_init.aset.brp = 7
-        CH_init.bset.tseg1 = 10
-        CH_init.bset.tseg2 = 2
-        CH_init.bset.sjw = 2
-        CH_init.bset.smp = 0
-        CH_init.bset.brp = 1
-
+        if baud_rate == 500:
+            CH_init.clk = 60000000  # USBCANFD-200U clock is 60MHz
+            CH_init.mode = 0  # 工作模式，0 表示正常模式（相当于正常节点），1 表示只听模式（只接收，不影响总线）
+            CH_init.aset.tseg1 = 10
+            CH_init.aset.tseg2 = 2
+            CH_init.aset.sjw = 2
+            CH_init.aset.smp = 0  # smp is sample point, not involved in baudrate calculation
+            CH_init.aset.brp = 7
+            CH_init.bset.tseg1 = 10
+            CH_init.bset.tseg2 = 2
+            CH_init.bset.sjw = 2
+            CH_init.bset.smp = 0
+            CH_init.bset.brp = 1
+        if baud_rate == 250:
+            CH_init.clk = 60000000  # USBCANFD-200U clock is 60MHz
+            CH_init.mode = 0  # 工作模式，0 表示正常模式（相当于正常节点），1 表示只听模式（只接收，不影响总线）
+            CH_init.aset.tseg1 = 5
+            CH_init.aset.tseg2 = 0
+            CH_init.aset.sjw = 2
+            CH_init.aset.smp = 87  # smp is sample point, not involved in baudrate calculation
+            CH_init.aset.brp = 29
+            CH_init.bset.tseg1 = 5
+            CH_init.bset.tseg2 = 0
+            CH_init.bset.sjw = 2
+            CH_init.bset.smp = 87
+            CH_init.bset.brp = 29
+            
         self.ch_handle = usbcanfd_lib.VCI_InitCAN(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX(channel), byref(CH_init))
 
         if self.ch_handle == 0:
