@@ -214,6 +214,7 @@ def send_tcp(command,ip,port=8001,wait=False):
     except:
         print(f"connect {ip} {port} fail")
         sock.close()
+        time.sleep(3)
         return res
     sock.sendall(command.encode())
     if wait:
