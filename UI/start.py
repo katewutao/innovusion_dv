@@ -939,7 +939,7 @@ class TestMain(QThread):
             os.system("python3 can_cancle.py -c switch")
         kill_client()
         print(f"start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
-        if self.cmd_anlyze_log is not None:
+        if self.cmd_anlyze_log.poll() is not None:
             print("continue analyse log")
             kill_subprocess("log_main.py")
             self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
