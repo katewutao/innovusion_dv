@@ -156,11 +156,11 @@ def main(args):
         else:
             df_dict_res[key].to_csv(os.path.join(save_folder,f"{key}.csv"),index=False)
     writer.close()
-    ExcelFormat(result_path).format()
+    # ExcelFormat(result_path).format()
     df_fault_count = get_fault_count(df_dict_res)
     if df_fault_count.shape[0]>0:
         df_fault_count.to_excel(fault_count_path,index=True,index_label="fault name/ip")
-        ExcelFormat(fault_count_path).format()
+        # ExcelFormat(fault_count_path).format()
     
 
 if __name__=="__main__":
