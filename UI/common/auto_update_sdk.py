@@ -151,6 +151,7 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
         if ret:
             sdk_version_no_platform=ret.group(1)
             sdk_version_client=sdk_version_no_platform.replace("release","release-client")
+            
         else:
             print(f"{ip} can't find sdk version")
             return False
@@ -158,7 +159,11 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
         util_folder = "./lidar_util"
         util_names={"inno_pc_client":"",}
         if os.getenv("project")=="Robin":
-            util_names={"inno_pc_client":"",}
+            util_names={
+                "inno_pc_client":"",
+                "innovusion_lidar_util":""
+                        }
+            sdk_version_client = "release-client-sdk-3.0.12"
         else:
             util_names={
                 "innovusion_lidar_util":"",
@@ -185,5 +190,5 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
             write_sdk_version(sdk_version)
         return True
 if __name__=="__main__":
-    down_sdk("172.168.1.10","release-sdk-3.0.3-arm",False)
+    down_sdk("172.168.1.10",False)
     # down_sdk("172.168.1.10")

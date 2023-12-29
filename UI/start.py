@@ -939,6 +939,9 @@ class TestMain(QThread):
             os.system("python3 can_cancle.py -c switch")
         kill_client()
         print(f"start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
+        if self.cmd_anlyze_log is not None:
+            print("continue analyse log")
+            self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
         for i in range(data_num_power_off):
             temp_pow=pow_status
             for row_idx,ip in enumerate(ip_list):
@@ -951,15 +954,13 @@ class TestMain(QThread):
             t0=(power_one_time[0]+power_one_time[1]-(time.time()-t))/(data_num_power_off-i)
             if t0>0:
                 time.sleep(t0)
-        if self.cmd_anlyze_log is not None:
-            print("continue analyse log")
-            self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
 
     @handle_exceptions
     def run(self):
         if not os.path.exists(self.save_folder):
             os.makedirs(self.save_folder)
         self.analyse_command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
+        print(self.analyse_command)
         print(f"start analyse log")
         self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
         util_dir="lidar_util"
