@@ -1,5 +1,6 @@
 import platform,subprocess,os,sys,datetime,re,time
 import requests,socket
+import pandas as pd
 
 def kill_subprocess(cmd):
     if "windows" in platform.platform().lower():
@@ -10,9 +11,16 @@ def kill_subprocess(cmd):
     os.system(command)
     print(command)
     
-def multi_cmd(command_list,max_thread_counter):
+def multi_cmd(command_list,max_thread_counter,conf_file=""):
     cmds=[]
+    if conf_file!="" and os.path.exists(conf_file):
+        df_config = pd.read_csv(conf_file)
+    else:
+        df_config = pd.DataFrame(columns=["command"])
     for command in command_list:
+        if command in df_config["command"].values:
+            continue
+        df_config.loc[df_config.shape[0]] = [command]
         cmd=subprocess.Popen(command,shell=True)
         cmds.append(cmd)
         while True:
@@ -24,6 +32,8 @@ def multi_cmd(command_list,max_thread_counter):
                 break
     for cmd in cmds:
         cmd.wait()
+    if conf_file!="":
+        df_config.to_csv(conf_file,index=False)
 
 def str2timestamp(str1):
     str1=str(str1)

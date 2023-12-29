@@ -951,11 +951,17 @@ class TestMain(QThread):
             t0=(power_one_time[0]+power_one_time[1]-(time.time()-t))/(data_num_power_off-i)
             if t0>0:
                 time.sleep(t0)
+        if self.cmd_anlyze_log is not None:
+            print("continue analyse log")
+            self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
 
     @handle_exceptions
     def run(self):
         if not os.path.exists(self.save_folder):
             os.makedirs(self.save_folder)
+        self.analyse_command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
+        print(f"start analyse log")
+        self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
         util_dir="lidar_util"
         if "linux" in platform.platform().lower():
             util_name="innovusion_lidar_util"
@@ -1036,10 +1042,9 @@ class TestMain(QThread):
                     print(f"power off failed")
                     time.sleep(2)
             rm_empty_folder(self.save_folder)
-            print("start analyze log")
-            command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
-            print(command)
-            cmd = subprocess.Popen(command,shell=True)
+            print("start continue analyze log")
+            kill_subprocess("log_main.py")
+            cmd = subprocess.Popen(self.analyse_command + " -r",shell=True)
             cmd.wait()
             self.sigout_test_finish.emit(self.util_path)
         else:
@@ -1133,10 +1138,9 @@ class TestMain(QThread):
                 temp_thread.join()
             print(f"remove empty folder")
             rm_empty_folder(self.save_folder)
-            print("start analyze log")
-            command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
-            print(command)
-            cmd = subprocess.Popen(command,shell=True)
+            print("start continue analyze log")
+            kill_subprocess("log_main.py")
+            cmd = subprocess.Popen(self.analyse_command + " -r",shell=True)
             cmd.wait()
             self.sigout_test_finish.emit(self.util_path)
         print(f"Test has been stop")

@@ -3,7 +3,7 @@
 #  * @email [kate.wu@cn.innovuison.com]
 #  * @create date 2023-10-31 13:34:58
 #  * @modify date 2023-10-31 13:34:58
-#  * @desc [description]
+#  * @desc [analyze_log]
 #  */
 from utils import *
 import re
@@ -83,16 +83,18 @@ def get_fault_count(df_dict_res):
 
 def main(args):
     global fw_file_name,pcs_file_name
+    if not os.path.exists(args.folder):
+        return
     save_folder = args.output_folder
     result_path = os.path.join(save_folder,"result.xlsx")
     fault_count_path = os.path.join(save_folder,"fault_count.xlsx")
+    command_path = os.path.join(save_folder,"config.csv")
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     excel_list = []
     commands = []
     aim_path = []
     rm_file_list = []
-    file_idx = 0
     if "windows" in platform.platform().lower():
         python_version = "python"
     else:
@@ -103,12 +105,7 @@ def main(args):
                 for file in files:
                     if not file.endswith(".txt"):
                         continue
-                    xlsx_path = os.path.join(save_folder,f"{file_idx}.xlsx")
-                    file_idx+=1
-                    excel_list.append(xlsx_path)
                     aim_path.append(os.path.join(root,file))
-                    commands.append(f'{python_version} one_subprocess.py -cp "{os.path.join(root,file)}" -sp "{excel_list[-1]}"')
-                    print(commands[-1])
     elif args.lidar_log:
         for root,_ ,files in os.walk(args.folder):
             list_dir = os.listdir(root)
@@ -116,14 +113,20 @@ def main(args):
                 tmp_dir = os.path.join(root,"tmp")
                 aim_path.append(tmp_dir)
                 merge_lidar_log(tmp_dir)
-                excel_list.append(os.path.join(save_folder,f"{file_idx}.xlsx"))
-                rm_file_list.append([os.path.join(tmp_dir,fw_file_name),os.path.join(tmp_dir,pcs_file_name)])
-                commands.append(f'python one_subprocess.py -fp "{rm_file_list[-1][0]}" -pp "{rm_file_list[-1][1]}" -sp "{excel_list[-1]}"')
-                print(commands[-1])
-                file_idx+=1
     else:
         return
-    multi_cmd(commands,10)
+    aim_path = sorted(aim_path,key=lambda x: os.path.getctime(x))
+    for idx,log_path in enumerate(aim_path):
+        xlsx_path = os.path.join(save_folder,f"{idx}.xlsx")
+        excel_list.append(xlsx_path)
+        if args.client:
+            commands.append(f'{python_version} one_subprocess.py -cp "{log_path}" -sp "{xlsx_path}"')
+        else:
+            rm_file_list.append([os.path.join(log_path,fw_file_name),os.path.join(log_path,pcs_file_name)])
+            commands.append(f'python one_subprocess.py -fp "{rm_file_list[-1][0]}" -pp "{rm_file_list[-1][1]}" -sp "{excel_list[-1]}"')
+        print(commands[-1])
+    commands = commands[args.start_idx:]
+    multi_cmd(commands,args.max_thread_counter,command_path)
     if len(rm_file_list)>0:
         for rm_file in rm_file_list:
             for file in rm_file:
@@ -139,10 +142,11 @@ def main(args):
                 df_dict_res[key] = df[key]
             else:
                 df_dict_res[key] = pd.concat([df_dict_res[key],df[key]],ignore_index=True)
-        try:
-            os.remove(excel)
-        except:
-            pass
+        if args.rm_result:
+            try:
+                os.remove(excel)
+            except:
+                pass
     if len(df_dict_res.keys())==0:
         return
     writer = pd.ExcelWriter(result_path)
@@ -165,6 +169,9 @@ if __name__=="__main__":
     parse.add_argument("--client", "-c" ,action="store_true")
     parse.add_argument("--lidar-log", "-ll" , action="store_true")
     parse.add_argument("--output-folder", "-o" ,type=str, default="./analyze_result")
+    parse.add_argument("--max-thread-counter", "-mtc" ,type=int, default=6)
+    parse.add_argument("--start-idx", "-si" ,type=int, default=0)
+    parse.add_argument("--rm-result", "-r" ,action="store_true")
     args = parse.parse_args()
     t=time.time()
     main(args)
