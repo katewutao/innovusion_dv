@@ -129,7 +129,7 @@ def down_sdk_command(util_names,public_path,command,util_folder,rm_sdk):
             if os.path.exists(util_save_path):
                 os.remove(util_save_path)
             shutil.copyfile(down_path,util_save_path)
-        else:
+        if not os.path.exists(util_save_path):
             download=False
             print(f"find {filename} failed")
     if "linux" in platform.platform().lower():
@@ -190,5 +190,6 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
             write_sdk_version(sdk_version)
         return True
 if __name__=="__main__":
-    down_sdk("172.168.1.10",False)
+    os.environ["project"]="Robin"
+    down_sdk("172.168.1.10","release-1.1.0-rw-nio-pcs-rc1-arm",False)
     # down_sdk("172.168.1.10")
