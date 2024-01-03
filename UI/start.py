@@ -638,6 +638,7 @@ class MonitorFault(QThread):
             res_fw=str(response.content)[2:-1]
         except:
             print(f"{self.ip} download fw log failed")
+            time.sleep(3)
             return ""
         try:
             response = requests.get(command_pcs,timeout=3)
@@ -645,6 +646,7 @@ class MonitorFault(QThread):
             res_pcs=str(response.content)[2:-1]
         except:
             print(f"{self.ip} download pcs log failed")
+            time.sleep(3)
             return res_fw.replace("\\n","\n")
         res = (res_fw+res_pcs)
         return res.replace("\\n","\n")
