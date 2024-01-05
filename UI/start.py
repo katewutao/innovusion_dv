@@ -196,22 +196,6 @@ def ping_sure(ip,interval_time):
             print(f"{ip} is not connect")
     print(f' lidar {ip} has connected')    
     
-def get_promission(ip,time_out):
-    print(f"{ip} get premission")
-    if 'windows' not in platform.platform().lower():
-        import pexpect as pect
-    else:
-        import wexpect as pect
-    child = pect.spawn(f'ssh root@{ip}',timeout=time_out)
-    try:
-        child.expect('yes',timeout=3)
-        child.sendline('yes')
-    except:
-        pass
-    child.expect('password')
-    child.sendline('4920lidar')
-    child.close()
-
 
 def get_circle_time(dict_config):
     times=[]
@@ -1000,6 +984,7 @@ class TestMain(QThread):
                     extend_pcs_log_size(self.util_path,ip,50000)
                     open_broadcast(self.util_path,ip,9600+idx)
                     get_promission(ip,float(self.txt_timeout.text()))
+                    set_network(ip,ip)
                     if self.cb_lidar_mode.currentText()=="CAN":
                         while True:
                             if set_lidar_mode(ip,"can",self.can_mode):

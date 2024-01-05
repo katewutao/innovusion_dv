@@ -203,6 +203,21 @@ def get_current_date():
     start_time=f"{ret[0].zfill(4)}{ret[1].zfill(2)}{ret[2].zfill(2)}T{ret[3].zfill(2)}{ret[4].zfill(2)}{ret[5].zfill(2)}"
     return start_time
 
+def get_promission(ip,time_out):
+    print(f"{ip} get premission")
+    if 'windows' not in platform.platform().lower():
+        import pexpect as pect
+    else:
+        import wexpect as pect
+    child = pect.spawn(f'ssh root@{ip}',timeout=time_out)
+    try:
+        child.expect('yes',timeout=3)
+        child.sendline('yes')
+    except:
+        pass
+    child.expect('password')
+    child.sendline('4920lidar')
+    child.close()
 
 def send_tcp(command,ip,port=8001,wait=False):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -249,6 +264,37 @@ def get_customerid(ip):
         customerid=ret.group(1)
     return customerid
 
+def set_network(ip,new_ip):
+    ret = re.search("^(\d+\.\d+)",ip)
+    if not ret:
+        print(f"{ip} is not valid,set network fail")
+        return
+    ip_key = ret.group(1).replace(".","\.")
+    res = os.popen("ip addr show").read()
+    ret_ip_cfg = re.findall("inet\s+([0-9\./]+)",res)
+    netmask = ""
+    for item in ret_ip_cfg:
+        ret = re.search(f"^{ip_key}.+/(\d+)",item)
+        if ret:
+            ffff_count = int(int(ret.group(1))/8)
+            netmask = ("255."*ffff_count)[:-1]+".0"*(4-ffff_count)
+            break
+    if netmask == "":
+        print(f"{ip_key} not find in ip config,set network fail")
+        return
+    new_ip_list = new_ip.split(".")
+    netmask_list = netmask.split(".")
+    last_ip = "1" if new_ip_list[-1] != "1" else "100"
+    command_list = new_ip_list+netmask_list+new_ip_list[:-1]+[last_ip]
+    set_command = " ".join(command_list)
+    command = f'set_network {set_command}'
+    s = send_tcp(command,ip,8001)
+    if f"netmask={netmask}" not in s:
+        print(f"{ip} set network {netmask} fail")
+        return
+    else:
+        print(f"{ip} set network {netmask} success")
+        return
 
 if __name__=="__main__":
     # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
@@ -258,17 +304,10 @@ if __name__=="__main__":
     # s = send_tcp(command,"172.168.1.10",8088)
     # print(time.time()-t)
     
-    
-    command = "http://172.168.1.10:8010/command/?get_sdk_version"
-    
-    while True:
-        res = []
-        res.append(send_tcp('scanh_tran STR051ND',"172.168.1.10",8001).strip("\n"))
-        res.append(send_tcp('scanh_tran STR052ND',"172.168.1.10",8001).strip("\n"))
-        res.append(send_tcp('scanh_tran STR053ND',"172.168.1.10",8001).strip("\n"))
-        res.append(send_tcp('scanh_tran STR054ND',"172.168.1.10",8001).strip("\n"))
-        res.append(send_tcp('scanh_tran STR055ND',"172.168.1.10",8001).strip("\n"))
-        res.append(send_tcp('scanh_tran STR056ND',"172.168.1.10",8001).strip("\n"))
-        res.append(send_tcp('scanh_tran STR108ND',"172.168.1.10",8001).strip("\n"))
-        res.append(send_tcp('scanh_tran STR109ND',"172.168.1.10",8001).strip("\n"))
-        print(datetime.datetime.now(),res)
+    util_path = "../lidar_util/innovusion_lidar_util"
+    for i in range(6):
+        ip = f"172.168.1.{13+i}"
+        port = 8600+i
+        open_broadcast(util_path,ip,port)
+        set_network(ip,ip)
+        reboot_lidar(ip)
