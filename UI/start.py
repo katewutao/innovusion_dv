@@ -704,14 +704,15 @@ class MonitorFault(QThread):
             print(f"file {util_path} not exists!")
             return None
         while True:
-            if ping(self.ip,3) or self.isInterruptionRequested():
+            if ping(self.ip,3):
                 break
+            if self.isInterruptionRequested():
+                return
         if not os.path.exists(self.savepath):
             try:
                 os.makedirs(self.savepath)
             except:
                 pass
-            
         is_first_write=True
         log_lines_counter = 0
         raw_idx = 1
@@ -727,6 +728,8 @@ class MonitorFault(QThread):
             if not os.path.exists(newest_path):
                 if hasattr(self,"cmd") and self.cmd.poll()==None:
                     get_curl_result(command2,1)
+                    if self.isInterruptionRequested():
+                        return
                 else:
                     self.reboot_cmd(command1,command2,command3,command4)
                 continue
@@ -771,7 +774,11 @@ class MonitorFault(QThread):
                 raw_idx += 1
                 newest_path=self.newest_folder(self.savepath,raw_idx)
                 command2=f'http://localhost:{self.tcp_port}/command/?set_raw_data_save_path={newest_path}'
+                if self.isInterruptionRequested():
+                    return
                 get_curl_result(command2,1)
+                if self.isInterruptionRequested():
+                    return
                 get_curl_result(command3,1)
     
     @handle_exceptions
