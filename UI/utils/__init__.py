@@ -221,6 +221,7 @@ def get_promission(ip,time_out):
 
 def send_tcp(command,ip,port=8001,wait=False):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    command = command.strip("\n")+"\n"
     if wait:
         sock.settimeout(5)
     res = ""
