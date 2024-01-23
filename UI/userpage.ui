@@ -53,10 +53,13 @@
     <property name="geometry">
      <rect>
       <x>170</x>
-      <y>159</y>
+      <y>169</y>
       <width>131</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(0, 255, 127)</string>
     </property>
     <property name="text">
      <string>Test Start</string>
@@ -78,9 +81,9 @@
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>560</x>
       <y>0</y>
-      <width>881</width>
+      <width>351</width>
       <height>51</height>
      </rect>
     </property>
@@ -90,7 +93,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Seyond DV Test Tool</string>
+     <string>DV Test Tool</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
@@ -151,7 +154,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>51</y>
+      <y>60</y>
       <width>901</width>
       <height>101</height>
      </rect>
@@ -415,11 +418,14 @@
    <widget class="QPushButton" name="btn_cancle_can">
     <property name="geometry">
      <rect>
-      <x>630</x>
-      <y>159</y>
+      <x>650</x>
+      <y>169</y>
       <width>131</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 255, 0)</string>
     </property>
     <property name="text">
      <string>Cancle CAN Mode</string>
@@ -431,11 +437,14 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>400</x>
-      <y>159</y>
+      <x>420</x>
+      <y>169</y>
       <width>131</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 0, 0)</string>
     </property>
     <property name="text">
      <string>Test Stop</string>
@@ -662,6 +671,30 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <widget class="QLabel" name="lb_logo">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>0</y>
+      <width>531</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>28</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
    <zorder>frame</zorder>
    <zorder>txt_log</zorder>
    <zorder>label_4</zorder>
@@ -683,6 +716,7 @@
    <zorder>lb_power_status</zorder>
    <zorder>lb_version</zorder>
    <zorder>lb_test_time</zorder>
+   <zorder>lb_logo</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_record_start">

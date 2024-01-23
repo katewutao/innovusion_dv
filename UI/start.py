@@ -1158,7 +1158,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.project_folder="./project"
         self.test_folder="./test_config"
         self.power_folder="./power"
-
+        self.logo_path = "config/Seyond Black Horizontal RGB.jpg"
+        
         self.timer = QTimer()
         
         self.cb_project.currentIndexChanged.connect(self.project_changed)
@@ -1171,6 +1172,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.init_select_item()
     
         self.cb_can_mode.setEnabled(False)
+        self.lb_logo.setPixmap(QPixmap(self.logo_path))
         
         IntValidator = QIntValidator(0,100000)
         DoubleValidator = QDoubleValidator(0,100000,3,notation=QtGui.QDoubleValidator.StandardNotation)
