@@ -147,6 +147,11 @@ def main(args):
                 os.remove(excel)
             except:
                 pass
+    if args.rm_result:
+        try:
+            os.remove(command_path)
+        except:
+            pass
     if len(df_dict_res.keys())==0:
         return
     writer = pd.ExcelWriter(result_path)
