@@ -174,7 +174,7 @@ if __name__=="__main__":
     parse.add_argument("--client", "-c" ,action="store_true")
     parse.add_argument("--lidar-log", "-ll" , action="store_true")
     parse.add_argument("--output-folder", "-o" ,type=str, default="./analyze_result")
-    parse.add_argument("--max-thread-counter", "-mtc" ,type=int, default=6)
+    parse.add_argument("--max-thread-counter", "-mtc" ,type=int, default=3)
     parse.add_argument("--start-idx", "-si" ,type=int, default=0)
     parse.add_argument("--rm-result", "-r" ,action="store_true")
     args = parse.parse_args()

@@ -1136,7 +1136,7 @@ class TestMain(QThread):
             rm_empty_folder(self.save_folder)
             print("start continue analyze log")
             kill_subprocess("log_main.py")
-            cmd = subprocess.Popen(self.analyse_command + " -r",shell=True)
+            cmd = subprocess.Popen(self.analyse_command + " -r -mtc 6",shell=True)
             cmd.wait()
             self.sigout_test_finish.emit(self.util_path)
         print(f"Test has been stop")
