@@ -41,15 +41,8 @@ def main_close(args):
         return
     
     usbcan = USBCAN(conf)
-    if conf['redis']['upload']:
-        pool = redis.ConnectionPool(host=conf['redis']['host'], port=conf['redis']['port'], db=conf['redis']['db_num'])
-        r = redis.Redis(connection_pool=pool)
-        if not usbcan.run_usbcan(socket.gethostname(), r):
-            return
-    else:
-        if not usbcan.run_usbcan():
-            return
-
+    usbcan.run_usbcan()
+    
     # Block
     # tcp_server(conf)
 

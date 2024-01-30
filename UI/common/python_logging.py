@@ -16,9 +16,9 @@ def my_log(name, mode, encoding='utf-8'):
 
     # 创建一个文件处理器，文件写入日志
     # fh = logging.FileHandler(filename="./{}_log.txt".format(time.strftime("%Y_%m_%d %H_%M_%S",time.localtime())),encoding="utf8", mode='a')
-    fh = logging.FileHandler(filename=name, encoding=encoding, mode=mode)
-    # 创建一个文件格式器f_formatter
-    f_formatter = logging.Formatter(fmt="[%(asctime)s.%(msecs)03d] [%(levelname)s] %(filename)s, %(lineno)s, %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
+    # fh = logging.FileHandler(filename=name, encoding=encoding, mode=mode)
+    # # 创建一个文件格式器f_formatter
+    # f_formatter = logging.Formatter(fmt="[%(asctime)s.%(msecs)03d] [%(levelname)s] %(filename)s, %(lineno)s, %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
 
     # 关联控制台日志器—处理器—格式器
     logger.addHandler(sh)
@@ -26,11 +26,11 @@ def my_log(name, mode, encoding='utf-8'):
     # 设置处理器输出级别
     sh.setLevel(logging.INFO)
 
-    # 关联文件日志器-处理器-格式器
-    logger.addHandler(fh)
-    fh.setFormatter(f_formatter)
-    # 设置处理器输出级别
-    fh.setLevel(logging.DEBUG)
+    # # 关联文件日志器-处理器-格式器
+    # logger.addHandler(fh)
+    # fh.setFormatter(f_formatter)
+    # # 设置处理器输出级别
+    # fh.setLevel(logging.DEBUG)
 
     return logger
 

@@ -73,16 +73,19 @@ class USBCAN():
         self.usbcan.start_CAN(self.rx_ch)
         
         if self.cantype == 'canfd':
-            threading.Thread(target=self.usbcan.receive_frame_FD, args=(self.rx_ch, hostname, r)).start()
-            threading.Thread(target=self.usbcan.transmit_frame_FD, args=(self.tx_ch,)).start()
-            return True
+            th1 = threading.Thread(target=self.usbcan.receive_frame_FD, args=(self.rx_ch, hostname, r))
+            th2 = threading.Thread(target=self.usbcan.transmit_frame_FD, args=(self.tx_ch,))
         elif self.cantype == 'can':
-            threading.Thread(target=self.usbcan.receive_frame, args=(self.rx_ch,)).start()
-            threading.Thread(target=self.usbcan.transmit_frame, args=(self.tx_ch,)).start()
-            return True
+            th1 = threading.Thread(target=self.usbcan.receive_frame, args=(self.rx_ch,))
+            th2 = threading.Thread(target=self.usbcan.transmit_frame, args=(self.tx_ch,))
         else:
             logger.error('Invalid CAN type.')
             return False
+        th1.start()
+        th2.start()
+        th1.join()
+        th2.join()
+        return True
 
 
     def stop_usbcan(self):
@@ -169,15 +172,8 @@ def main(args):
         return
     
     usbcan = USBCAN(conf)
-    if conf['redis']['upload']:
-        pool = redis.ConnectionPool(host=conf['redis']['host'], port=conf['redis']['port'], db=conf['redis']['db_num'])
-        r = redis.Redis(connection_pool=pool)
-        if not usbcan.run_usbcan(socket.gethostname(), r):
-            return
-    else:
-        if not usbcan.run_usbcan():
-            return
-
+    usbcan.run_usbcan()
+    
     # Block
     # tcp_server(conf)
 
