@@ -1153,6 +1153,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         QMainWindow.__init__(self)
         userpage.Ui_MainWindow.__init__(self)
         self.setupUi(self)
+        self.log_rows = 0
         self.lb_version.setText(f"Version:  {get_tags()}")
         
         self.project_folder="./project"
@@ -1194,10 +1195,14 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             self.stdoutbak.write(info)
 
     def normalOutputWritten(self, text):
+        if self.log_rows>50000:
+            self.txt_log.clear()
+            self.log_rows=0
         self.txt_log.append(text.strip('\n'))
         self.cursor=self.txt_log.textCursor()
         self.txt_log.moveCursor(self.cursor.End) 
         QtWidgets.QApplication.processEvents()
+        self.log_rows+=1
     
     
     
