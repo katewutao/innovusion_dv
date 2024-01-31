@@ -191,5 +191,5 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
         return True
 if __name__=="__main__":
     os.environ["project"]="Robin"
-    down_sdk("172.168.1.10","release-1.1.0-rw-nio-pcs-rc1-arm",False)
+    down_sdk("172.168.1.10",None,False)
     # down_sdk("172.168.1.10")

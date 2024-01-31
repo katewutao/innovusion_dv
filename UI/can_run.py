@@ -13,6 +13,7 @@ import threading
 import redis
 import json
 import subprocess as sp
+import time
 from core import usbcanfd_controller as usbcanfd
 from common import python_logging
 logger = python_logging.my_log('USBCAN.log', 'w')
@@ -174,6 +175,7 @@ def main(args):
     usbcan = USBCAN(conf)
     usbcan.run_usbcan()
     
+        
     # Block
     # tcp_server(conf)
 
