@@ -12,7 +12,7 @@ from can_run import *
 
 def main_close(args):
     conf = load_conf('config/CANFD_Config.json')
-    if args.can=="Default":
+    if args.can in ["Default","Robin","FII"]:
         os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
         return
     elif args.can=="GF":
@@ -21,9 +21,6 @@ def main_close(args):
         conf["frame"]["payload"]="000000"
         conf["frame"]["payload_len"]=3
         conf["frame"]["send_count"]=5
-    elif args.can=="Robin":
-        os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
-        return
     elif args.can=="switch":
         conf["frame"]["type"]="can"
         conf["frame"]["frame_ID"]="701"

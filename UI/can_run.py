@@ -141,7 +141,7 @@ def main(args):
     if args.can=="Default":
         conf["frame"]["type"]="canfd"  #can or canfd
         conf["frame"]["frame_ID"]="505"
-        conf["frame"]["payload"]="0011223344556677"
+        conf["frame"]["payload"]="004000800000000"
         conf["frame"]["payload_len"]=8
         conf["frame"]["send_count"]=-1
     elif args.can=="GF":
