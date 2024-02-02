@@ -913,6 +913,8 @@ class TestMain(QThread):
                 if dsp_thread.isRunning():
                     dsp_thread.stop()
         self.sigout_power.emit(False)
+        if os.getenv("relay")=="True":
+            os.system("python3 can_cancle.py -c switch")
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can.kill()
             self.kill_cmd_can=subprocess.Popen(f'exec python3 can_cancle.py -c {self.can_mode}',shell=True)
@@ -928,8 +930,6 @@ class TestMain(QThread):
                     print(f"power off failed")
                     time.sleep(2)
             self.power_monitor.resume()
-        if os.getenv("relay")=="True":
-            os.system("python3 can_cancle.py -c switch")
         kill_client()
         print(f"start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
         if self.cmd_anlyze_log.poll() is not None:
