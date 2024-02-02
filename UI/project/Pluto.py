@@ -74,7 +74,7 @@ def extract(search_keys, st):
 def one_record(ip,save_log,SN,CustomerSN):
     global search_keys
     command = f'http://{ip}:8088/get-all-status'
-    res = get_curl_result(command,1.5)[0]
+    res = get_curl_result(command,3)[0]
     if res=="":
         print(f"{ip} can't connect")
     temp = [f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}",SN,CustomerSN,"","",""]
