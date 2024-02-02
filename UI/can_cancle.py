@@ -40,7 +40,6 @@ def main_close(args):
     
     usbcan = USBCAN(conf)
     usbcan.run_usbcan()
-    
     if args.can=="switch":
         conf["frame"]["payload"]="0001"*4
         time.sleep(2)
