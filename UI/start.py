@@ -913,12 +913,12 @@ class TestMain(QThread):
                 if dsp_thread.isRunning():
                     dsp_thread.stop()
         self.sigout_power.emit(False)
-        if os.getenv("relay")=="True":
-            os.system("python3 can_cancle.py -c switch")
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can.kill()
             self.kill_cmd_can=subprocess.Popen(f'exec python3 can_cancle.py -c {self.can_mode}',shell=True)
             self.kill_cmd_can.wait()
+            if os.getenv("relay")=="True":
+                os.system("python3 can_cancle.py -c switch")
         else:
             self.power_monitor.pause()
             while True:
