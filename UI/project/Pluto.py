@@ -77,6 +77,7 @@ def one_record(ip,save_log,SN,CustomerSN):
     res = get_curl_result(command,3)[0]
     if res=="":
         print(f"{ip} can't connect")
+        return None
     temp = [f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}",SN,CustomerSN,"","",""]
     temp+=extract(search_keys, res)
     return temp
