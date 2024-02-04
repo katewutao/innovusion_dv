@@ -27,10 +27,10 @@ search_keys={
     "Rel Test Name": "",
     "Rel CP code": "",
     "Rel Leg": "",
-    "FPGA_temp": "T0",
-    "Adc_temp": "T1",
-    "Tboard_temp": "T2",
-    "Tlaser_temp": "Tlaser",
+    "FPGA_temp": "T0=",
+    "Adc_temp": "T1=",
+    "Tboard_temp": "T2=",
+    "Tlaser_temp": "Tlaser=",
     "det_A temp": "A=",
     "det_B temp": "B=",
     "det_C temp": "C=",
@@ -54,19 +54,11 @@ def extract(search_keys, st):
     res=[]
     for key in search_keys.keys():
         if search_keys[key]!="":
-            if re.search("^CH([A|B|C|D])_",key) and re.search("intensity$",search_keys[key]):
-                ret=re.search(search_keys[key]+".*?(\d+).*?(\d+).*?(\d+).*?(\d+)",st)
-                CH_idx=ord(re.search("^CH([A|B|C|D])_",key).group(1))-ord("A")
-                if ret:
-                    res.append(ret.group(CH_idx+1))
-                else:
-                    res.append("NaN")
+            ret=re.search(search_keys[key]+".*?(-?\d+\.?\d*)",st)
+            if ret:
+                res.append(ret.group(1))
             else:
-                ret=re.search(search_keys[key]+".*?(-?\d+\.?\d*)",st)
-                if ret:
-                    res.append(ret.group(1))
-                else:
-                    res.append("NaN")
+                res.append("NaN")
     return res
 
 
