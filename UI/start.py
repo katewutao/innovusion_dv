@@ -1023,9 +1023,9 @@ class TestMain(QThread):
                 self.one_cycle(time_one,self.ip_list,i,int(self.txt_off_counter.text()),self.save_folder)
                 i+=1 
             self.power_monitor.stop()
-            if os.getenv("relay")=="True":
-                os.system("python3 can_run.py -c switch")
             if self.cb_lidar_mode.currentText()=="CAN":
+                if os.getenv("relay")=="True":
+                    os.system("python3 can_run.py -c switch")
                 cancle_can(self.ip_list,self.can_mode)
             while True:
                 print("power off")
