@@ -179,10 +179,11 @@ class TestMain(QThread):
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,ip_list,times,cb_lidar_mode):
+    def __init__(self,ip_list,times,lidar_mode,can_mode):
         super(TestMain,self).__init__()
 
-        self.cb_lidar_mode=cb_lidar_mode
+        self.lidar_mode=lidar_mode
+        self.can_mode=can_mode
         self.ip_list=ip_list
         self.times=times
     
@@ -221,6 +222,8 @@ class TestMain(QThread):
                     last_timestamp=current_timestamp
                     print(f"set power voltage failed, {power_one_time[2]}V")
                 time.sleep(2)
+        if self.lidar_mode=="CAN":
+            subprocess.Popen(f"python3 can_run.py -c {self.can_mode}",shell=True)
         sleep_time = int(power_one_time[0]-time.time()+t)
         print(f"start monitor {sleep_time}s")
         self.records=[]
@@ -231,14 +234,18 @@ class TestMain(QThread):
             if sleep_time > 0:
                 time.sleep(sleep_time)
         self.sigout_power.emit(False)
-        while True:
-            try:
-                pow=power.Power()
-                pow.power_off()
-                break
-            except:
-                print(f"power off failed")
-                time.sleep(2)
+        if self.lidar_mode=="CAN":
+            cmd = subprocess.Popen(f"python3 can_cancle.py -c {self.can_mode}",shell=True)
+            cmd.wait()
+        else:
+            while True:
+                try:
+                    pow=power.Power()
+                    pow.power_off()
+                    break
+                except:
+                    print(f"power off failed")
+                    time.sleep(2)
         print(f"start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
         t0=(power_one_time[0]+power_one_time[1]-(time.time()-t))
         if t0>0:
@@ -294,9 +301,6 @@ class MainCode(QMainWindow,ui_power.Ui_MainWindow):
         self.btn_start.clicked.connect(self.test_main)
         self.btn_stop.clicked.connect(self.test_stop)
         self.init_select_item()
-        
-        self.cb_lidar_mode.setEnabled(False)
-        
         
         self.scrollArea_list=[]      
     
@@ -374,7 +378,9 @@ class MainCode(QMainWindow,ui_power.Ui_MainWindow):
     @handle_exceptions
     def test_main(self):    
         self.btn_start.setEnabled(False)
-        self.test=TestMain(self.ip_list,self.times,self.cb_lidar_mode)
+        can_mode = self.cb_can_mode.currentText()
+        lidar_mode = self.cb_lidar_mode.currentText()
+        self.test=TestMain(self.ip_list,self.times,lidar_mode,can_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_power.connect(self.power_status)
         self.test.start()
@@ -392,12 +398,14 @@ class MainCode(QMainWindow,ui_power.Ui_MainWindow):
         print(f"Test finished")
     
     def test_set_off(self):
+        self.cb_can_mode.setEnabled(False)
         self.cb_test_name.setEnabled(False)
         self.cb_power_type.setEnabled(False)
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
     
     def test_set_on(self):
+        self.cb_can_mode.setEnabled(True)
         self.cb_test_name.setEnabled(True)
         self.cb_power_type.setEnabled(True)
         self.btn_start.setEnabled(True)
