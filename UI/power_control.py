@@ -13,7 +13,7 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-import userpage
+import ui_power
 import subprocess
 import re,threading
 import platform
@@ -179,19 +179,12 @@ class TestMain(QThread):
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,can_mode,ip_list,record_folder,record_header,times,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
+    def __init__(self,ip_list,times,cb_lidar_mode):
         super(TestMain,self).__init__()
-        self.csv_write_func=csv_write_func
-        self.txt_record_interval=txt_record_interval
+
         self.cb_lidar_mode=cb_lidar_mode
-        self.save_folder=record_folder
         self.ip_list=ip_list
-        self.txt_timeout=txt_timeout
-        self.record_header=record_header
-        self.txt_off_counter=txt_off_counter
         self.times=times
-        self.record_func=record_func
-        self.can_mode=can_mode
     
     def send_lidar_info(self,list1,row_idx):
         self.sigout_lidar_info.emit(list1,row_idx)
@@ -203,7 +196,7 @@ class TestMain(QThread):
         self.sigout_heal_fault.emit(fault,row_idx)
     
     @handle_exceptions
-    def one_cycle(self,power_one_time,ip_list,i,data_num_power_off,log_path):
+    def one_cycle(self,power_one_time,i):
         self.sigout_power.emit(True)
         import power
         print(f"current circle {i}")
@@ -256,7 +249,7 @@ class TestMain(QThread):
         i=1
         for time_one in self.times:
             self.sigout_schedule.emit(i,len(self.times))
-            self.one_cycle(time_one,self.ip_list,i,int(self.txt_off_counter.text()),self.save_folder)
+            self.one_cycle(time_one,i)
             i+=1 
         self.sigout_test_finish.emit(None)
         
@@ -280,14 +273,13 @@ class EmittingStream(QtCore.QObject):
         self.textWritten.emit(str(text))
 
         
-class MainCode(QMainWindow,userpage.Ui_MainWindow):
+class MainCode(QMainWindow,ui_power.Ui_MainWindow):
     
     def __init__(self):
         QMainWindow.__init__(self)
-        userpage.Ui_MainWindow.__init__(self)
+        ui_power.Ui_MainWindow.__init__(self)
         self.setupUi(self)
         self.log_rows = 0
-        self.lb_version.setText(f"Version:  {get_tags()}")
         
         self.project_folder="./project"
         self.test_folder="./test_config"
@@ -296,23 +288,15 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         
         self.timer = QTimer()
         
-        self.cb_project.currentIndexChanged.connect(self.project_changed)
         self.cb_test_name.currentIndexChanged.connect(self.test_name_changed)
         self.cb_power_type.currentIndexChanged.connect(self.power_changed)
-        self.cb_lidar_mode.currentIndexChanged.connect(self.lidar_mode_changed)
+
         self.btn_start.clicked.connect(self.test_main)
         self.btn_stop.clicked.connect(self.test_stop)
         self.init_select_item()
         
         self.cb_lidar_mode.setEnabled(False)
-        self.cb_can_mode.setEnabled(False)
-        self.lb_logo.setPixmap(QPixmap(self.logo_path))
         
-        IntValidator = QIntValidator(0,100000)
-        DoubleValidator = QDoubleValidator(0,100000,3,notation=QtGui.QDoubleValidator.StandardNotation)
-        self.txt_timeout.setValidator(DoubleValidator)
-        self.txt_record_interval.setValidator(DoubleValidator)
-        self.txt_off_counter.setValidator(IntValidator)
         
         self.scrollArea_list=[]      
     
@@ -338,102 +322,9 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.log_rows+=1
     
     
-    @handle_exceptions
-    def update_test_time(self):
-        time_s=TimeConvert.hms2time(self.lb_test_time.text())
-        time_s+=1
-        hms=TimeConvert.time2hms(time_s)
-        self.lb_test_time.setText(hms)
-    
-    
-    @handle_exceptions
-    def init_table(self,row_counter,columns):
-        columns=["Lidar_IP"]+list(columns)
-        for row_num in range(self.tbw_data.rowCount(),-1,-1):
-            self.tbw_data.removeRow(row_num)
-        for row_num in range(self.tbw_fault.rowCount(),-1,-1):
-            self.tbw_fault.removeRow(row_num)
-        self.tbw_data.setColumnCount(len(columns))
-        self.tbw_fault.setColumnCount(1)
-        for j in range(len(columns)):
-            self.tbw_data.setHorizontalHeaderItem(j, QtWidgets.QTableWidgetItem())
-            self.tbw_data.horizontalHeader().setSectionResizeMode(j, QHeaderView.ResizeToContents)
-            item = self.tbw_data.horizontalHeaderItem(j)
-            item.setText(f"{columns[j]}")
-        
-        self.tbw_fault.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem())
-        self.tbw_fault.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        item = self.tbw_fault.horizontalHeaderItem(0)
-        item.setText("Lidar_IP")
-        
-        
-        for i in range(row_counter):
-            self.tbw_data.insertRow(i)
-            self.tbw_fault.insertRow(i)
-            self.tbw_data.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
-            self.tbw_fault.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
-            self.tbw_fault.setItem(i,0,QtWidgets.QTableWidgetItem(self.ip_list[i]))
-            for j in range(len(columns)):
-                if j==0:
-                    cell_value=self.ip_list[i]
-                else:
-                    cell_value=""
-                self.tbw_data.setItem(i,j,QtWidgets.QTableWidgetItem(cell_value))
-        
-    
-    @handle_exceptions
-    def report_fault(self,fault,row_idx):
-        self.set_fault(fault,row_idx)
-        for col_idx in range(self.tbw_fault.columnCount()):
-            if  self.tbw_fault.horizontalHeaderItem(col_idx).text()==fault:
-                if self.tbw_fault.item(row_idx,col_idx)!=None:
-                    last_fault_count=self.tbw_fault.item(row_idx,col_idx).text()
-                    if re.search("\d+",last_fault_count):
-                        self.tbw_fault.setItem(row_idx,col_idx,QtWidgets.QTableWidgetItem(f"{int(last_fault_count)+1}"))
-                        
-                        return
-                self.tbw_fault.setItem(row_idx,col_idx,QtWidgets.QTableWidgetItem(f"{1}"))
-                return
-        last_max_col=self.tbw_fault.columnCount()
-        self.tbw_fault.setColumnCount(last_max_col+1)
-        self.tbw_fault.setHorizontalHeaderItem(last_max_col, QtWidgets.QTableWidgetItem())
-        self.tbw_fault.horizontalHeader().setSectionResizeMode(last_max_col, QHeaderView.ResizeToContents)
-        item = self.tbw_fault.horizontalHeaderItem(last_max_col)
-        item.setText(f"{fault}")
-        self.tbw_fault.setItem(row_idx,last_max_col,QtWidgets.QTableWidgetItem(f"{1}"))
-        
-    @handle_exceptions
-    def set_fault(self,fault,row_idx):
-        fault_name_width=185
-        if fault not in self.scrollArea_list:
-            self.scrollArea_list.append(fault)
-            self.scrollArea.takeWidget()
-            self.scrollAreaWidgetContents.setMinimumSize(fault_name_width+19+40*len(self.ip_list),20+30*len(self.scrollArea_list))
-            label=QtWidgets.QLabel(self.scrollAreaWidgetContents)
-            label.setGeometry(QtCore.QRect(10,30*len(self.scrollArea_list)-10,fault_name_width,21))
-            label.setText(fault)
-            setattr(self,f"lb_{fault}",label)            
-            for idx,ip in enumerate(self.ip_list):
-                label=QtWidgets.QLabel(self.scrollAreaWidgetContents)
-                label.setGeometry(QtCore.QRect(fault_name_width+19+40*idx, 30*len(self.scrollArea_list)-10, 21, 21))
-                label.setText("")
-                label.setStyleSheet("border-radius:10px;background-color:rgb(0, 0, 0)")
-                setattr(self,f"lb_{fault}_{idx}",label)
-            self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-        getattr(self,f"lb_{fault}_{row_idx}").setStyleSheet("border-radius:10px;background-color:rgb(255, 0, 0)")
-
-    @handle_exceptions
-    def heal_fault(self,fault,row_idx):
-        if fault in self.scrollArea_list:
-            getattr(self,f"lb_{fault}_{row_idx}").setStyleSheet("border-radius:10px;background-color:rgb(115, 210, 22)")
     
     def init_select_item(self):
-        self.cb_project.clear()
         self.cb_test_name.clear()
-        for project in sorted(os.listdir(self.project_folder)):
-            ret=re.search("^(.+)\.py",project)
-            if ret:
-                self.cb_project.addItem(ret.group(1))
         for test_name in sorted(os.listdir(self.test_folder)):  # may can be json file, but no explain
             ret=re.search("^(.+)\.py",test_name)
             if ret:
@@ -450,18 +341,6 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         if os.path.exists("power.py"):
             os.remove("power.py")
         shutil.copyfile(os.path.join(self.power_folder,f"power_{self.cb_power_type.currentText()}.py"),os.path.join(os.getcwd(),"power.py"))
-    
-    def lidar_mode_changed(self):
-        if self.cb_lidar_mode.currentText()=="No Power":
-            self.cb_power_type.setEnabled(False)
-        else:
-            self.cb_power_type.setEnabled(True)
-        if self.cb_lidar_mode.currentText()=="CAN":
-            self.cb_can_mode.setEnabled(True)
-        else:
-            self.cb_can_mode.setEnabled(False)
-        os.environ["lidar_mode"]=self.cb_lidar_mode.currentText()
-            
     
     def power_status(self,mode):
         if mode:
@@ -491,35 +370,12 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         if hasattr(self,"test_config"):
             self.ip_list=self.test_config["lidar_ip"]
             self.times=get_circle_time(self.test_config["time_dict"])
-            self.init_table(len(self.ip_list),self.record_header.split(","))
-        self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 485, 795))
-        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-        self.scrollArea_list=[]
     
     @handle_exceptions
-    def test_main(self):
-        if self.txt_off_counter.text().strip()=="":  #setReadOnly(True)
-            print(f"please input power off empty data number")
-            return        
-        if self.txt_record_interval.text().strip()=="":  #setReadOnly(True)
-            print(f"please input record interval time")
-            return
-        if self.txt_timeout.text().strip()=="":  #setReadOnly(True)
-            print(f"please input timeout")
-            return
+    def test_main(self):    
         self.btn_start.setEnabled(False)
-        self.pgb_test.setValue(0)
-        self.lb_test_time.setText("00:00:00")
-        self.timer.start(1000)
-        self.timer.timeout.connect(self.update_test_time)
-        print(f"{self.lb_version.text()},Laser test,Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s,Relay:{self.relay.isChecked()},DSP:{self.dsp.isChecked()},Timeout:{self.txt_timeout.text()}s")
-        os.environ["relay"]=str(self.relay.isChecked())
-        os.environ["dsp"]=str(self.dsp.isChecked())
-        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
+        self.test=TestMain(self.ip_list,self.times,self.cb_lidar_mode)
         self.test.sigout_test_finish.connect(self.test_finish)
-        self.test.sigout_schedule.connect(self.set_schedule)
         self.test.sigout_power.connect(self.power_status)
         self.test.start()
         self.test_set_off()
@@ -536,43 +392,16 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         print(f"Test finished")
     
     def test_set_off(self):
-        self.cb_lidar_mode.setEnabled(False)
-        self.cb_project.setEnabled(False)
         self.cb_test_name.setEnabled(False)
         self.cb_power_type.setEnabled(False)
-        self.cb_can_mode.setEnabled(False)
-        self.txt_off_counter.setEnabled(False)  #setReadOnly(True)
-        self.txt_record_interval.setEnabled(False)
-        self.txt_timeout.setEnabled(False)
         self.btn_start.setEnabled(False)
-        self.btn_cancle_can.setEnabled(False)
-        self.relay.setEnabled(False)
-        self.dsp.setEnabled(False)
         self.btn_stop.setEnabled(True)
     
     def test_set_on(self):
-        self.cb_lidar_mode.setEnabled(False)
-        self.cb_project.setEnabled(True)
         self.cb_test_name.setEnabled(True)
-        if self.cb_lidar_mode.currentText()!="No Power":
-            self.cb_power_type.setEnabled(True)
-        if self.cb_lidar_mode.currentText()=="CAN":
-            self.cb_can_mode.setEnabled(True)
-        self.txt_off_counter.setEnabled(True)  #setReadOnly(True)
-        self.txt_record_interval.setEnabled(True)
-        self.txt_timeout.setEnabled(True)
+        self.cb_power_type.setEnabled(True)
         self.btn_start.setEnabled(True)
-        self.btn_cancle_can.setEnabled(True)
-        self.relay.setEnabled(True)
-        self.dsp.setEnabled(True)
         self.btn_stop.setEnabled(False)
-    
-    @handle_exceptions
-    def set_schedule(self,current_counter,sum_counter):
-        str1=f"{round(current_counter*100/sum_counter,1)}%"
-        # self.lb_schedule.setText(f"Test Schedule: {str1}")
-        self.pgb_test.setValue(math.floor(current_counter*10000/sum_counter))
-        self.pgb_test.setFormat(str1)
     
     @handle_exceptions
     def test_stop(self):

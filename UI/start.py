@@ -588,7 +588,7 @@ class MonitorFault(QThread):
     def newest_folder(self,A,B):
         newest_path=os.path.join(A,str(B))
         return newest_path
-
+        
     def check_raw(self,folder):
         file_list=os.listdir(folder)
         key="^.*\.inno_raw$"  #"sn\d*-\d+.*\.inno_raw$"
