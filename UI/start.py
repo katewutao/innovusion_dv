@@ -831,8 +831,50 @@ class TestMain(QThread):
     def heal_fault(self,fault,row_idx):
         self.sigout_heal_fault.emit(fault,row_idx)
     
+    
+    def run_monitor(self,log_path,time_path):
+        self.records=[]
+        self.monitors=[]
+        self.dsps=[]
+        for ip_num,ip in enumerate(self.ip_list):
+            print(f"start add record {ip}")
+            record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
+            record_thread.sigout_set_tbw_value.connect(self.send_lidar_info)
+            record_thread.start()
+            self.records.append(record_thread)
+            print(f"start add record success {ip}")
+            raw_save_path=os.path.join(log_path,"raw",ip.replace(".","_"),time_path)
+            monitor_thread=MonitorFault(ip,log_path,raw_save_path,ip_num,9600+ip_num,9100+ip_num,8600+ip_num,8100+ip_num,8010)
+            monitor_thread.sigout_fault_info.connect(self.set_fault)
+            monitor_thread.sigout_fault_heal.connect(self.heal_fault)
+            monitor_thread.start()
+            self.monitors.append(monitor_thread)
+            print(f"start add fault monitor success {ip}")
+            if os.getenv("dsp")=="True":
+                dsp_thread=DSP_info_thread(ip,self.save_folder)
+                dsp_thread.start()
+                self.dsps.append(dsp_thread)
+                print(f"start add dsp success {ip}")
+    
+    def stop_monitor(self):
+        if hasattr(self,"monitors"):
+            print("start stop monitor fault")
+            for monitor in self.monitors:
+                if monitor.isRunning():
+                    monitor.stop()
+        if hasattr(self,"records"):
+            print("start stop record")
+            for record in self.records:
+                if record.isRunning():
+                    record.stop()
+        if hasattr(self,"dsps"):
+            print("start dsp record")
+            for dsp_thread in self.dsps:
+                if dsp_thread.isRunning():
+                    dsp_thread.stop()
+    
     @handle_exceptions
-    def one_cycle(self,power_one_time,ip_list,i,data_num_power_off,log_path):
+    def one_cycle(self,power_one_time,i,data_num_power_off,log_path):
         self.sigout_power.emit(True)
         import power
         print(f"current circle {i}")
@@ -866,52 +908,20 @@ class TestMain(QThread):
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         self.power_monitor.resume()
-        self.records=[]
-        self.monitors=[]
-        self.dsps=[]
         if sleep_time>2:
-            for ip_num,ip in enumerate(ip_list):
-                print(f"start add record {ip}")
-                record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
-                record_thread.sigout_set_tbw_value.connect(self.send_lidar_info)
-                record_thread.start()
-                self.records.append(record_thread)
-                print(f"start add record success {ip}")
-                raw_save_path=os.path.join(log_path,"raw",ip.replace(".","_"),time_path)
-                monitor_thread=MonitorFault(ip,log_path,raw_save_path,ip_num,9600+ip_num,9100+ip_num,8600+ip_num,8100+ip_num,8010)
-                monitor_thread.sigout_fault_info.connect(self.set_fault)
-                monitor_thread.sigout_fault_heal.connect(self.heal_fault)
-                monitor_thread.start()
-                self.monitors.append(monitor_thread)
-                print(f"start add fault monitor success {ip}")
-                if os.getenv("dsp")=="True":
-                    dsp_thread=DSP_info_thread(ip,self.save_folder)
-                    dsp_thread.start()
-                    self.dsps.append(dsp_thread)
-                    print(f"start add dsp success {ip}")
+            self.run_monitor(log_path,time_path)
             sleep_time = power_one_time[0]-time.time()+t
             if sleep_time > 0:
                 time.sleep(sleep_time)
             threads=[]
             print("start download lidar log")
-            for ip in ip_list:
+            for ip in self.ip_list:
                 thread=threading.Thread(target=downlog,args=(ip,log_path,time_path,))
                 thread.start()
                 threads.append(thread)
             for temp_thread in threads:
                 temp_thread.join()
-            print("start stop monitor fault")
-            for monitor in self.monitors:
-                if monitor.isRunning():
-                    monitor.stop()
-            print("start stop record")
-            for record in self.records:
-                if record.isRunning():
-                    record.stop()
-            print("start dsp record")
-            for dsp_thread in self.dsps:
-                if dsp_thread.isRunning():
-                    dsp_thread.stop()
+            self.stop_monitor()
         self.sigout_power.emit(False)
         if self.cb_lidar_mode.currentText()=="CAN":
             self.cmd_can.kill()
@@ -938,7 +948,7 @@ class TestMain(QThread):
             self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
         for i in range(data_num_power_off):
             temp_pow=pow_status
-            for row_idx,ip in enumerate(ip_list):
+            for row_idx,ip in enumerate(self.ip_list):
                 if self.cb_lidar_mode.currentText()=="CAN":
                     temp=[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]+[-100]*(self.record_header.count(",")-2)+temp_pow
                 else:
@@ -1020,7 +1030,7 @@ class TestMain(QThread):
             i=1
             for time_one in self.times:
                 self.sigout_schedule.emit(i,len(self.times))
-                self.one_cycle(time_one,self.ip_list,i,int(self.txt_off_counter.text()),self.save_folder)
+                self.one_cycle(time_one,i,int(self.txt_off_counter.text()),self.save_folder)
                 i+=1 
             self.power_monitor.stop()
             if self.cb_lidar_mode.currentText()=="CAN":
@@ -1045,28 +1055,7 @@ class TestMain(QThread):
             self.sigout_test_finish.emit(self.util_path)
         else:
             time_path=get_time()
-            self.records=[]
-            self.monitors=[]
-            self.dsps=[]
-            for ip_num,ip in enumerate(self.ip_list):
-                print(f"start add record {ip}")
-                record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
-                record_thread.sigout_set_tbw_value.connect(self.send_lidar_info)
-                record_thread.start()
-                self.records.append(record_thread)
-                print(f"start add record success {ip}")
-                raw_save_path=os.path.join(self.save_folder,"raw",ip.replace(".","_"),time_path)
-                monitor_thread=MonitorFault(ip,self.save_folder,raw_save_path,ip_num,9600+ip_num,9100+ip_num,8600+ip_num,8100+ip_num,8010)
-                monitor_thread.sigout_fault_info.connect(self.set_fault)
-                monitor_thread.sigout_fault_heal.connect(self.heal_fault)
-                monitor_thread.start()
-                self.monitors.append(monitor_thread)
-                print(f"start add fault monitor success {ip}")
-                if os.getenv("dsp")=="True":
-                    dsp_thread=DSP_info_thread(ip,self.save_folder)
-                    dsp_thread.start()
-                    self.dsps.append(dsp_thread)
-                    print(f"start add dsp success {ip}")
+            self.run_monitor(self.save_folder,time_path)
             while True:
                 if self.isInterruptionRequested():
                     break
@@ -1076,24 +1065,7 @@ class TestMain(QThread):
     @handle_exceptions
     def stop(self):
         self.requestInterruption()
-        if hasattr(self,"records"):
-            for record in self.records:
-                try:
-                    record.stop()
-                except:
-                    pass
-        if hasattr(self,"monitors"):
-            for monitor in self.monitors:
-                try:
-                    monitor.stop()
-                except:
-                    pass
-        if hasattr(self,"dsps"):
-            for dsp in self.dsps:
-                try:
-                    dsp.stop()
-                except:
-                    pass
+        self.stop_monitor()
         if self.cb_lidar_mode.currentText()=="CAN":
             if hasattr(self,"cmd_can"):
                 try:
