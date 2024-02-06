@@ -871,7 +871,7 @@ class TestMain(QThread):
                 if dsp_thread.isRunning():
                     dsp_thread.stop()
     
-    def set_power_status(power_voltage,power_on=True):
+    def set_power_status(self,power_voltage,power_on=True):
         import power
         while True:
             try:
@@ -994,7 +994,7 @@ class TestMain(QThread):
         print(f"get inno_pc_client permission")
         os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
         if self.cb_lidar_mode.currentText()!="No Power":
-            os.system("python3 ./power.py")
+            self.set_power_status(None,power_on=True)
         if self.cb_lidar_mode.currentText()=="CAN":
             if os.getenv("relay")=="True":
                 os.system("python3 can_run.py -c switch")
