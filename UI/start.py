@@ -137,7 +137,7 @@ def ping(ip,time_interval):
     return res
     
 
-def downlog(ip,log_path,time_path):
+def downlog(ip,log_path,time_path,wait_time=8):
     save_path=os.path.join(log_path,"log",ip.replace('.','_'),time_path)
     os.makedirs(save_path)
     if not ping(ip,1):
@@ -148,12 +148,12 @@ def downlog(ip,log_path,time_path):
     cmd1=subprocess.Popen(command1,shell=True)
     cmd2=subprocess.Popen(command2,shell=True)
     try:
-        cmd1.wait(3)
+        cmd1.wait(wait_time)
     except:
         cmd1.kill()
         print(f"{ip} download tmp timeout")
     try:
-        cmd2.wait(3)
+        cmd2.wait(wait_time)
     except:
         cmd2.kill()
         print(f"{ip} download mnt timeout")
