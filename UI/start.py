@@ -255,7 +255,6 @@ def set_lidar_mode(ip,lidar_type,can_mode):
 
 def cancle_can(ip_list,can_mode="Default"):
     os.system("python3 ./power.py")
-    os.system("python3 lib/set_usbcanfd_env.py demo")
     print(f"start set lidar power mode")
     subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
@@ -527,9 +526,8 @@ class one_lidar_record_thread(QThread):
         save_log=os.path.join(self.record_folder,f"testlog_{ip_name}.txt")
         save_csv=os.path.join(self.record_folder,f"record_{ip_name}.csv")
         if not os.path.exists(save_csv):
-            file = open(save_csv, 'w', newline='\n')
-            file.write(self.record_header)
-            file.close()
+            with open(save_csv, 'w', newline='\n') as f:
+                f.write(self.record_header)
         while True:
             sn_res=get_curl_result(f"http://{self.ip}:8010/command/?get_sn",1)
             if sn_res[1]:
@@ -873,6 +871,45 @@ class TestMain(QThread):
                 if dsp_thread.isRunning():
                     dsp_thread.stop()
     
+    def set_power_status(power_voltage,power_on=True):
+        import power
+        while True:
+            try:
+                pow=power.Power()
+                if power_on:
+                    pow.power_on()
+                else:
+                    pow.power_off()
+                break
+            except:
+                if power_on:
+                    print(f"power on failed")
+                else:
+                    print(f"power off failed")
+                time.sleep(2)
+        if isinstance(power_voltage,type(None)):
+            return
+        last_timestamp = time.time()
+        while True:
+            try:
+                print(f"start set voltage")
+                pow=power.Power()
+                print(f"init power")
+                pow.set_voltage(power_voltage)
+                print(f"set {power_voltage}V")
+                voltage=pow.PowerStatus()[0]
+                print(f"voltage is {voltage}")
+                if abs(voltage-power_voltage)<0.3:
+                    break
+            except:
+                current_timestamp=time.time()
+                if current_timestamp-last_timestamp>3:
+                    last_timestamp=current_timestamp
+                    print(f"set power voltage failed, {power_voltage}V")
+                time.sleep(2)
+        
+    
+    
     @handle_exceptions
     def one_cycle(self,power_one_time,i,data_num_power_off,log_path):
         self.sigout_power.emit(True)
@@ -880,26 +917,7 @@ class TestMain(QThread):
         print(f"current circle {i}")
         t=time.time()
         self.power_monitor.pause()
-        last_timestamp=time.time()
-        while True:
-            try:
-                print(f"start set voltage")
-                pow=power.Power()
-                print(f"init power")
-                pow.power_on()
-                print(f"power on")
-                pow.set_voltage(power_one_time[2])
-                print(f"set {power_one_time[2]}V")
-                voltage=pow.PowerStatus()[0]
-                print(f"voltage is {voltage}")
-                if abs(voltage-power_one_time[2])<0.3:
-                    break
-            except:
-                current_timestamp=time.time()
-                if current_timestamp-last_timestamp>3:
-                    last_timestamp=current_timestamp
-                    print(f"set power voltage failed, {power_one_time[2]}V")
-                time.sleep(2)
+        self.set_power_status(power_one_time[2],power_on=True)
         sleep_time = int(power_one_time[0]-time.time()+t)
         print(f"start monitor {sleep_time}s")
         time_path=get_time()
@@ -931,14 +949,7 @@ class TestMain(QThread):
                 os.system("python3 can_cancle.py -c switch")
         else:
             self.power_monitor.pause()
-            while True:
-                try:
-                    pow=power.Power()
-                    pow.power_off()
-                    break
-                except:
-                    print(f"power off failed")
-                    time.sleep(2)
+            self.set_power_status(None,power_on=False)
             self.power_monitor.resume()
         kill_client()
         print(f"start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
@@ -1009,23 +1020,11 @@ class TestMain(QThread):
                     break
                 except Exception as e:
                     print(e)
-            reboot_lidar(ip)
-            record_file=os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv')
-            if not os.path.exists(record_file):
-                with open(record_file,"w",newline="\n") as f:
-                    f.write(self.record_header)  
+            reboot_lidar(ip) 
         if self.cb_lidar_mode.currentText()!="No Power":
-            import power
             self.power_monitor=Power_monitor()
             self.power_monitor.start()
-            while True:
-                try:
-                    pow=power.Power()
-                    pow.power_off()
-                    break
-                except:
-                    print(f"power off failed")
-                    time.sleep(2)
+            self.set_power_status(None,power_on=False)
             os.system(f'python3 can_cancle.py -c {self.can_mode}')
             i=1
             for time_one in self.times:
@@ -1036,17 +1035,9 @@ class TestMain(QThread):
             if self.cb_lidar_mode.currentText()=="CAN":
                 if os.getenv("relay")=="True":
                     os.system("python3 can_run.py -c switch")
+                self.set_power_status(None,power_on=True)
                 cancle_can(self.ip_list,self.can_mode)
-            while True:
-                print("power off")
-                try:
-                    pow=power.Power()
-                    pow.power_off()
-                    time.sleep(20)
-                    break
-                except:
-                    print(f"power off failed")
-                    time.sleep(2)
+            self.set_power_status(None,power_on=False)
             rm_empty_folder(self.save_folder)
             print("start continue analyze log")
             kill_subprocess("log_main.py")
