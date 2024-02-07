@@ -186,7 +186,43 @@ def init_power():
         return True
     print(f"power is not PY or DH")
     return False
-    
+
+def set_power_status(power_voltage,power_on=True):
+        import power
+        while True:
+            try:
+                pow=power.Power()
+                if power_on:
+                    pow.power_on()
+                else:
+                    pow.power_off()
+                break
+            except:
+                if power_on:
+                    print(f"power on failed")
+                else:
+                    print(f"power off failed")
+                time.sleep(2)
+        if isinstance(power_voltage,type(None)):
+            return
+        last_timestamp = time.time()
+        while True:
+            try:
+                print(f"start set voltage")
+                pow=power.Power()
+                print(f"init power")
+                pow.set_voltage(power_voltage)
+                print(f"set {power_voltage}V")
+                voltage=pow.PowerStatus()[0]
+                print(f"voltage is {voltage}")
+                if abs(voltage-power_voltage)<0.3:
+                    break
+            except:
+                current_timestamp=time.time()
+                if current_timestamp-last_timestamp>3:
+                    last_timestamp=current_timestamp
+                    print(f"set power voltage failed, {power_voltage}V")
+                time.sleep(2)
     
 def ping_sure(ip,interval_time):
     while True:
@@ -254,7 +290,7 @@ def set_lidar_mode(ip,lidar_type,can_mode):
 
 
 def cancle_can(ip_list,can_mode="Default"):
-    os.system("python3 ./power.py")
+    set_power_status(None,True)
     print(f"start set lidar power mode")
     subprocess.Popen(f'python3 can_run.py -c {can_mode}',shell=True)
     for ip in ip_list:
@@ -871,45 +907,6 @@ class TestMain(QThread):
                 if dsp_thread.isRunning():
                     dsp_thread.stop()
     
-    def set_power_status(self,power_voltage,power_on=True):
-        import power
-        while True:
-            try:
-                pow=power.Power()
-                if power_on:
-                    pow.power_on()
-                else:
-                    pow.power_off()
-                break
-            except:
-                if power_on:
-                    print(f"power on failed")
-                else:
-                    print(f"power off failed")
-                time.sleep(2)
-        if isinstance(power_voltage,type(None)):
-            return
-        last_timestamp = time.time()
-        while True:
-            try:
-                print(f"start set voltage")
-                pow=power.Power()
-                print(f"init power")
-                pow.set_voltage(power_voltage)
-                print(f"set {power_voltage}V")
-                voltage=pow.PowerStatus()[0]
-                print(f"voltage is {voltage}")
-                if abs(voltage-power_voltage)<0.3:
-                    break
-            except:
-                current_timestamp=time.time()
-                if current_timestamp-last_timestamp>3:
-                    last_timestamp=current_timestamp
-                    print(f"set power voltage failed, {power_voltage}V")
-                time.sleep(2)
-        
-    
-    
     @handle_exceptions
     def one_cycle(self,power_one_time,i,data_num_power_off,log_path):
         self.sigout_power.emit(True)
@@ -917,7 +914,7 @@ class TestMain(QThread):
         print(f"current circle {i}")
         t=time.time()
         self.power_monitor.pause()
-        self.set_power_status(power_one_time[2],power_on=True)
+        set_power_status(power_one_time[2],power_on=True)
         sleep_time = int(power_one_time[0]-time.time()+t)
         print(f"start monitor {sleep_time}s")
         time_path=get_time()
@@ -949,7 +946,7 @@ class TestMain(QThread):
                 os.system("python3 can_cancle.py -c switch")
         else:
             self.power_monitor.pause()
-            self.set_power_status(None,power_on=False)
+            set_power_status(None,power_on=False)
             self.power_monitor.resume()
         kill_client()
         print(f"start sleep {int(power_one_time[0]+power_one_time[1]-(time.time()-t))}s")
@@ -994,7 +991,7 @@ class TestMain(QThread):
         print(f"get inno_pc_client permission")
         os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
         if self.cb_lidar_mode.currentText()!="No Power":
-            self.set_power_status(None,power_on=True)
+            set_power_status(None,power_on=True)
         if self.cb_lidar_mode.currentText()=="CAN":
             if os.getenv("relay")=="True":
                 os.system("python3 can_run.py -c switch")
@@ -1024,7 +1021,7 @@ class TestMain(QThread):
         if self.cb_lidar_mode.currentText()!="No Power":
             self.power_monitor=Power_monitor()
             self.power_monitor.start()
-            self.set_power_status(None,power_on=False)
+            set_power_status(None,power_on=False)
             os.system(f'python3 can_cancle.py -c {self.can_mode}')
             i=1
             for time_one in self.times:
@@ -1035,9 +1032,8 @@ class TestMain(QThread):
             if self.cb_lidar_mode.currentText()=="CAN":
                 if os.getenv("relay")=="True":
                     os.system("python3 can_run.py -c switch")
-                self.set_power_status(None,power_on=True)
                 cancle_can(self.ip_list,self.can_mode)
-            self.set_power_status(None,power_on=False)
+            set_power_status(None,power_on=False)
             rm_empty_folder(self.save_folder)
             print("start continue analyze log")
             kill_subprocess("log_main.py")
@@ -1371,29 +1367,13 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         print(f"recover udp port")
         if self.cb_lidar_mode.currentText()!="No Power":
             print("power on")
-            import power
-            while True:
-                try:
-                    pow=power.Power()
-                    pow.power_on()
-                    break
-                except:
-                    print(f"power on failed")
-                    time.sleep(2)
+            set_power_status(None,power_on=True)
         for idx,ip in enumerate(self.ip_list):
             ping_sure(ip,3)
             open_broadcast(util_path,ip,8010)
         if self.cb_lidar_mode.currentText()!="No Power":
             print("power off")
-            import power
-            while True:
-                try:
-                    pow=power.Power()
-                    pow.power_off()
-                    break
-                except:
-                    print(f"power off failed")
-                    time.sleep(2)
+            set_power_status(None,power_on=False)
         self.test_set_on()
         print(f"Test finished")
     
