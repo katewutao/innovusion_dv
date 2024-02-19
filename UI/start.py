@@ -842,16 +842,16 @@ class TestMain(QThread):
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,can_mode,ip_list,record_folder,record_header,times,csv_write_func,record_func,txt_record_interval,txt_off_counter,txt_timeout,cb_lidar_mode):
+    def __init__(self,can_mode,ip_list,record_folder,record_header,times,csv_write_func,record_func,record_interval,off_counter,timeout,lidar_mode):
         super(TestMain,self).__init__()
         self.csv_write_func=csv_write_func
-        self.txt_record_interval=txt_record_interval
-        self.cb_lidar_mode=cb_lidar_mode
+        self.record_interval=record_interval
+        self.lidar_mode=lidar_mode
         self.save_folder=record_folder
         self.ip_list=ip_list
-        self.txt_timeout=txt_timeout
+        self.timeout=timeout
         self.record_header=record_header
-        self.txt_off_counter=txt_off_counter
+        self.off_counter=off_counter
         self.times=times
         self.record_func=record_func
         self.can_mode=can_mode
@@ -872,7 +872,7 @@ class TestMain(QThread):
         self.dsps=[]
         for ip_num,ip in enumerate(self.ip_list):
             print(f"start add record {ip}")
-            record_thread=one_lidar_record_thread(ip,float(self.txt_record_interval.text()),self.save_folder,self.record_header,ip_num,self.record_func)
+            record_thread=one_lidar_record_thread(ip,float(self.record_interval),self.save_folder,self.record_header,ip_num,self.record_func)
             record_thread.sigout_set_tbw_value.connect(self.send_lidar_info)
             record_thread.start()
             self.records.append(record_thread)
@@ -920,7 +920,7 @@ class TestMain(QThread):
         time_path=get_time()
         if os.getenv("relay")=="True":
             os.system("python3 can_run.py -c switch")
-        if self.cb_lidar_mode.currentText()=="CAN":
+        if self.lidar_mode=="CAN":
             self.cmd_can=subprocess.Popen(f'exec python3 can_run.py -c {self.can_mode}',shell=True)
         self.power_monitor.resume()
         if sleep_time>2:
@@ -938,7 +938,7 @@ class TestMain(QThread):
                 temp_thread.join()
             self.stop_monitor()
         self.sigout_power.emit(False)
-        if self.cb_lidar_mode.currentText()=="CAN":
+        if self.lidar_mode=="CAN":
             self.cmd_can.kill()
             self.kill_cmd_can=subprocess.Popen(f'exec python3 can_cancle.py -c {self.can_mode}',shell=True)
             self.kill_cmd_can.wait()
@@ -957,7 +957,7 @@ class TestMain(QThread):
         for i in range(data_num_power_off):
             temp_pow=pow_status
             for row_idx,ip in enumerate(self.ip_list):
-                if self.cb_lidar_mode.currentText()=="CAN":
+                if self.lidar_mode=="CAN":
                     temp=[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]+[-100]*(self.record_header.count(",")-2)+temp_pow
                 else:
                     temp=[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]+[-100]*(self.record_header.count(","))
@@ -982,17 +982,17 @@ class TestMain(QThread):
             util_name="innovusion_lidar_util.exe"
         self.util_path=os.path.join(util_dir,util_name)
         kill_client()
-        if self.txt_record_interval.text().strip()=="":
+        if self.record_interval.strip()=="":
             print(f"please input record interval time")
             return None
-        if self.txt_off_counter.text().strip()=="":
+        if self.off_counter.strip()=="":
             print(f"please input power off empty data number")
             return None
         print(f"get inno_pc_client permission")
         os.system('echo demo|sudo -S chmod 777 lidar_util/inno_pc_client')
-        if self.cb_lidar_mode.currentText()!="No Power":
+        if self.lidar_mode!="No Power":
             set_power_status(None,power_on=True)
-        if self.cb_lidar_mode.currentText()=="CAN":
+        if self.lidar_mode=="CAN":
             if os.getenv("relay")=="True":
                 os.system("python3 can_run.py -c switch")
             os.system("python3 lib/set_usbcanfd_env.py demo")
@@ -1008,9 +1008,9 @@ class TestMain(QThread):
                         down_count+=1
                     extend_pcs_log_size(self.util_path,ip,50000)
                     open_broadcast(self.util_path,ip,9600+idx)
-                    get_promission(ip,float(self.txt_timeout.text()))
+                    get_promission(ip,float(self.timeout))
                     set_network(ip,ip)
-                    if self.cb_lidar_mode.currentText()=="CAN":
+                    if self.lidar_mode=="CAN":
                         while True:
                             if set_lidar_mode(ip,"can",self.can_mode):
                                 break
@@ -1018,7 +1018,7 @@ class TestMain(QThread):
                 except Exception as e:
                     print(e)
             reboot_lidar(ip) 
-        if self.cb_lidar_mode.currentText()!="No Power":
+        if self.lidar_mode!="No Power":
             self.power_monitor=Power_monitor()
             self.power_monitor.start()
             set_power_status(None,power_on=False)
@@ -1026,10 +1026,10 @@ class TestMain(QThread):
             i=1
             for time_one in self.times:
                 self.sigout_schedule.emit(i,len(self.times))
-                self.one_cycle(time_one,i,int(self.txt_off_counter.text()),self.save_folder)
+                self.one_cycle(time_one,i,int(self.off_counter),self.save_folder)
                 i+=1 
             self.power_monitor.stop()
-            if self.cb_lidar_mode.currentText()=="CAN":
+            if self.lidar_mode=="CAN":
                 if os.getenv("relay")=="True":
                     os.system("python3 can_run.py -c switch")
                 cancle_can(self.ip_list,self.can_mode)
@@ -1053,7 +1053,7 @@ class TestMain(QThread):
     def stop(self):
         self.requestInterruption()
         self.stop_monitor()
-        if self.cb_lidar_mode.currentText()=="CAN":
+        if self.lidar_mode=="CAN":
             if hasattr(self,"cmd_can"):
                 try:
                     self.cmd_can.kill()
@@ -1078,9 +1078,9 @@ class TestMain(QThread):
                 self.terminate()
                 break
         kill_client()
-        if self.cb_lidar_mode.currentText()=="CAN":
+        if self.lidar_mode=="CAN":
             os.system(f'exec python3 can_cancle.py -c {self.can_mode}')
-        elif self.cb_lidar_mode.currentText()=="No Power":
+        elif self.lidar_mode=="No Power":
             threads=[]
             time_path=get_time()
             print(f"start download log")
@@ -1345,7 +1345,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s,Relay:{self.relay.isChecked()},DSP:{self.dsp.isChecked()},Timeout:{self.txt_timeout.text()}s")
         os.environ["relay"]=str(self.relay.isChecked())
         os.environ["dsp"]=str(self.dsp.isChecked())
-        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval,self.txt_off_counter,self.txt_timeout,self.cb_lidar_mode)
+        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText())
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
         self.test.sigout_schedule.connect(self.set_schedule)
