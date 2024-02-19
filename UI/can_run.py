@@ -155,7 +155,7 @@ def main(args):
         conf["frame"]["type"]="can"
         conf["frame"]["frame_ID"]="505"
         conf["frame"]["payload_len"]=8
-        conf["frame"]["payload"]="00"*conf["frame"]["payload_len"]
+        conf["frame"]["payload"]="0040008000000000"
         conf["frame"]["send_count"]=-1
     elif args.can=="switch": 
         conf["frame"]["type"]="can"
