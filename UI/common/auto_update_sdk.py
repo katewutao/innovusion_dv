@@ -158,10 +158,11 @@ def down_sdk(ip,sdk_version=None,rm_sdk=True):
         public_path = './sdk'
         util_folder = "./lidar_util"
         util_names={"inno_pc_client":"",}
-        if os.getenv("project")=="Robin":
+        if "Robin" in os.getenv("project"):
             util_names={
                 "inno_pc_client":"",
-                "innovusion_lidar_util":""
+                "innovusion_lidar_util":"",
+                "get_pcd":"",
                         }
             sdk_version_client = "release-client-sdk-3.0.12"
         else:

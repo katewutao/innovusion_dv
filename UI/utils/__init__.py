@@ -1,6 +1,16 @@
-import platform,subprocess,os,sys,datetime,re,time
+import platform
+import subprocess
+import os
+import sys
+import datetime
+import re
+import time
 import requests,socket
 import pandas as pd
+import numpy as np
+from sklearn.decomposition import PCA
+
+
 
 def kill_subprocess(cmd):
     if "windows" in platform.platform().lower():
@@ -34,6 +44,58 @@ def multi_cmd(command_list,max_thread_counter,conf_file=""):
         cmd.wait()
     if conf_file!="":
         df_config.to_csv(conf_file,index=False)
+
+def load_pointcloud_yaml(path="./config/pointcloud_area.yaml"):
+    import yaml
+    config = {}
+    if not os.path.exists(path):
+        print(f"Can't find {path}")
+        return config
+    with open(path, 'r') as f:
+        config = yaml.safe_load(f)
+    return config
+class PointCloud(object):
+    def __init__(self,df=None):
+        self.df = df
+        
+    def filter_box(self, bds):
+        df_filter = self.df.loc[(self.df["x"] >= bds[0]) & (self.df["x"] <= bds[1]) & ((self.df["y"] >= bds[2])) & (
+            self.df["y"] <= bds[3]) & (self.df["z"] >= bds[4]) & (self.df["z"] <= bds[5])]
+        return df_filter
+    
+    def add_angle_r(self):
+        r = np.linalg.norm(self.df[["x", "y", "z"]].values, axis=1).reshape(-1)
+        azimuth = np.rad2deg(np.arctan2(self.df["y"].values, self.df["z"].values))
+        evelation = np.rad2deg(np.arcsin(self.df["x"].values/r))
+        self.df["radius"] = r
+        self.df["azimuth"] = azimuth
+        self.df["evelation"] = evelation
+        return self.df
+        
+    def filter_fov(self,fov):
+        df = self.df.loc[(self.df["azimuth"] >= fov[0]) & (self.df["azimuth"] <= fov[1]) & ((self.df["evelation"] >= fov[2])) & (
+            self.df["evelation"] <= fov[3])]
+        return df       
+
+    def calc_acc(self,df,gt_distance):
+        acc = np.linalg.norm(df[["x", "y", "z"]].values, axis=1).mean()-gt_distance
+        return acc
+
+    def calc_pre(self,df_pc):
+        if df_pc.shape[0]<3:
+            return "NaN"
+        data = df_pc[["x","y","z"]].values
+        pca = PCA(n_components=data.shape[1])
+        pca.fit(data)
+        vector = pca.components_[-1]/np.linalg.norm(pca.components_[-1])
+        # vector/=np.linalg.norm(vector)
+        d = -vector.dot(pca.mean_)
+        # print(self.data,vector,d)
+        dist=data@vector+d
+        mse=np.abs(dist).mean()
+        pre=dist.std()
+        return round(float(pre*6),3)
+        
 
 def str2timestamp(str1):
     str1=str(str1)
@@ -69,101 +131,6 @@ class TimeConvert(object):
         return s
 
 
-
-
-def extend_pcs_log_size(util_path,ip,size=200000):
-    if not os.path.exists(util_path):
-        print(f"Can't find {util_path}")
-        return
-    save_cfg_file = "1.cfg"
-    save_restart_bash="restart_inno_pc_server.sh"
-    command=f'"{util_path}" {ip} download_internal_file PCS_ENV "{save_cfg_file}"'
-    if os.path.exists(save_cfg_file):
-        os.remove(save_cfg_file)
-    cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-    res=cmd.communicate()
-    if not os.path.exists(save_cfg_file):
-        print(f"Can't get {ip} PCS_ENV")
-        return
-    with open(save_cfg_file,"r") as f:
-        pcs_env=f.read()
-    
-    command=f'sshpass -p 4920lidar scp -rp root@{ip}:/app/pointcloud/restart_inno_pc_server.sh "{save_restart_bash}"'
-    cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-    cmd.communicate()
-    if not os.path.exists(save_restart_bash):
-        print(f"Can't get {ip} restart_inno_pc_server.sh")
-        return
-    with open(save_restart_bash,"r") as f:
-        restart_bash=f.read()
-    os.remove(save_restart_bash)
-    ret_bash=re.search("{(LOG_OPTION.*?)}",restart_bash)
-    if not ret_bash:
-        print(f"{ip} bash not have LOG_OPTION")
-        return
-    ret=re.search("(LOG_OPTION.*?)\s*=.*(--log-file-max-size-k\s+\d+\.?\d*)",pcs_env)
-    if ret:
-        pcs_env=pcs_env.replace(ret.group(2),f"--log-file-max-size-k {size}").replace(ret.group(1),ret_bash.group(1))
-    else:
-        print(f"{ip} pcs_env not have LOG_OPTION")
-        return
-    with open(save_cfg_file,"w") as f:
-        f.write(pcs_env)
-    command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
-    cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-    res=cmd.communicate()
-    if "succe" in res[0]:
-        print(f"{ip} extend log size {size}Kb success")
-    else:
-        print(f"{ip} extend log size fail")
-    os.remove(save_cfg_file)
-    
-
-
-
-def open_broadcast(util_path,ip,udp_port=8010):
-    if not os.path.exists(util_path):
-        print(f"Can't find {util_path}")
-        return
-    save_cfg_file = "1.cfg"
-    command=f'"{util_path}" {ip} download_internal_file PCS_ENV "{save_cfg_file}"'
-    if os.path.exists(save_cfg_file):
-        os.remove(save_cfg_file)
-    cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-    res=cmd.communicate()
-    if not os.path.exists(save_cfg_file):
-        print(f"Can't get {ip} PCS_ENV")
-        return
-    with open(save_cfg_file,"r") as f:
-        pcs_env=f.read()
-    pcs_env_lines = pcs_env.split("\n")
-    pcs_env = "UDP_IP=eth0\n"
-    for pcs_env_line in pcs_env_lines:
-        ret=re.search("^\s*?(UDP_PORT.*)=(\d+)",pcs_env_line)
-        if ret:
-            pcs_env += f"{ret.group(1)}={udp_port}\n"
-        else:
-            ret=re.search("^\s*?(UDP_IP)",pcs_env_line)
-            if not ret and pcs_env_line != "":
-                pcs_env += f"{pcs_env_line}\n"
-    with open(save_cfg_file,"w") as f:
-        f.write(pcs_env)
-    command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
-    cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-    res=cmd.communicate()
-    if "succe" in res[0]:
-        print(f"{ip} set broadcast success")
-    else:
-        print(f"{ip} set broadcast fail")
-    os.remove(save_cfg_file)
-    
-
-def reboot_lidar(ip):
-    print(f"reboot lidar {ip}")
-    while True:
-        if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
-            break
-    time.sleep(10)
 
 def get_curl_result(command,timeout=0.2):
     excute_flag=False
@@ -203,21 +170,7 @@ def get_current_date():
     start_time=f"{ret[0].zfill(4)}{ret[1].zfill(2)}{ret[2].zfill(2)}T{ret[3].zfill(2)}{ret[4].zfill(2)}{ret[5].zfill(2)}"
     return start_time
 
-def get_promission(ip,time_out):
-    print(f"{ip} get premission")
-    if 'windows' not in platform.platform().lower():
-        import pexpect as pect
-    else:
-        import wexpect as pect
-    child = pect.spawn(f'ssh root@{ip}',timeout=time_out)
-    try:
-        child.expect('yes',timeout=3)
-        child.sendline('yes')
-    except:
-        pass
-    child.expect('password')
-    child.sendline('4920lidar')
-    child.close()
+
 
 def send_tcp(command,ip,port=8001,wait=False):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -254,64 +207,175 @@ def send_tcp(command,ip,port=8001,wait=False):
     sock.close()
     return res
 
-def get_customerid(ip):
-    customerid = 'null'
-    command = 'mfg_rd "CustomerSN"'
-    s = send_tcp(command,ip,8001)
-    if s == "":
-        s = send_tcp(command,ip,8002)
-    ret=re.search('CustomerSN.*?:\s*[\'|"](.+)[\'|"]',s)
-    if ret:
-        customerid=ret.group(1)
-    return customerid
-
-def set_network(ip,new_ip):
-    ret = re.search("^(\d+\.\d+)",ip)
-    if not ret:
-        print(f"{ip} is not valid,set network fail")
-        return
-    ip_key = ret.group(1).replace(".","\.")
-    res = os.popen("ip addr show").read()
-    ret_ip_cfg = re.findall("inet\s+([0-9\./]+)",res)
-    netmask = ""
-    for item in ret_ip_cfg:
-        ret = re.search(f"^{ip_key}.+/(\d+)",item)
+class LidarTool(object):
+    def __init__(self):
+        pass
+    
+    def get_promission(ip,time_out):
+        print(f"{ip} get premission")
+        if 'windows' not in platform.platform().lower():
+            import pexpect as pect
+        else:
+            import wexpect as pect
+        child = pect.spawn(f'ssh root@{ip}',timeout=time_out)
+        try:
+            child.expect('yes',timeout=3)
+            child.sendline('yes')
+        except:
+            pass
+        child.expect('password')
+        child.sendline('4920lidar')
+        child.close()
+    
+    def get_customerid(ip):
+        customerid = 'null'
+        command = 'mfg_rd "CustomerSN"'
+        s = send_tcp(command,ip,8001)
+        if s == "":
+            s = send_tcp(command,ip,8002)
+        ret=re.search('CustomerSN.*?:\s*[\'|"](.+)[\'|"]',s)
         if ret:
-            ffff_count = int(int(ret.group(1))/8)
-            netmask = ("255."*ffff_count)[:-1]+".0"*(4-ffff_count)
-            break
-    if netmask == "":
-        print(f"{ip_key} not find in ip config,set network fail")
-        return
-    new_ip_list = new_ip.split(".")
-    netmask_list = netmask.split(".")
-    last_ip = "1" if new_ip_list[-1] != "1" else "100"
-    command_list = new_ip_list+netmask_list+new_ip_list[:-1]+[last_ip]
-    set_command = " ".join(command_list)
-    command = f'set_network {set_command}'
-    s = send_tcp(command,ip,8001)
-    if f"netmask={netmask}" not in s:
-        print(f"{ip} set network {netmask} fail")
-        return
-    else:
-        print(f"{ip} set network {netmask} success")
-        return
+            customerid=ret.group(1)
+        return customerid
 
-def open_ptp(ip):
-    command = f"set_i_config time ptp_en 1"
-    s = send_tcp(command,ip,8001)
-    if "done" not in s:
-        print(f"{ip} open ptp fail,process set_i_config")
-        return
-    command = f"get_i_config time"
-    s = send_tcp(command,ip,8001)
-    if "ptp_en = 1" in s:
-        print(f"{ip} open ptp success")
-        return
-    else:
-        print(f"{ip} open ptp fail, process get_i_config")
-        return
+    def set_network(ip,new_ip):
+        ret = re.search("^(\d+\.\d+)",ip)
+        if not ret:
+            print(f"{ip} is not valid,set network fail")
+            return
+        ip_key = ret.group(1).replace(".","\.")
+        res = os.popen("ip addr show").read()
+        ret_ip_cfg = re.findall("inet\s+([0-9\./]+)",res)
+        netmask = ""
+        for item in ret_ip_cfg:
+            ret = re.search(f"^{ip_key}.+/(\d+)",item)
+            if ret:
+                ffff_count = int(int(ret.group(1))/8)
+                netmask = ("255."*ffff_count)[:-1]+".0"*(4-ffff_count)
+                break
+        if netmask == "":
+            print(f"{ip_key} not find in ip config,set network fail")
+            return
+        new_ip_list = new_ip.split(".")
+        netmask_list = netmask.split(".")
+        last_ip = "1" if new_ip_list[-1] != "1" else "100"
+        command_list = new_ip_list+netmask_list+new_ip_list[:-1]+[last_ip]
+        set_command = " ".join(command_list)
+        command = f'set_network {set_command}'
+        s = send_tcp(command,ip,8001)
+        if f"netmask={netmask}" not in s:
+            print(f"{ip} set network {netmask} fail")
+            return
+        else:
+            print(f"{ip} set network {netmask} success")
+            return
 
+    def open_ptp(ip):
+        command = f"set_i_config time ptp_en 1"
+        s = send_tcp(command,ip,8001)
+        if "done" not in s:
+            print(f"{ip} open ptp fail,process set_i_config")
+            return
+        command = f"get_i_config time"
+        s = send_tcp(command,ip,8001)
+        if "ptp_en = 1" in s:
+            print(f"{ip} open ptp success")
+            return
+        else:
+            print(f"{ip} open ptp fail, process get_i_config")
+            return
+
+    def extend_pcs_log_size(util_path,ip,size=200000):
+        if not os.path.exists(util_path):
+            print(f"Can't find {util_path}")
+            return
+        save_cfg_file = "1.cfg"
+        save_restart_bash="restart_inno_pc_server.sh"
+        command=f'"{util_path}" {ip} download_internal_file PCS_ENV "{save_cfg_file}"'
+        if os.path.exists(save_cfg_file):
+            os.remove(save_cfg_file)
+        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+        res=cmd.communicate()
+        if not os.path.exists(save_cfg_file):
+            print(f"Can't get {ip} PCS_ENV")
+            return
+        with open(save_cfg_file,"r") as f:
+            pcs_env=f.read()
+        
+        command=f'sshpass -p 4920lidar scp -rp root@{ip}:/app/pointcloud/restart_inno_pc_server.sh "{save_restart_bash}"'
+        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+        cmd.communicate()
+        if not os.path.exists(save_restart_bash):
+            print(f"Can't get {ip} restart_inno_pc_server.sh")
+            return
+        with open(save_restart_bash,"r") as f:
+            restart_bash=f.read()
+        os.remove(save_restart_bash)
+        ret_bash=re.search("{(LOG_OPTION.*?)}",restart_bash)
+        if not ret_bash:
+            print(f"{ip} bash not have LOG_OPTION")
+            return
+        ret=re.search("(LOG_OPTION.*?)\s*=.*(--log-file-max-size-k\s+\d+\.?\d*)",pcs_env)
+        if ret:
+            pcs_env=pcs_env.replace(ret.group(2),f"--log-file-max-size-k {size}").replace(ret.group(1),ret_bash.group(1))
+        else:
+            print(f"{ip} pcs_env not have LOG_OPTION")
+            return
+        with open(save_cfg_file,"w") as f:
+            f.write(pcs_env)
+        command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
+        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+        res=cmd.communicate()
+        if "succe" in res[0]:
+            print(f"{ip} extend log size {size}Kb success")
+        else:
+            print(f"{ip} extend log size fail")
+        os.remove(save_cfg_file)
+        
+    def open_broadcast(util_path,ip,udp_port=8010):
+        if not os.path.exists(util_path):
+            print(f"Can't find {util_path}")
+            return
+        save_cfg_file = "1.cfg"
+        command=f'"{util_path}" {ip} download_internal_file PCS_ENV "{save_cfg_file}"'
+        if os.path.exists(save_cfg_file):
+            os.remove(save_cfg_file)
+        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+        res=cmd.communicate()
+        if not os.path.exists(save_cfg_file):
+            print(f"Can't get {ip} PCS_ENV")
+            return
+        with open(save_cfg_file,"r") as f:
+            pcs_env=f.read()
+        pcs_env_lines = pcs_env.split("\n")
+        pcs_env = "UDP_IP=eth0\n"
+        for pcs_env_line in pcs_env_lines:
+            ret=re.search("^\s*?(UDP_PORT.*)=(\d+)",pcs_env_line)
+            if ret:
+                pcs_env += f"{ret.group(1)}={udp_port}\n"
+            else:
+                ret=re.search("^\s*?(UDP_IP)",pcs_env_line)
+                if not ret and pcs_env_line != "":
+                    pcs_env += f"{pcs_env_line}\n"
+        with open(save_cfg_file,"w") as f:
+            f.write(pcs_env)
+        command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
+        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+        res=cmd.communicate()
+        if "succe" in res[0]:
+            print(f"{ip} set broadcast success")
+        else:
+            print(f"{ip} set broadcast fail")
+        os.remove(save_cfg_file)
+        
+
+    def reboot_lidar(ip):
+        print(f"reboot lidar {ip}")
+        while True:
+            if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
+                break
+        time.sleep(10)
+    
 if __name__=="__main__":
     # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
     # open_broadcast("./lidar_util/innovusion_lidar_util","172.168.1.10")
@@ -319,7 +383,7 @@ if __name__=="__main__":
     # t= time.time()
     # s = send_tcp(command,"172.168.1.10",8088)
     # print(time.time()-t)
-    open_ptp("172.168.1.10")
+    LidarTool.open_ptp("172.168.1.10")
     # util_path = "../lidar_util/innovusion_lidar_util"
     # for i in range(6):
     #     ip = f"172.168.1.{13+i}"

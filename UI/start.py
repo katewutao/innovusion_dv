@@ -30,9 +30,10 @@ from threading import Thread
 import sys
 import builtins
 from utils import *
+from utils.ConvertPcd import *
 sys.path.append(".")
 
-
+pointcloud_config = {}
 pow_status=[0,0]
 spec_df = pd.DataFrame(columns=["LL", "UL"])
  
@@ -72,7 +73,7 @@ def set_tbw_value(tbw_obj):
             tbw_obj.setItem(row_idx,idx+1,new_item)
     return set_value
  
- 
+
 
 def time_limited(timeout):
     def decorator(function):
@@ -282,7 +283,7 @@ def set_lidar_mode(ip,lidar_type,can_mode):
     if re.search(f"boot from.+{lidar_type}",res[0]):
         print(f"{ip} set {lidar_type} mode success")
         if can_mode=="Robin":
-            reboot_lidar(ip)
+            LidarTool.reboot_lidar(ip)
         return True
     else:
         print(f"{ip} set {lidar_type} mode fail")
@@ -570,7 +571,7 @@ class one_lidar_record_thread(QThread):
                 sn=sn_res[0]
                 break
         while True:
-            CustomerSN=get_customerid(self.ip)
+            CustomerSN=LidarTool.get_customerid(self.ip)
             if CustomerSN!=None:
                 break
         global pow_status
@@ -830,21 +831,87 @@ class MonitorFault(QThread):
         print(f"{self.ip} finish monitor fualt success")
         
 
+class PointCloud(QThread):
+    sigout_pointcloud = pyqtSignal(list,int)
+    
+    @handle_exceptions
+    def __init__(self,ip,row_idx,report_path,pcd_path,get_pcd_path,interval,record_func,pointcloud_header):
+        super(PointCloud,self).__init__()
+        self.ip=ip
+        self.row_idx=row_idx
+        self.report_path=report_path
+        self.pcd_path=pcd_path
+        self.get_pcd_path=get_pcd_path
+        self.record_func=record_func
+        self.interval=interval
+        self.capture_pcd_path = os.path.join(self.pcd_path,f"{ip.replace('.','_')}.pcd")
+        self.capture_pcd_command = f'"{get_pcd_path}" --lidar-ip {ip} --lidar-udp-port 8010 --frame-number 1 --output-filename "{self.capture_pcd_path}"'
+        self.get_pcd_out = os.path.join(self.pcd_path,f"{ip}_out.log")
+        self.get_pcd_err = os.path.join(self.pcd_path,f"{ip}_err.log") 
+        if not os.path.exists(self.pcd_path):
+            os.makedirs(self.pcd_path)
+        if not os.path.exists(self.report_path):
+            os.makedirs(self.report_path)
+        self.report_path = os.path.join(self.report_path,f"{ip}.csv")
+        if not os.path.exists(self.report_path):
+            csv_write(self.report_path,pointcloud_header)
+        
+    @handle_exceptions
+    def run(self):
+        while True:
+            if ping(self.ip,3):
+                break
+            if self.isInterruptionRequested():
+                return
+        get_curl_result(f"http://172.168.1.10:8675/v1/pcs/enable?toggle=on",1)
+        while True:
+            t=time.time()
+            if self.isInterruptionRequested():
+                break
+            if os.path.exists(self.capture_pcd_path):
+                os.remove(self.capture_pcd_path)
+            cmd=subprocess.Popen(self.capture_pcd_command,shell=True,stdout=open(self.get_pcd_out,"w"),stderr=open(self.get_pcd_err,"a"))
+            cmd.wait()
+            if not os.path.exists(self.capture_pcd_path):
+                print(f"{self.ip} capture pcd fail")
+                continue
+            else:
+                df = read_pcd(self.capture_pcd_path)
+                res = self.record_func(df,self.ip,self.pcd_path)
+                self.sigout_pointcloud.emit(res,self.row_idx)
+                csv_write(self.report_path,res)
+            sleep_time=self.interval-time.time()+t
+            if sleep_time>0:
+                time.sleep(sleep_time)            
+    
+    @handle_exceptions
+    def stop(self):
+        t=time.time()
+        while self.isRunning():
+            print(f"{self.ip} try finish monitor fault")
+            self.requestInterruption()
+            self.wait(1000)
+            if time.time()-t>3:
+                self.terminate()
+                break
+        print(f"pointcloud thread finish success")
+
+
 
 
 
 class TestMain(QThread):
     sigout_test_finish = pyqtSignal(str)
     sigout_lidar_info=pyqtSignal(list,int)
+    sigout_pointcloud=pyqtSignal(list,int)
     sigout_schedule=pyqtSignal(int,int)
     sigout_set_fault=pyqtSignal(str,int)
     sigout_heal_fault=pyqtSignal(str,int)
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,can_mode,ip_list,record_folder,record_header,times,csv_write_func,record_func,record_interval,off_counter,timeout,lidar_mode):
+    def __init__(self,can_mode,ip_list,record_folder,record_header,times,record_func,record_interval,off_counter,timeout,lidar_mode,pointcloud_func,pointcloud_header):
         super(TestMain,self).__init__()
-        self.csv_write_func=csv_write_func
         self.record_interval=record_interval
         self.lidar_mode=lidar_mode
         self.save_folder=record_folder
@@ -855,6 +922,8 @@ class TestMain(QThread):
         self.times=times
         self.record_func=record_func
         self.can_mode=can_mode
+        self.pointcloud_func=pointcloud_func
+        self.pointcloud_header=pointcloud_header
     
     def send_lidar_info(self,list1,row_idx):
         self.sigout_lidar_info.emit(list1,row_idx)
@@ -865,11 +934,16 @@ class TestMain(QThread):
     def heal_fault(self,fault,row_idx):
         self.sigout_heal_fault.emit(fault,row_idx)
     
+    def send_pointcloud_info(self,res,row_idx):
+        self.sigout_pointcloud.emit(res,row_idx)
     
     def run_monitor(self,log_path,time_path):
         self.records=[]
         self.monitors=[]
         self.dsps=[]
+        self.pointclouds=[]
+        pointcloud_report_path = os.path.join(self.save_folder,"pointcloud")
+        pcd_save_folder = os.path.join(self.util_dir,"pcd")
         for ip_num,ip in enumerate(self.ip_list):
             print(f"start add record {ip}")
             record_thread=one_lidar_record_thread(ip,float(self.record_interval),self.save_folder,self.record_header,ip_num,self.record_func)
@@ -889,6 +963,12 @@ class TestMain(QThread):
                 dsp_thread.start()
                 self.dsps.append(dsp_thread)
                 print(f"start add dsp success {ip}")
+            if os.getenv("pointcloud")=="True":
+                pointcloud_thread=PointCloud(ip,ip_num,pointcloud_report_path,pcd_save_folder,self.get_pcd_path,float(self.record_interval),self.pointcloud_func,self.pointcloud_header)
+                pointcloud_thread.sigout_pointcloud.connect(self.send_pointcloud_info)
+                pointcloud_thread.start()
+                self.pointclouds.append(pointcloud_thread)
+                print(f"start add pointcloud success {ip}")
     
     def stop_monitor(self):
         if hasattr(self,"monitors"):
@@ -906,6 +986,11 @@ class TestMain(QThread):
             for dsp_thread in self.dsps:
                 if dsp_thread.isRunning():
                     dsp_thread.stop()
+        if hasattr(self,"pointclouds"):
+            print("start stop pointcloud")
+            for pointcloud in self.pointclouds:
+                if pointcloud.isRunning():
+                    pointcloud.stop()
     
     @handle_exceptions
     def one_cycle(self,power_one_time,i,data_num_power_off,log_path):
@@ -962,7 +1047,7 @@ class TestMain(QThread):
                 else:
                     temp=[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]+[-100]*(self.record_header.count(","))
                 self.sigout_lidar_info.emit(temp,row_idx)
-                self.csv_write_func(os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv'),temp)
+                csv_write(os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv'),temp)
             t0=(power_one_time[0]+power_one_time[1]-(time.time()-t))/(data_num_power_off-i)
             if t0>0:
                 time.sleep(t0)
@@ -975,12 +1060,15 @@ class TestMain(QThread):
         print(self.analyse_command)
         print(f"start analyse log")
         self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
-        util_dir="lidar_util"
+        self.util_dir="lidar_util"
         if "linux" in platform.platform().lower():
             util_name="innovusion_lidar_util"
+            get_pcd_name="get_pcd"
         elif "windows" in platform.platform().lower():
             util_name="innovusion_lidar_util.exe"
-        self.util_path=os.path.join(util_dir,util_name)
+            get_pcd_name="get_pcd.exe"
+        self.util_path=os.path.join(self.util_dir,util_name)
+        self.get_pcd_path=os.path.join(self.util_dir,get_pcd_name)
         kill_client()
         if self.record_interval.strip()=="":
             print(f"please input record interval time")
@@ -1006,11 +1094,11 @@ class TestMain(QThread):
                         if down_sdk(ip) or down_count>10:
                             break
                         down_count+=1
-                    extend_pcs_log_size(self.util_path,ip,50000)
-                    open_broadcast(self.util_path,ip,9600+idx)
-                    get_promission(ip,float(self.timeout))
-                    set_network(ip,ip)
-                    open_ptp(ip)
+                    LidarTool.extend_pcs_log_size(self.util_path,ip,50000)
+                    LidarTool.open_broadcast(self.util_path,ip,9600+idx)
+                    LidarTool.get_promission(ip,float(self.timeout))
+                    LidarTool.set_network(ip,ip)
+                    LidarTool.open_ptp(ip)
                     if self.lidar_mode=="CAN":
                         while True:
                             if set_lidar_mode(ip,"can",self.can_mode):
@@ -1018,7 +1106,7 @@ class TestMain(QThread):
                     break
                 except Exception as e:
                     print(e)
-            reboot_lidar(ip) 
+            LidarTool.reboot_lidar(ip) 
         if self.lidar_mode!="No Power":
             self.power_monitor=Power_monitor()
             self.power_monitor.start()
@@ -1143,9 +1231,18 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         
         self.scrollArea_list=[]      
     
+        self.actionlidar_status.triggered.connect(self.stackedWidget_currentChanged(0))
+        self.actionlidar_pointcloud.triggered.connect(self.stackedWidget_currentChanged(1))
+        self.stackedWidget.setCurrentIndex(0)
         sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
 
+    
+    def stackedWidget_currentChanged(self,idx):
+        def changed_idx():
+            self.stackedWidget.setCurrentIndex(idx)
+        return changed_idx
+    
     def write(self, info):
         self.txt_log.insertPlainText(info)
         if len(info):
@@ -1176,19 +1273,33 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     
     @handle_exceptions
-    def init_table(self,row_counter,columns):
-        columns=["Lidar_IP"]+list(columns)
+    def init_table(self,row_counter,columns_status,columns_pointcloud):
+        columns_status=["Lidar_IP"]+list(columns_status)
+        columns_pointcloud=["Lidar_IP"]+list(columns_pointcloud)
+        
         for row_num in range(self.tbw_data.rowCount(),-1,-1):
             self.tbw_data.removeRow(row_num)
         for row_num in range(self.tbw_fault.rowCount(),-1,-1):
             self.tbw_fault.removeRow(row_num)
-        self.tbw_data.setColumnCount(len(columns))
+        for row_num in range(self.tbw_pointcloud.rowCount(),-1,-1):
+            self.tbw_pointcloud.removeRow(row_num)    
+            
+        self.tbw_data.setColumnCount(len(columns_status))
+        self.tbw_pointcloud.setColumnCount(len(columns_pointcloud))
         self.tbw_fault.setColumnCount(1)
-        for j in range(len(columns)):
+        
+        for j in range(len(columns_status)):
             self.tbw_data.setHorizontalHeaderItem(j, QtWidgets.QTableWidgetItem())
             self.tbw_data.horizontalHeader().setSectionResizeMode(j, QHeaderView.ResizeToContents)
             item = self.tbw_data.horizontalHeaderItem(j)
-            item.setText(f"{columns[j]}")
+            item.setText(f"{columns_status[j]}")
+        for j in range(len(columns_pointcloud)):
+            self.tbw_pointcloud.setHorizontalHeaderItem(j, QtWidgets.QTableWidgetItem())
+            self.tbw_pointcloud.horizontalHeader().setSectionResizeMode(j, QHeaderView.ResizeToContents)
+            item = self.tbw_pointcloud.horizontalHeaderItem(j)
+            item.setText(f"{columns_pointcloud[j]}")
+        
+        
         
         self.tbw_fault.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem())
         self.tbw_fault.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
@@ -1199,15 +1310,23 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         for i in range(row_counter):
             self.tbw_data.insertRow(i)
             self.tbw_fault.insertRow(i)
+            self.tbw_pointcloud.insertRow(i)
             self.tbw_data.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            self.tbw_pointcloud.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
             self.tbw_fault.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
             self.tbw_fault.setItem(i,0,QtWidgets.QTableWidgetItem(self.ip_list[i]))
-            for j in range(len(columns)):
+            for j in range(len(columns_status)):
                 if j==0:
                     cell_value=self.ip_list[i]
                 else:
                     cell_value=""
                 self.tbw_data.setItem(i,j,QtWidgets.QTableWidgetItem(cell_value))
+            for j in range(len(columns_pointcloud)):
+                if j==0:
+                    cell_value=self.ip_list[i]
+                else:
+                    cell_value=""
+                self.tbw_pointcloud.setItem(i,j,QtWidgets.QTableWidgetItem(cell_value))
         
     
     @handle_exceptions
@@ -1307,20 +1426,22 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             self.save_folder=self.cb_test_name.currentText()
             self.read_config()
     
+    @handle_exceptions
     def project_changed(self):
         if self.cb_project.currentText().strip()!="":
             os.environ["project"]=self.cb_project.currentText()
             mata_class=importlib.import_module(f"{self.project_folder.strip('.').strip('/')}.{self.cb_project.currentText()}")
             self.record_header=mata_class.record_header
-            self.csv_write_func=mata_class.csv_write
             self.record_func=mata_class.one_record
+            self.pointcloud_func=mata_class.pointcloud_analyze
+            self.pointcloud_header=mata_class.pointcloud_header
             self.read_config()
 
     def read_config(self):
         if hasattr(self,"test_config"):
             self.ip_list=self.test_config["lidar_ip"]
             self.times=get_circle_time(self.test_config["time_dict"])
-            self.init_table(len(self.ip_list),self.record_header.split(","))
+            self.init_table(len(self.ip_list),self.record_header.split(","),self.pointcloud_header)
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 485, 795))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
@@ -1343,12 +1464,14 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.lb_test_time.setText("00:00:00")
         self.timer.start(1000)
         self.timer.timeout.connect(self.update_test_time)
-        print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s,Relay:{self.relay.isChecked()},DSP:{self.dsp.isChecked()},Timeout:{self.txt_timeout.text()}s")
+        print(f"{self.lb_version.text()},Lidar mode:{self.cb_lidar_mode.currentText()}, Powers:{self.cb_power_type.currentText()}, Project:{self.cb_project.currentText()},Test name:{self.cb_test_name.currentText()},CAN mode:{self.cb_can_mode.currentText()},Off counter:{self.txt_off_counter.text()},Interval:{self.txt_record_interval.text()}s,Relay:{self.relay.isChecked()},DSP:{self.dsp.isChecked()},pointcloud:{self.cb_pointcloud.isChecked()},Timeout:{self.txt_timeout.text()}s")
         os.environ["relay"]=str(self.relay.isChecked())
         os.environ["dsp"]=str(self.dsp.isChecked())
-        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.csv_write_func,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText())
+        os.environ["pointcloud"]=str(self.cb_pointcloud.isChecked())
+        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText(),self.pointcloud_func,self.pointcloud_header)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
+        self.test.sigout_pointcloud.connect(set_tbw_value(self.tbw_pointcloud))
         self.test.sigout_schedule.connect(self.set_schedule)
         self.test.sigout_heal_fault.connect(self.heal_fault)
         self.test.sigout_set_fault.connect(self.report_fault)
@@ -1371,7 +1494,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             set_power_status(None,power_on=True)
         for idx,ip in enumerate(self.ip_list):
             ping_sure(ip,3)
-            open_broadcast(util_path,ip,8010)
+            LidarTool.open_broadcast(util_path,ip,8010)
         if self.cb_lidar_mode.currentText()!="No Power":
             print("power off")
             set_power_status(None,power_on=False)
@@ -1391,6 +1514,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.btn_cancle_can.setEnabled(False)
         self.relay.setEnabled(False)
         self.dsp.setEnabled(False)
+        self.cb_pointcloud.setEnabled(False)
         self.btn_stop.setEnabled(True)
     
     def test_set_on(self):
@@ -1408,6 +1532,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.btn_cancle_can.setEnabled(True)
         self.relay.setEnabled(True)
         self.dsp.setEnabled(True)
+        self.cb_pointcloud.setEnabled(True)
         self.btn_stop.setEnabled(False)
     
     @handle_exceptions

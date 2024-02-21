@@ -16,7 +16,7 @@ import pandas as pd
 import subprocess
 import datetime,platform
 from utils import *
-
+from utils.ConvertPcd import *
 
 
 search_keys={
@@ -66,6 +66,25 @@ search_keys={
 
 record_header=",".join(search_keys.keys())
 
+pointcloud_header = ["Timestamp","PPS"]
+channel_max = 4
+config = load_pointcloud_yaml()
+pointcloud_bds ={}
+for area in config.keys():
+    for i in range(channel_max):
+        pointcloud_header.append(f"INT_{i}_{area}")
+    pointcloud_header.append(f"ACC_{area}")
+    pointcloud_header.append(f"PRE_{area}")
+    pointcloud_bds[area] = {}
+    for ip in config[area].keys():
+        try:
+            pointcloud_bds[area][ip] = {
+                    "bds":[config[area][ip]["x_min"],config[area][ip]["x_max"],config[area][ip]["y_min"],config[area][ip]["y_max"],config[area][ip]["z_min"],config[area][ip]["z_max"]],
+                    "gt_distance":config[area][ip]["gt_distance"],
+                }
+        except:
+            print(f"pointcloud config error: {area} {ip} format error")
+    
 def extract(search_keys, st):
     import re
     res=[]
@@ -97,3 +116,31 @@ def one_record(ip,save_log,SN,CustomerSN):
     temp = [f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}",SN,CustomerSN]
     temp+=extract(search_keys, res)
     return temp
+
+def pointcloud_analyze(df,ip,pcd_save_path):
+    res = [f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]
+    res.append(df.shape[0])
+    if "intensity" not in df.columns:
+        if "elongation" in df.columns:
+            df["intensity"] = df["elongation"]
+    for area in pointcloud_bds.keys():
+        if ip not in pointcloud_bds[area].keys():
+            res += ["NaN"]*(channel_max+2)
+        else:
+            bds = pointcloud_bds[area][ip]["bds"]
+            df_bds = PointCloud(df).filter_box(bds)
+            if df_bds.shape[0]==0:
+                res += ["NaN"]*(channel_max+2)
+                continue
+            df2pcd(df_bds,os.path.join(pcd_save_path,f"{ip}_{area}.pcd"))
+            for i in range(channel_max):
+                df_channel = df_bds[df_bds["channel"]==i]
+                if df_channel.shape[0]==0 or "intensity" not in df_channel.columns:
+                    res.append("NaN")
+                else:
+                    res.append(round(float(df_channel["intensity"].mean()),3))
+            acc = PointCloud().calc_acc(df_bds,pointcloud_bds[area][ip]["gt_distance"])
+            pre = PointCloud().calc_pre(df_bds)
+            res.append(acc)
+            res.append(pre)
+    return res
