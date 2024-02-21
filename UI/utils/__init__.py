@@ -297,6 +297,21 @@ def set_network(ip,new_ip):
         print(f"{ip} set network {netmask} success")
         return
 
+def open_ptp(ip):
+    command = f"set_i_config time ptp_en 1"
+    s = send_tcp(command,ip,8001)
+    if "done" not in s:
+        print(f"{ip} open ptp fail,process set_i_config")
+        return
+    command = f"get_i_config time"
+    s = send_tcp(command,ip,8001)
+    if "ptp_en = 1" in s:
+        print(f"{ip} open ptp success")
+        return
+    else:
+        print(f"{ip} open ptp fail, process get_i_config")
+        return
+
 if __name__=="__main__":
     # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
     # open_broadcast("./lidar_util/innovusion_lidar_util","172.168.1.10")
@@ -304,11 +319,11 @@ if __name__=="__main__":
     # t= time.time()
     # s = send_tcp(command,"172.168.1.10",8088)
     # print(time.time()-t)
-    
-    util_path = "../lidar_util/innovusion_lidar_util"
-    for i in range(6):
-        ip = f"172.168.1.{13+i}"
-        port = 8600+i
-        open_broadcast(util_path,ip,port)
-        set_network(ip,ip)
-        reboot_lidar(ip)
+    open_ptp("172.168.1.10")
+    # util_path = "../lidar_util/innovusion_lidar_util"
+    # for i in range(6):
+    #     ip = f"172.168.1.{13+i}"
+    #     port = 8600+i
+    #     open_broadcast(util_path,ip,port)
+    #     set_network(ip,ip)
+    #     reboot_lidar(ip)

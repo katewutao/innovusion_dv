@@ -1010,6 +1010,7 @@ class TestMain(QThread):
                     open_broadcast(self.util_path,ip,9600+idx)
                     get_promission(ip,float(self.timeout))
                     set_network(ip,ip)
+                    open_ptp(ip)
                     if self.lidar_mode=="CAN":
                         while True:
                             if set_lidar_mode(ip,"can",self.can_mode):
