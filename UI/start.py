@@ -863,7 +863,7 @@ class PointCloud(QThread):
                 break
             if self.isInterruptionRequested():
                 return
-        get_curl_result(f"http://172.168.1.10:8675/v1/pcs/enable?toggle=on",1)
+        LidarTool.set_pcs(self.ip,True)
         while True:
             t=time.time()
             if self.isInterruptionRequested():

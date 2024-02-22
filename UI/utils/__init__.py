@@ -347,6 +347,16 @@ class LidarTool(object):
             if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
                 break
         time.sleep(10)
+        
+    def set_pcs(ip,open=True):
+        if open:
+            res, flag = get_curl_result(f"http://{ip}:8675/v1/pcs/enable?toggle=on",2)
+        else:
+            res, flag = get_curl_result(f"http://{ip}:8675/v1/pcs/enable?toggle=off",2)
+        if flag:
+            print(f"{ip} set pcs {open} success")
+        else:
+            print(f"{ip} set pcs {open} fail")
     
 if __name__=="__main__":
     # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
