@@ -172,7 +172,7 @@ def get_current_date():
 
 
 
-def send_tcp(command,ip,port=8001,wait=False):
+def send_tcp(command,ip,port=8001,wait=False,max_length=1024):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     command = command.strip("\n")+"\n"
     if wait:
@@ -190,7 +190,7 @@ def send_tcp(command,ip,port=8001,wait=False):
         first_recv = True
         while True:
             try:
-                response = sock.recv(1024).decode()
+                response = sock.recv(max_length).decode()
             except:
                 break
             if first_recv:
@@ -201,7 +201,7 @@ def send_tcp(command,ip,port=8001,wait=False):
                 break
     else:
         try:
-            res = sock.recv(1024).decode()
+            res = sock.recv(max_length).decode()
         except:
             pass
     sock.close()
@@ -286,22 +286,8 @@ class LidarTool(object):
             return
 
     def extend_pcs_log_size(util_path,ip,size=200000):
-        if not os.path.exists(util_path):
-            print(f"Can't find {util_path}")
-            return
-        save_cfg_file = "1.cfg"
+        lidar_port = 8002        
         save_restart_bash="restart_inno_pc_server.sh"
-        command=f'"{util_path}" {ip} download_internal_file PCS_ENV "{save_cfg_file}"'
-        if os.path.exists(save_cfg_file):
-            os.remove(save_cfg_file)
-        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-        res=cmd.communicate()
-        if not os.path.exists(save_cfg_file):
-            print(f"Can't get {ip} PCS_ENV")
-            return
-        with open(save_cfg_file,"r") as f:
-            pcs_env=f.read()
-        
         command=f'sshpass -p 4920lidar scp -rp root@{ip}:/app/pointcloud/restart_inno_pc_server.sh "{save_restart_bash}"'
         cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
         cmd.communicate()
@@ -315,60 +301,44 @@ class LidarTool(object):
         if not ret_bash:
             print(f"{ip} bash not have LOG_OPTION")
             return
-        ret=re.search("(LOG_OPTION.*?)\s*=.*(--log-file-max-size-k\s+\d+\.?\d*)",pcs_env)
-        if ret:
-            pcs_env=pcs_env.replace(ret.group(2),f"--log-file-max-size-k {size}").replace(ret.group(1),ret_bash.group(1))
+        cfg = send_tcp("get_i_config pcsenv",ip,lidar_port,max_length=4096)
+        ret_cfg = re.search(f"(?:user config)?[\s\S]*{ret_bash.group(1)}\s*=(.*)\n",cfg)
+        if ret_cfg:
+            log_option = ret_cfg.group(1)
+            ret_log_size = re.search("(--log-file-max-size-k\s+\d+)",log_option)
+            if ret_log_size:
+                log_option = log_option.replace(ret_log_size.group(1),f"--log-file-max-size-k {size}")
+            else:
+                print(f"{ip} can't find log size")
+                return
         else:
-            print(f"{ip} pcs_env not have LOG_OPTION")
+            print(f"{ip} can't find {ret_bash.group(1)}")
             return
-        with open(save_cfg_file,"w") as f:
-            f.write(pcs_env)
-        command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
-        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-        res=cmd.communicate()
-        if "succe" in res[0]:
-            print(f"{ip} extend log size {size}Kb success")
+        command = f"set_i_config pcsenv {ret_bash.group(1)} {log_option}"
+        send_tcp(command,ip,lidar_port)
+        res = send_tcp("get_i_config pcsenv",ip,lidar_port,max_length=4096)
+        if re.search(f"{ret_bash.group(1)}.*--log-file-max-size-k {size}",res):
+            print(f"{ip} extend log size success")
         else:
-            print(f"{ip} extend log size fail")
-        os.remove(save_cfg_file)
+            print(f"{ip} extend log size fail,set i config fail")
+        
         
     def open_broadcast(util_path,ip,udp_port=8010):
-        if not os.path.exists(util_path):
-            print(f"Can't find {util_path}")
-            return
-        save_cfg_file = "1.cfg"
-        command=f'"{util_path}" {ip} download_internal_file PCS_ENV "{save_cfg_file}"'
-        if os.path.exists(save_cfg_file):
-            os.remove(save_cfg_file)
-        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-        res=cmd.communicate()
-        if not os.path.exists(save_cfg_file):
-            print(f"Can't get {ip} PCS_ENV")
-            return
-        with open(save_cfg_file,"r") as f:
-            pcs_env=f.read()
-        pcs_env_lines = pcs_env.split("\n")
-        pcs_env = "UDP_IP=eth0\n"
-        for pcs_env_line in pcs_env_lines:
-            ret=re.search("^\s*?(UDP_PORT.*)=(\d+)",pcs_env_line)
-            if ret:
-                pcs_env += f"{ret.group(1)}={udp_port}\n"
-            else:
-                ret=re.search("^\s*?(UDP_IP)",pcs_env_line)
-                if not ret and pcs_env_line != "":
-                    pcs_env += f"{pcs_env_line}\n"
-        with open(save_cfg_file,"w") as f:
-            f.write(pcs_env)
-        command=f'"{util_path}" {ip} upload_internal_file PCS_ENV "{save_cfg_file}"'
-        cmd=subprocess.Popen(command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-        res=cmd.communicate()
-        if "succe" in res[0]:
-            print(f"{ip} set broadcast success")
-        else:
-            print(f"{ip} set broadcast fail")
-        os.remove(save_cfg_file)
+        lidar_port = 8002
+        command = "set_i_config pcsenv UDP_IP eth0"
+        send_tcp(command,ip,lidar_port)
+        udp_port_names = ["UDP_PORT_DATA","UDP_PORT_MESSAGE","UDP_PORT_STATUS"]
+        for udp_port_name in udp_port_names:
+            command = f"set_i_config pcsenv {udp_port_name} {udp_port}"
+            send_tcp(command,ip,lidar_port)
+        cfg = send_tcp("get_i_config pcsenv",ip,lidar_port,max_length=4096)
+        for udp_port_name in udp_port_names:
+            if not re.search(f"{udp_port_name}.*{udp_port}",cfg):
+                print(f"{ip} open broadcast fail")
+                return
+        print(f"{ip} open broadcast success")
+        return
         
-
     def reboot_lidar(ip):
         print(f"reboot lidar {ip}")
         while True:
@@ -383,7 +353,8 @@ if __name__=="__main__":
     # t= time.time()
     # s = send_tcp(command,"172.168.1.10",8088)
     # print(time.time()-t)
-    LidarTool.open_ptp("172.168.1.10")
+    LidarTool.open_broadcast(None,"172.168.1.10",9600)
+    LidarTool.extend_pcs_log_size(None,"172.168.1.10",900000)
     # util_path = "../lidar_util/innovusion_lidar_util"
     # for i in range(6):
     #     ip = f"172.168.1.{13+i}"
