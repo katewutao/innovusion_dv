@@ -78,8 +78,10 @@ class PointCloud(object):
         return df       
 
     def calc_acc(self,df,gt_distance):
+        if df.shape[0]==0:
+            return "NaN"
         acc = np.linalg.norm(df[["x", "y", "z"]].values, axis=1).mean()-gt_distance
-        return acc
+        return round(float(acc),3)
 
     def calc_pre(self,df_pc):
         if df_pc.shape[0]<3:

@@ -148,7 +148,7 @@ POINTS '''+str(len(data))+'''\nDATA ascii\n'''
     files.close()
     
 
-def df2pcd(df, file_name, binary=False):
+def df2pcd(df, file_name, binary=True):
     count = []
     type_dict={
         "int":"I",
