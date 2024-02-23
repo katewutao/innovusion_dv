@@ -162,7 +162,10 @@ def csv_write(file, list1):
         str1 = ""
     else:
         str1 = '\n'
-    str1+=",".join(map(str,list1))
+    if isinstance(list1, list):
+        str1+=",".join(map(str,list1))
+    elif isinstance(list1, str):
+        str1 += list1
     with open(file, 'a', newline='\n') as f:
         f.write(str1)
 
