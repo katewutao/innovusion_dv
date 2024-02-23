@@ -562,9 +562,7 @@ class one_lidar_record_thread(QThread):
         ip_name=self.ip.replace('.', '_')
         save_log=os.path.join(self.record_folder,f"testlog_{ip_name}.txt")
         save_csv=os.path.join(self.record_folder,f"record_{ip_name}.csv")
-        if not os.path.exists(save_csv):
-            with open(save_csv, 'w', newline='\n') as f:
-                f.write(self.record_header)
+        csv_write(save_csv,self.record_header)
         while True:
             sn_res=get_curl_result(f"http://{self.ip}:8010/command/?get_sn",1)
             if sn_res[1]:
