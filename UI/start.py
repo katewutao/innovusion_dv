@@ -1381,7 +1381,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         fault_name_width=185
         if fault not in self.scrollArea_list:
             self.scrollArea_list.append(fault)
-            self.scrollArea_faulttakeWidget()
+            self.scrollArea_fault.takeWidget()
             self.scrollArea_contents_fault.setMinimumSize(fault_name_width+19+40*len(self.ip_list),20+30*len(self.scrollArea_list))
             label=QtWidgets.QLabel(self.scrollArea_contents_fault)
             label.setGeometry(QtCore.QRect(10,30*len(self.scrollArea_list)-10,fault_name_width,21))
@@ -1393,7 +1393,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
                 label.setText("")
                 label.setStyleSheet("border-radius:10px;background-color:rgb(0, 0, 0)")
                 setattr(self,f"lb_{fault}_{idx}",label)
-            self.scrollArea_faultsetWidget(self.scrollArea_contents_fault)
+            self.scrollArea_fault.setWidget(self.scrollArea_contents_fault)
         getattr(self,f"lb_{fault}_{row_idx}").setStyleSheet("border-radius:10px;background-color:rgb(255, 0, 0)")
 
     @handle_exceptions
