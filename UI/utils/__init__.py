@@ -360,6 +360,9 @@ class LidarTool(object):
             print(f"{ip} set pcs {open} success")
         else:
             print(f"{ip} set pcs {open} fail")
+            
+            
+    
     
 if __name__=="__main__":
     # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)

@@ -31,6 +31,7 @@ import sys
 import builtins
 from utils import *
 from utils.ConvertPcd import *
+from utils.plot_data import *
 sys.path.append(".")
 
 pointcloud_config = {}
@@ -102,22 +103,6 @@ def time_limited(timeout):
         return decorator2
     return decorator
 
-def handle_exceptions(func):
-    def wrapper(*args, **kwargs):
-        try:
-            sig = inspect.signature(func)
-            num_args = len(sig.parameters)
-            if num_args == len(args):
-                result = func(*args)
-            else:
-                instance = args[0]
-                result = func(instance, **kwargs)
-            return result
-        except Exception as e:
-            print(traceback.format_exc())
-            print(f"Error occurred while executing {func.__name__}: {e}")
-            return None
-    return wrapper
 
 
 def ping(ip,time_interval):
@@ -887,7 +872,7 @@ class PointCloud(QThread):
     def stop(self):
         t=time.time()
         while self.isRunning():
-            print(f"{self.ip} try finish monitor fault")
+            print(f"{self.ip} try finish monitor pointcloud")
             self.requestInterruption()
             self.wait(1000)
             if time.time()-t>3:
@@ -909,12 +894,13 @@ class TestMain(QThread):
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,can_mode,ip_list,record_folder,record_header,times,record_func,record_interval,off_counter,timeout,lidar_mode,pointcloud_func,pointcloud_header):
+    def __init__(self,can_mode,ip_list,widget_plot_dict,record_folder,record_header,times,record_func,record_interval,off_counter,timeout,lidar_mode,pointcloud_func,pointcloud_header):
         super(TestMain,self).__init__()
         self.record_interval=record_interval
         self.lidar_mode=lidar_mode
         self.save_folder=record_folder
         self.ip_list=ip_list
+        self.widget_plot_dict=widget_plot_dict
         self.timeout=timeout
         self.record_header=record_header
         self.off_counter=off_counter
@@ -941,6 +927,7 @@ class TestMain(QThread):
         self.monitors=[]
         self.dsps=[]
         self.pointclouds=[]
+        self.currents=[]
         pointcloud_report_path = os.path.join(self.save_folder,"pointcloud")
         pcd_save_folder = os.path.join(self.util_dir,"pcd")
         for ip_num,ip in enumerate(self.ip_list):
@@ -968,6 +955,11 @@ class TestMain(QThread):
                 pointcloud_thread.start()
                 self.pointclouds.append(pointcloud_thread)
                 print(f"start add pointcloud success {ip}")
+            if os.getenv("current")=="True":
+                self.current_monitor = Current_monitor(ip,self.widget_plot_dict,float(self.record_interval),self.save_folder)
+                self.current_monitor.start()
+                self.currents.append(self.current_monitor)
+                print(f"start add current monitor success")
     
     def stop_monitor(self):
         if hasattr(self,"monitors"):
@@ -990,6 +982,11 @@ class TestMain(QThread):
             for pointcloud in self.pointclouds:
                 if pointcloud.isRunning():
                     pointcloud.stop()
+        if hasattr(self,"currents"):
+            print("start stop pointcloud")
+            for current in self.currents:
+                if current.isRunning():
+                    current.stop()
     
     @handle_exceptions
     def one_cycle(self,power_one_time,i,data_num_power_off,log_path):
@@ -1233,16 +1230,20 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         
         self.scrollArea_list=[]      
     
-        self.actionlidar_status.triggered.connect(self.stackedWidget_currentChanged(0))
-        self.actionlidar_pointcloud.triggered.connect(self.stackedWidget_currentChanged(1))
-        self.stackedWidget.setCurrentIndex(0)
+        self.actionlidar_status.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_lidar,self.lb_lidar,["Lidar status","Lidar pointcloud"]))
+        self.actionlidar_pointcloud.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_lidar,self.lb_lidar,["Lidar status","Lidar pointcloud"]))
+        self.actionFault.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_current,self.lb_current,["Fault","Current"]))
+        self.actionCurrent.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_current,self.lb_current,["Fault","Current"]))
+        
+        
         sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
 
     
-    def stackedWidget_currentChanged(self,idx):
+    def stackedWidget_currentChanged(self,idx,stacked_object,lb_object,list_name):
         def changed_idx():
-            self.stackedWidget.setCurrentIndex(idx)
+            stacked_object.setCurrentIndex(idx)
+            lb_object.setText(list_name[idx])
         return changed_idx
     
     def write(self, info):
@@ -1263,8 +1264,31 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         QtWidgets.QApplication.processEvents()
         self.log_rows+=1
     
+    @handle_exceptions
+    def clear_scroll_area(self,scroll_area):
+        if scroll_area.widget()==None:
+            return
+        scroll_contents = scroll_area.widget()
+        # 清空内容小部件中的子控件
+        for child_widget in scroll_contents.findChildren(QWidget):
+            child_widget.setParent(None)
+            child_widget.deleteLater()
+        # 移除内容小部件
+        scroll_area.takeWidget()
     
     
+    @handle_exceptions
+    def init_plot_widget(self):
+        self.widget_plot_dict = {}
+        global widget_width,widget_height
+        self.clear_scroll_area(self.scrollArea_current)
+        widget_counts=len(self.ip_list)
+        self.scrollArea_contents_current.setMinimumSize(widget_width+30,widget_height*widget_counts)
+        for idx,ip in enumerate(self.ip_list):
+            qwidget=QtWidgets.QWidget(self.scrollArea_contents_current)
+            qwidget.setGeometry(QtCore.QRect(10, widget_height*idx, widget_width-30, widget_height))
+            self.widget_plot_dict[ip] = Plot_Widget(qwidget,f"{ip}")
+        self.scrollArea_current.setWidget(self.scrollArea_contents_current)
     
     @handle_exceptions
     def update_test_time(self):
@@ -1357,19 +1381,19 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         fault_name_width=185
         if fault not in self.scrollArea_list:
             self.scrollArea_list.append(fault)
-            self.scrollArea.takeWidget()
-            self.scrollAreaWidgetContents.setMinimumSize(fault_name_width+19+40*len(self.ip_list),20+30*len(self.scrollArea_list))
-            label=QtWidgets.QLabel(self.scrollAreaWidgetContents)
+            self.scrollArea_faulttakeWidget()
+            self.scrollArea_contents_fault.setMinimumSize(fault_name_width+19+40*len(self.ip_list),20+30*len(self.scrollArea_list))
+            label=QtWidgets.QLabel(self.scrollArea_contents_fault)
             label.setGeometry(QtCore.QRect(10,30*len(self.scrollArea_list)-10,fault_name_width,21))
             label.setText(fault)
             setattr(self,f"lb_{fault}",label)            
             for idx,ip in enumerate(self.ip_list):
-                label=QtWidgets.QLabel(self.scrollAreaWidgetContents)
+                label=QtWidgets.QLabel(self.scrollArea_contents_fault)
                 label.setGeometry(QtCore.QRect(fault_name_width+19+40*idx, 30*len(self.scrollArea_list)-10, 21, 21))
                 label.setText("")
                 label.setStyleSheet("border-radius:10px;background-color:rgb(0, 0, 0)")
                 setattr(self,f"lb_{fault}_{idx}",label)
-            self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+            self.scrollArea_faultsetWidget(self.scrollArea_contents_fault)
         getattr(self,f"lb_{fault}_{row_idx}").setStyleSheet("border-radius:10px;background-color:rgb(255, 0, 0)")
 
     @handle_exceptions
@@ -1442,16 +1466,18 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def read_config(self):
         if hasattr(self,"test_config"):
             self.ip_list=self.test_config["lidar_ip"]
+            self.init_plot_widget()
             self.times=get_circle_time(self.test_config["time_dict"])
             self.init_table(len(self.ip_list),self.record_header.split(","),self.pointcloud_header)
-        self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 485, 795))
-        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.scrollArea_contents_fault = QtWidgets.QWidget()
+        self.scrollArea_contents_fault.setGeometry(QtCore.QRect(0, 0, 485, 795))
+        self.scrollArea_contents_fault.setObjectName("scrollAreaWidgetContents")
+        self.scrollArea_fault.setWidget(self.scrollArea_contents_fault)
         self.scrollArea_list=[]
     
     @handle_exceptions
     def test_main(self):
+        
         if self.txt_off_counter.text().strip()=="":  #setReadOnly(True)
             print(f"please input power off empty data number")
             return        
@@ -1470,7 +1496,8 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         os.environ["relay"]=str(self.relay.isChecked())
         os.environ["dsp"]=str(self.dsp.isChecked())
         os.environ["pointcloud"]=str(self.cb_pointcloud.isChecked())
-        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText(),self.pointcloud_func,self.pointcloud_header)
+        os.environ["current"]=str(self.cb_current.isChecked())
+        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.widget_plot_dict,self.save_folder,self.record_header,self.times,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText(),self.pointcloud_func,self.pointcloud_header)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
         self.test.sigout_pointcloud.connect(set_tbw_value(self.tbw_pointcloud))
@@ -1517,6 +1544,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.relay.setEnabled(False)
         self.dsp.setEnabled(False)
         self.cb_pointcloud.setEnabled(False)
+        self.cb_current.setEnabled(False)
         self.btn_stop.setEnabled(True)
     
     def test_set_on(self):
@@ -1535,6 +1563,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.relay.setEnabled(True)
         self.dsp.setEnabled(True)
         self.cb_pointcloud.setEnabled(True)
+        self.cb_current.setEnabled(True)
         self.btn_stop.setEnabled(False)
     
     @handle_exceptions
