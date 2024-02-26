@@ -143,7 +143,7 @@
     <widget class="QComboBox" name="cb_test_name">
      <property name="geometry">
       <rect>
-       <x>640</x>
+       <x>650</x>
        <y>10</y>
        <width>161</width>
        <height>31</height>
@@ -243,7 +243,7 @@
     <widget class="QLineEdit" name="txt_timeout">
      <property name="geometry">
       <rect>
-       <x>640</x>
+       <x>650</x>
        <y>60</y>
        <width>31</width>
        <height>25</height>
@@ -340,7 +340,7 @@
     <widget class="QCheckBox" name="relay">
      <property name="geometry">
       <rect>
-       <x>740</x>
+       <x>750</x>
        <y>70</y>
        <width>61</width>
        <height>21</height>
@@ -353,7 +353,7 @@
     <widget class="QCheckBox" name="dsp">
      <property name="geometry">
       <rect>
-       <x>690</x>
+       <x>700</x>
        <y>70</y>
        <width>51</width>
        <height>21</height>
@@ -366,7 +366,7 @@
     <widget class="QCheckBox" name="cb_pointcloud">
      <property name="geometry">
       <rect>
-       <x>690</x>
+       <x>700</x>
        <y>50</y>
        <width>101</width>
        <height>21</height>
@@ -379,7 +379,7 @@
     <widget class="QCheckBox" name="cb_current">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>810</x>
        <y>70</y>
        <width>71</width>
        <height>21</height>

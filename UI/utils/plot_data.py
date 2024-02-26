@@ -12,7 +12,7 @@ import numpy as np
 import os
 from utils import *
 
-widget_height=160
+widget_height=130
 widget_width=490
 
 
