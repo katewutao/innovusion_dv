@@ -1037,8 +1037,8 @@ class TestMain(QThread):
             self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)
         for i in range(data_num_power_off):
             temp_pow=pow_status
-            csv_save_path = os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv')
             for row_idx,ip in enumerate(self.ip_list):
+                csv_save_path = os.path.join(self.save_folder,'record_'+ip.replace('.','_')+'.csv')
                 if self.lidar_mode=="CAN":
                     temp=[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"]+[-100]*(self.record_header.count(",")-2)+temp_pow
                 else:
