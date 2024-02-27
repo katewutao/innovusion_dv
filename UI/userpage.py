@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'c:\Users\Administrator\Desktop\code\innovusion_dv\UI\userpage.ui'
+# Form implementation generated from reading ui file 'c:\Users\SZV00160\Desktop\code\innovusion_dv\UI\userpage.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -317,7 +317,7 @@ class Ui_MainWindow(object):
         self.menuBar.addAction(self.menuCurrent_Fault.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget_lidar.setCurrentIndex(1)
+        self.stackedWidget_lidar.setCurrentIndex(0)
         self.stackedWidget_current.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
