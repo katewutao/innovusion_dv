@@ -6,6 +6,8 @@
 运行脚本出现报错：no module named xxx:pip3 install serial -i https://mirrors.aliyun.com/pypi/simple/
 运行脚本出现报错：no module named xxx:pip3 install pyserial -i https://mirrors.aliyun.com/pypi/simple/
 运行脚本出现报错：no module named xxx:pip3 install modbus_tk -i https://mirrors.aliyun.com/pypi/simple/
+运行脚本出现报错：no module named sklearn:pip3 install scikit-learn -i https://mirrors.aliyun.com/pypi/simple/
+
 
 第一次运行脚本出现报错：no module named xxx:    pip3 install xxx  -i https://pypi.douban.com/simple/
 报错no sshpass : sudo apt install sshpass
