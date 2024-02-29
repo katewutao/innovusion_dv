@@ -633,25 +633,17 @@ class MonitorFault(QThread):
     
     def download_fw_pcs(self):
         print(f"{self.ip} download fw and pcs")
-        command_fw=f"http://{self.ip}:8675/lidar-log.txt"
-        command_pcs=f"http://{self.ip}:8675/inno_pc_server.txt"
-        try:
-            response = requests.get(command_fw,timeout=3)
-            response.raise_for_status()
-            res_fw=str(response.content)[2:-1]
-        except:
-            print(f"{self.ip} download fw log failed")
-            time.sleep(3)
+        command_fw=f"http://{self.ip}:8675/download?downloadType=log&downloadName=lidar&currBoot=true&downloadFull=true"
+        command_pcs=f"http://{self.ip}:8675/download?downloadType=log&downloadName=sdk&currBoot=true&downloadFull=true"
+        res_fw = download_file(command_fw,None,3)
+        res_pcs = download_file(command_pcs,None,3)
+        if res_fw == "":
+            print(f"{self.ip} download fw failed")
             return ""
-        try:
-            response = requests.get(command_pcs,timeout=3)
-            response.raise_for_status()
-            res_pcs=str(response.content)[2:-1]
-        except:
-            print(f"{self.ip} download pcs log failed")
-            time.sleep(3)
-            return res_fw.replace("\\n","\n")
-        res = (res_fw+res_pcs)
+        if res_pcs == "":
+            print(f"{self.ip} download pcs failed")
+            return ""
+        res = str(res_fw)[2:-1] + str(res_pcs)[2:-1]
         return res.replace("\\n","\n")
         
     def get_cmd_print(self,fault_log_path):

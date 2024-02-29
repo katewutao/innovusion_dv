@@ -145,17 +145,22 @@ def get_curl_result(command,timeout=0.2):
         res=""
     return res,excute_flag
 
-def download_file(url,filename):
-    print(f"download {filename} start")
+def download_file(url,filename=None,time_sleep=0):
     try:
         response = requests.get(url)
+        response.raise_for_status()
     except:
-        print(f"download {filename} failed")
-        return
-    response.raise_for_status()
-    with open(filename,"wb") as f:
-        f.write(response.content)
-    print(f"download {filename} success")
+        time.sleep(time_sleep)
+        if isinstance(filename,str):
+            print(f"download {filename} failed")
+        return ""
+    res = response.content
+    if isinstance(filename,str):
+        with open(filename,"wb") as f:
+            f.write(res)
+        print(f"download {filename} success")
+    else:
+        return res
     
 def csv_write(file, list1):
     if not os.path.exists(file):
@@ -371,8 +376,8 @@ if __name__=="__main__":
     # t= time.time()
     # s = send_tcp(command,"172.168.1.10",8088)
     # print(time.time()-t)
-    LidarTool.open_broadcast(None,"172.168.1.10",9600)
-    LidarTool.extend_pcs_log_size(None,"172.168.1.10",900000)
+    # LidarTool.open_broadcast(None,"172.168.1.10",9600)
+    # LidarTool.extend_pcs_log_size(None,"172.168.1.10",900000)
     # util_path = "../lidar_util/innovusion_lidar_util"
     # for i in range(6):
     #     ip = f"172.168.1.{13+i}"
@@ -380,3 +385,6 @@ if __name__=="__main__":
     #     open_broadcast(util_path,ip,port)
     #     set_network(ip,ip)
     #     reboot_lidar(ip)
+    ip = "172.168.1.10"
+    download_file(f"http://{ip}:8675/download?downloadType=log&downloadName=lidar&currBoot=true&downloadFull=true","lidar.log")
+    download_file(f"http://{ip}:8675/download?downloadType=log&downloadName=sdk&currBoot=true&downloadFull=true","pcs.log")
