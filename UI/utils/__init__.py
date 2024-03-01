@@ -385,6 +385,5 @@ if __name__=="__main__":
     #     open_broadcast(util_path,ip,port)
     #     set_network(ip,ip)
     #     reboot_lidar(ip)
-    ip = "172.168.1.10"
-    download_file(f"http://{ip}:8675/download?downloadType=log&downloadName=lidar&currBoot=true&downloadFull=true","lidar.log")
-    download_file(f"http://{ip}:8675/download?downloadType=log&downloadName=sdk&currBoot=true&downloadFull=true","pcs.log")
+    res = send_tcp(f":CURSor:DVREad? A","192.168.1.2",port=8802,wait=False,max_length=2000)
+    print(res)

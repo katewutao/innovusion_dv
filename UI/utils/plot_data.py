@@ -35,37 +35,56 @@ def handle_exceptions(func):
 
 class Current_monitor(QThread):
     @handle_exceptions
-    def __init__(self,ip,widget_plot_dict,sleep_time,save_foler):
+    def __init__(self,ip_list,widget_plot_dict,sleep_time,save_foler):
         super(Current_monitor,self).__init__()
-        self.ip = ip
-        self.widget_plot = widget_plot_dict[ip]
+        self.ip_list = ip_list
+        self.widget_plot_dict = widget_plot_dict
         self.sleep_time = sleep_time
         self.save_foler = os.path.join(save_foler,"current")
         self.plot_length = 1000
         if not os.path.exists(self.save_foler):
             os.makedirs(self.save_foler)
-        self.save_file = os.path.join(self.save_foler,f"{ip}.csv")
-        if not os.path.exists(self.save_file):
-            csv_write(self.save_file,["time","current"])
+        self.save_dict = {}
+        self.plot_data_dict = {}
+        for ip in ip_list:
+            self.plot_data_dict[ip] = []
+            self.save_dict[ip] = os.path.join(self.save_foler,f"{ip}.csv")
+            if not os.path.exists(self.save_dict[ip]):
+                csv_write(self.save_dict[ip],["time","current(mA)"])
     
     @handle_exceptions
     def run(self):
-        plot_data = []
         while True:
             t = time.time()
             if self.isInterruptionRequested():
                 break
-            #TODO: get data from ip
-            current = 1000
-            plot_data.append(current)
-            csv_write(self.save_file,[f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}",current])
-            if len(plot_data) > self.plot_length:
-                plot_data = plot_data[-self.plot_length:]
-            self.widget_plot.updateData(plot_data)
+            try:
+                respon = requests.get("http://192.168.1.2/REALDATA.HTM")
+                text = respon.text
+            except Exception as e:
+                print("can't connect to current monitor, please check the connection and try again")
+                time.sleep(5)
+                continue
+            res = re.findall("<nobr>(\d+-\d+).*?(-?\d+\.\d*)mV",text)
+            date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
+            if len(res)==15:
+                for idx,ip in enumerate(self.ip_list):
+                    voltage = float(res[idx][1])
+                    if abs(voltage) > 1000:
+                        current = voltage/7500
+                    else:
+                        current = voltage/0.1
+                    self.plot_data_dict[ip].append(current)
+                    csv_write(self.save_dict[ip],[date_time,current])
+                    if len(self.plot_data_dict[ip]) > self.plot_length:
+                        self.plot_data_dict[ip] = self.plot_data_dict[ip][-self.plot_length:]
+                    self.widget_plot_dict[ip].updateData(self.plot_data_dict[ip])
+            else:
+                print(f"current monitor data error: return length {len(res)}")
             sleep_time = self.sleep_time - (time.time() - t)
             if sleep_time > 0:
                 time.sleep(sleep_time)
-        
+
     @handle_exceptions
     def stop(self):
         t=time.time()

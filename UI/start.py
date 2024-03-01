@@ -947,11 +947,7 @@ class TestMain(QThread):
                 pointcloud_thread.start()
                 self.pointclouds.append(pointcloud_thread)
                 print(f"start add pointcloud success {ip}")
-            if os.getenv("current")=="True":
-                self.current_monitor = Current_monitor(ip,self.widget_plot_dict,float(self.record_interval),self.save_folder)
-                self.current_monitor.start()
-                self.currents.append(self.current_monitor)
-                print(f"start add current monitor success")
+            
     
     def stop_monitor(self):
         if hasattr(self,"monitors"):
@@ -1047,6 +1043,10 @@ class TestMain(QThread):
     def run(self):
         if not os.path.exists(self.save_folder):
             os.makedirs(self.save_folder)
+        if os.getenv("current")=="True":
+            self.current_monitor = Current_monitor(self.ip_list,self.widget_plot_dict,float(self.record_interval),self.save_folder)
+            self.current_monitor.start()
+            print(f"start add current monitor success")
         self.analyse_command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
         print(self.analyse_command)
         print(f"start analyse log")
