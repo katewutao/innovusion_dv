@@ -1149,6 +1149,11 @@ class TestMain(QThread):
                 self.power_monitor.stop()
             except:
                 pass
+        if hasattr(self,"current_monitor"):
+            try:
+                self.current_monitor.stop()
+            except:
+                pass
         t=time.time()
         while self.isRunning():
             print(f"try finish test")
