@@ -143,9 +143,9 @@ class Plot_Widget(QWidget):
             painter.setPen(pen)
             self.convert_data()
             for i in range(self.data.shape[0]-1):
-                x1 = int(i * self.point_width+self.label_width)
+                x1 = int(i * self.point_width + self.label_width)
                 y1 = int(self.data[i])
-                x2 = int((i + 1) * self.point_width+self.label_width)
+                x2 = int((i + 1) * self.point_width + self.label_width)
                 y2 = int(self.data[i + 1])
                 painter.drawLine(x1, y1, x2, y2)  # 绘制连线
         painter.end()

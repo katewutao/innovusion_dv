@@ -351,9 +351,11 @@ class LidarTool(object):
         
     def reboot_lidar(ip):
         print(f"reboot lidar {ip}")
-        while True:
-            if get_curl_result(f"http://{ip}:8010/command/?set_reboot=1",1)[1]:
-                break
+        res = send_tcp("reboot 1",ip,8002)
+        if res == "":
+            print(f"{ip} reboot fail")
+        else:
+            print(f"{ip} reboot success")
         time.sleep(10)
         
     def set_pcs(ip,open=True):
