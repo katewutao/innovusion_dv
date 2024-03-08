@@ -65,15 +65,17 @@ class Current_monitor(QThread):
                 print("can't connect to current monitor, please check the connection and try again")
                 time.sleep(5)
                 continue
-            res = re.findall("<nobr>(\d+-\d+).*?(-?\d+\.\d*)mV",text)
+            res = re.findall("<nobr>(\d+-\d+).*?(-?\d+\.\d*)(mV|V)",text)
             date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
-            if len(res)==15:
+            if len(res) >= len(self.ip_list):
                 for idx,ip in enumerate(self.ip_list):
                     voltage = float(res[idx][1])
                     if abs(voltage) > 1000:
                         current = voltage/7500
                     else:
                         current = voltage/0.1
+                    if res[idx][2] == "V":
+                        current = current*1000
                     self.plot_data_dict[ip].append(current)
                     csv_write(self.save_dict[ip],[date_time,current])
                     if len(self.plot_data_dict[ip]) > self.plot_length:
