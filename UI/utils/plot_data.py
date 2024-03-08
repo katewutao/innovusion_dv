@@ -97,7 +97,7 @@ class Current_monitor(QThread):
     def stop(self):
         t=time.time()
         while self.isRunning():
-            print(f"{self.ip} try finish monitor current")
+            print(f"try finish monitor current")
             self.requestInterruption()
             self.wait(1000)
             if time.time()-t>3:
