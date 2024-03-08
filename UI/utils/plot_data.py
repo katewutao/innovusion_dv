@@ -78,7 +78,7 @@ class Current_monitor(QThread):
                 for idx,ip in enumerate(self.ip_list):
                     voltage = float(res[idx][1])
                     if res[idx][2] == "V":
-                        resistor /= 1000
+                        voltage *= 1000
                     current = voltage/resistor
                     self.plot_data_dict[ip].append(current)
                     csv_write(self.save_dict[ip],[date_time,current])
