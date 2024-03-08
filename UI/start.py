@@ -1454,9 +1454,14 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     @handle_exceptions
     def test_name_changed(self):
         if self.cb_test_name.currentText().strip()!="":
+            cfg_file = os.path.join(self.test_folder,f"{self.cb_test_name.currentText()}.py")
             os.environ["test_name"]=self.cb_test_name.currentText()
-            mata_class=importlib.import_module(f"{self.test_folder.strip('.').strip('/')}.{self.cb_test_name.currentText()}")
-            self.test_config=mata_class.config
+            try:
+                with open(cfg_file,"r") as f:
+                    exec(f.read())
+                exec("self.test_config=config")
+            except Exception as e:
+                print(f"read test config error:{e}")
             self.save_folder=self.cb_test_name.currentText()
             self.read_config()
     
@@ -1639,3 +1644,4 @@ if __name__ == '__main__':
     window = MainCode()
     window.show()
     sys.exit(app.exec_())
+
