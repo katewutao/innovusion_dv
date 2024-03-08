@@ -37,9 +37,10 @@ class Current_monitor(QThread):
     sigout_plot_data = pyqtSignal(list,str)
     
     @handle_exceptions
-    def __init__(self,ip_list,sleep_time,save_foler):
+    def __init__(self,ip_list,relay_channel,sleep_time,save_foler):
         super(Current_monitor,self).__init__()
         self.ip_list = ip_list
+        self.relay_channel = relay_channel
         self.sleep_time = sleep_time
         self.save_foler = os.path.join(save_foler,"current")
         self.plot_length = 100
@@ -55,12 +56,13 @@ class Current_monitor(QThread):
     
     @handle_exceptions
     def run(self):
+        url_command = f"http://192.168.1.2/REALDATA.HTM?:COMPORT:WEBORGUNIT=UNIT{self.relay_channel}"
         while True:
             t = time.time()
             if self.isInterruptionRequested():
                 break
             try:
-                respon = requests.get("http://192.168.1.2/REALDATA.HTM")
+                respon = requests.get(url_command)
                 text = respon.text
             except Exception as e:
                 print("can't connect to current monitor, please check the connection and try again")
