@@ -372,20 +372,6 @@ class LidarTool(object):
     
     
 if __name__=="__main__":
-    # extend_pcs_log_size("./innovusion_lidar_util","172.168.1.10",size=200000)
-    # open_broadcast("./lidar_util/innovusion_lidar_util","172.168.1.10")
-    # command = 'mfg_rd "CustomerSN"'
-    # t= time.time()
-    # s = send_tcp(command,"172.168.1.10",8088)
-    # print(time.time()-t)
-    # LidarTool.open_broadcast(None,"172.168.1.10",9600)
-    # LidarTool.extend_pcs_log_size(None,"172.168.1.10",900000)
-    # util_path = "../lidar_util/innovusion_lidar_util"
-    # for i in range(6):
-    #     ip = f"172.168.1.{13+i}"
-    #     port = 8600+i
-    #     open_broadcast(util_path,ip,port)
-    #     set_network(ip,ip)
-    #     reboot_lidar(ip)
-    res = send_tcp(f":CURSor:DVREad? A","192.168.1.2",port=8802,wait=False,max_length=2000)
-    print(res)
+    ip = "172.168.1.10"
+    LidarTool.open_broadcast(None,ip,8010)
+    LidarTool.reboot_lidar(ip)

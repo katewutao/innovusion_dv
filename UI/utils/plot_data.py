@@ -59,6 +59,10 @@ class Current_monitor(QThread):
         url_command = f"http://192.168.1.2/REALDATA.HTM?:COMPORT:WEBORGUNIT=UNIT{self.relay_channel}"
         while True:
             t = time.time()
+            if os.getenv("resistor"):
+                resistor = float(os.getenv("resistor"))
+            else:
+                resistor = 0.1
             if self.isInterruptionRequested():
                 break
             try:
@@ -74,17 +78,8 @@ class Current_monitor(QThread):
                 for idx,ip in enumerate(self.ip_list):
                     voltage = float(res[idx][1])
                     if res[idx][2] == "V":
-                        R1 = 7500/1000
-                        R2 = 0.1/1000
-                        voltage_threshold = 1
-                    else:
-                        R1 = 7500
-                        R2 = 0.1
-                        voltage_threshold = 1000
-                    if abs(voltage) > voltage_threshold:
-                        current = voltage/R1
-                    else:
-                        current = voltage/R2
+                        resistor /= 1000
+                    current = voltage/resistor
                     self.plot_data_dict[ip].append(current)
                     csv_write(self.save_dict[ip],[date_time,current])
                     if len(self.plot_data_dict[ip]) > self.plot_length:
