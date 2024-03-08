@@ -1050,7 +1050,7 @@ class TestMain(QThread):
             os.makedirs(self.save_folder)
         if os.getenv("current")=="True":
             os.environ["resistor"] = "0.1"
-            self.current_monitor = Current_monitor(self.ip_list,self.relay_channel,float(self.record_interval),self.save_folder)
+            self.current_monitor = Current_monitor(self.ip_list,self.relay_channel,float(self.record_interval),self.save_folder,3)
             self.current_monitor.sigout_plot_data.connect(self.send_current_info)
             self.current_monitor.start()
             print(f"start add current monitor success")

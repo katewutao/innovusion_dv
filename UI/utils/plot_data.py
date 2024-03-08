@@ -37,7 +37,7 @@ class Current_monitor(QThread):
     sigout_plot_data = pyqtSignal(list,str)
     
     @handle_exceptions
-    def __init__(self,ip_list,relay_channel,sleep_time,save_foler,timeout=3):
+    def __init__(self,ip_list,relay_channel,sleep_time,save_foler,timeout):
         super(Current_monitor,self).__init__()
         self.ip_list = ip_list
         self.relay_channel = relay_channel
