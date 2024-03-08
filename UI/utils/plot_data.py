@@ -68,16 +68,16 @@ class Current_monitor(QThread):
             res = re.findall("<nobr>(\d+-\d+).*?(-?\d+\.\d*)\s*?(mV|V)",text)
             date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
             if len(res) >= len(self.ip_list):
-                if res[0][2] == "V":
-                    R1 = 7500/1000
-                    R2 = 0.1/1000
-                    voltage_threshold = 1
-                else:
-                    R1 = 7500
-                    R2 = 0.1
-                    voltage_threshold = 1000
                 for idx,ip in enumerate(self.ip_list):
                     voltage = float(res[idx][1])
+                    if res[idx][2] == "V":
+                        R1 = 7500/1000
+                        R2 = 0.1/1000
+                        voltage_threshold = 1
+                    else:
+                        R1 = 7500
+                        R2 = 0.1
+                        voltage_threshold = 1000
                     if abs(voltage) > voltage_threshold:
                         current = voltage/R1
                     else:
