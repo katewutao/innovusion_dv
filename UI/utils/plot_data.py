@@ -65,7 +65,7 @@ class Current_monitor(QThread):
                 print("can't connect to current monitor, please check the connection and try again")
                 time.sleep(5)
                 continue
-            res = re.findall("<nobr>(\d+-\d+).*?(-?\d+\.\d*)(mV|V)",text)
+            res = re.findall("<nobr>(\d+-\d+).*?(-?\d+\.\d*)\s*?(mV|V)",text)
             date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
             if len(res) >= len(self.ip_list):
                 if res[0][2] == "V":
