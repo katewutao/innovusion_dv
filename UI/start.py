@@ -883,16 +883,16 @@ class TestMain(QThread):
     sigout_schedule=pyqtSignal(int,int)
     sigout_set_fault=pyqtSignal(str,int)
     sigout_heal_fault=pyqtSignal(str,int)
+    sigout_plot_data = pyqtSignal(list,str)
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,can_mode,ip_list,widget_plot_dict,record_folder,record_header,times,record_func,record_interval,off_counter,timeout,lidar_mode,pointcloud_func,pointcloud_header):
+    def __init__(self,can_mode,ip_list,record_folder,record_header,times,record_func,record_interval,off_counter,timeout,lidar_mode,pointcloud_func,pointcloud_header):
         super(TestMain,self).__init__()
         self.record_interval=record_interval
         self.lidar_mode=lidar_mode
         self.save_folder=record_folder
         self.ip_list=ip_list
-        self.widget_plot_dict=widget_plot_dict
         self.timeout=timeout
         self.record_header=record_header
         self.off_counter=off_counter
@@ -913,6 +913,9 @@ class TestMain(QThread):
     
     def send_pointcloud_info(self,res,row_idx):
         self.sigout_pointcloud.emit(res,row_idx)
+    
+    def send_current_info(self,value,ip):
+        self.sigout_plot_data.emit(value,ip)
     
     def run_monitor(self,log_path,time_path):
         self.records=[]
@@ -1044,7 +1047,8 @@ class TestMain(QThread):
         if not os.path.exists(self.save_folder):
             os.makedirs(self.save_folder)
         if os.getenv("current")=="True":
-            self.current_monitor = Current_monitor(self.ip_list,self.widget_plot_dict,float(self.record_interval),self.save_folder)
+            self.current_monitor = Current_monitor(self.ip_list,float(self.record_interval),self.save_folder)
+            self.current_monitor.sigout_plot_data.connect(self.send_current_info)
             self.current_monitor.start()
             print(f"start add current monitor success")
         self.analyse_command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
@@ -1472,6 +1476,9 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.scrollArea_fault.setWidget(self.scrollArea_contents_fault)
         self.scrollArea_list=[]
     
+    def plot_figure_data(self,value,ip):
+        self.widget_plot_dict[ip].updateData(value)
+    
     @handle_exceptions
     def test_main(self):
         
@@ -1494,7 +1501,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         os.environ["dsp"]=str(self.dsp.isChecked())
         os.environ["pointcloud"]=str(self.cb_pointcloud.isChecked())
         os.environ["current"]=str(self.cb_current.isChecked())
-        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.widget_plot_dict,self.save_folder,self.record_header,self.times,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText(),self.pointcloud_func,self.pointcloud_header)
+        self.test=TestMain(self.cb_can_mode.currentText(),self.ip_list,self.save_folder,self.record_header,self.times,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText(),self.pointcloud_func,self.pointcloud_header)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
         self.test.sigout_pointcloud.connect(set_tbw_value(self.tbw_pointcloud))
@@ -1502,6 +1509,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.test.sigout_heal_fault.connect(self.heal_fault)
         self.test.sigout_set_fault.connect(self.report_fault)
         self.test.sigout_power.connect(self.power_status)
+        self.test.sigout_plot_data.connect(self.plot_data)
         self.test.start()
         self.test_set_off()
     

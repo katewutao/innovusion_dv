@@ -34,14 +34,15 @@ def handle_exceptions(func):
     return wrapper
 
 class Current_monitor(QThread):
+    sigout_plot_data = pyqtSignal(list,str)
+    
     @handle_exceptions
-    def __init__(self,ip_list,widget_plot_dict,sleep_time,save_foler):
+    def __init__(self,ip_list,sleep_time,save_foler):
         super(Current_monitor,self).__init__()
         self.ip_list = ip_list
-        self.widget_plot_dict = widget_plot_dict
         self.sleep_time = sleep_time
         self.save_foler = os.path.join(save_foler,"current")
-        self.plot_length = 1000
+        self.plot_length = 100
         if not os.path.exists(self.save_foler):
             os.makedirs(self.save_foler)
         self.save_dict = {}
@@ -86,7 +87,7 @@ class Current_monitor(QThread):
                     csv_write(self.save_dict[ip],[date_time,current])
                     if len(self.plot_data_dict[ip]) > self.plot_length:
                         self.plot_data_dict[ip] = self.plot_data_dict[ip][-self.plot_length:]
-                    self.widget_plot_dict[ip].updateData(self.plot_data_dict[ip])
+                    self.sigout_plot_data.emit(self.plot_data_dict[ip],ip)
             else:
                 print(f"current monitor data error: return length {len(res)}")
             sleep_time = self.sleep_time - (time.time() - t)
