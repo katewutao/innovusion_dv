@@ -1509,7 +1509,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.test.sigout_heal_fault.connect(self.heal_fault)
         self.test.sigout_set_fault.connect(self.report_fault)
         self.test.sigout_power.connect(self.power_status)
-        self.test.sigout_plot_data.connect(self.plot_data)
+        self.test.sigout_plot_data.connect(self.plot_figure_data)
         self.test.start()
         self.test_set_off()
     
