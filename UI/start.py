@@ -1117,6 +1117,8 @@ class TestMain(QThread):
                 self.one_cycle(time_one,i,int(self.off_counter),self.save_folder)
                 i+=1 
             self.power_monitor.stop()
+            if os.getenv("current")=="True":
+                self.current_monitor.stop()
             if self.lidar_mode=="CAN":
                 if os.getenv("relay")=="True":
                     os.system("python3 can_run.py -c switch")
