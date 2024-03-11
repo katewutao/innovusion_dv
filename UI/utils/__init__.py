@@ -372,6 +372,36 @@ class LidarTool(object):
     
     
 if __name__=="__main__":
-    ip = "172.168.1.10"
-    LidarTool.open_broadcast(None,ip,8010)
-    LidarTool.reboot_lidar(ip)
+    def rp_factor_phase_from_binary_stream(data, ch):
+        idx = 0
+        rp_factor = np.zeros(16)
+        num_str = ''
+        for character in data:
+            tmp = chr(character)
+            if tmp == '\t' or tmp == '\n':
+                rp_factor[idx] = float(num_str)
+                num_str = ''
+                idx = idx + 1
+                continue
+            num_str = num_str + tmp
+        rp_factor = np.reshape(rp_factor, (4, 4))
+        current_rp_factor = rp_factor[ch, 2]
+        return current_rp_factor
+
+    def read_rp_from_register(ch):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('172.168.1.10', 8001))
+        cmd_read_ripple_dist_rp_factor = 'ripple'
+        s.sendall(cmd_read_ripple_dist_rp_factor.encode())
+        data = s.recv(1024)
+        current_dist_rp_factor = rp_factor_phase_from_binary_stream(data, ch)
+        s.close()
+        return current_dist_rp_factor
+    t=time.time()   
+    print(read_rp_from_register(0),read_rp_from_register(1),read_rp_from_register(2),read_rp_from_register(3))
+    print(time.time()-t)
+    t=time.time()
+    res = send_tcp("ripple","172.168.1.10",8001)
+    print(re.findall("(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*).*\n",res))   
+    print(time.time()-t) 
+    

@@ -1457,7 +1457,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             cfg_file = os.path.join(self.test_folder,f"{self.cb_test_name.currentText()}.py")
             os.environ["test_name"]=self.cb_test_name.currentText()
             try:
-                with open(cfg_file,"r") as f:
+                with open(cfg_file,"r",encoding="utf-8") as f:
                     exec(f.read())
                 exec("self.test_config=config")
             except Exception as e:
