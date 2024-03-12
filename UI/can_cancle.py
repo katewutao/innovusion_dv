@@ -14,6 +14,8 @@ def main_close(args):
     conf = load_conf('config/CANFD_Config.json')
     if args.can in ["Default","Robin","FII"]:
         os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+        usbcan = USBCAN(conf)
+        usbcan.stop_usbcan()
         return
     elif args.can=="GF":
         conf["frame"]["type"]="canfd"

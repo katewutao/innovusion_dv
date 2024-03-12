@@ -330,9 +330,9 @@ class USBCANFD(object):
                     can_20_data[i].dat[j]=self.payload[j]
 
             send_CAN_number = usbcanfd_lib.VCI_TransmitFD(USBCANFD.USBCANFD_200U, USBCANFD.DEVICE_INDEX, USBCANFD.CHANNEL_INDEX(channel), byref(can_20_data), self.count)
-            # logger.info(f"CH:{channel} send {send_CANFD_number} CANFD frames!")
-            # for i in range(send_CAN_number):
-            #     logger.info(f"[Tx] FrameID: {hex(can_20_data[i].msg_header.id)}, Data: {list(map(lambda x: hex(x), can_20_data[i].dat))[:8]}")
+            logger.info(f"CH:{channel} send {send_CAN_number} CANFD frames!")
+            for i in range(send_CAN_number):
+                logger.info(f"[Tx] FrameID: {hex(can_20_data[i].msg_header.id)}, Data: {list(map(lambda x: hex(x), can_20_data[i].dat))[:8]}")
             time.sleep(self.interval_ms/1000)
 
             if self.send_count != -1 and count == self.send_count:

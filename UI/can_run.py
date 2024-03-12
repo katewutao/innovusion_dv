@@ -10,7 +10,6 @@
 import os
 import socket
 import threading
-import redis
 import json
 import subprocess as sp
 import time
