@@ -20,6 +20,8 @@ def main_close(args):
         conf["frame"]["payload"] = "0040008000000000"
         os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
         usbcan = usbcanfd.USBCANFD(**conf)
+        usbcan.reset_CAN(conf['device']['tx_ch'])
+        usbcan.reset_CAN(conf['device']['rx_ch'])
         usbcan.close_device()
         return
     elif args.can=="GF":
