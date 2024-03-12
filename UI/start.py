@@ -975,7 +975,7 @@ class TestMain(QThread):
                 if pointcloud.isRunning():
                     pointcloud.stop()
         if hasattr(self,"currents"):
-            print("start stop pointcloud")
+            print("start stop current")
             for current in self.currents:
                 if current.isRunning():
                     current.stop()
