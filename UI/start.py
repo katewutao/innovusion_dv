@@ -105,7 +105,7 @@ def time_limited(timeout):
 
 
 
-def ping(ip,time_interval):
+def ping(ip,time_interval=3):
     res = False
     respon=None
     try:
