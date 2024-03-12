@@ -475,8 +475,10 @@ class DSP_info_thread(QThread):#TODO
         if not os.path.exists(self.record_file):
             csv_write(self.record_file,["timestamp"]+list(self.read_keys.keys()))
         while True:
-            if ping(self.ip,3) or self.isInterruptionRequested():
+            if ping(self.ip,3):
                 break
+            if self.isInterruptionRequested():
+                return
         while True:
             if self.isInterruptionRequested():
                 break
@@ -537,8 +539,10 @@ class one_lidar_record_thread(QThread):
     @handle_exceptions
     def run(self):
         while True:
-            if ping(self.ip,3) or self.isInterruptionRequested():
+            if ping(self.ip,3):
                 break
+            if self.isInterruptionRequested():
+                return
         ip_name=self.ip.replace('.', '_')
         save_log=os.path.join(self.record_folder,f"testlog_{ip_name}.txt")
         save_csv=os.path.join(self.record_folder,f"record_{ip_name}.csv")
