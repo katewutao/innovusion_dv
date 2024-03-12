@@ -105,7 +105,7 @@ def time_limited(timeout):
 
 
 
-def ping(ip,time_interval=3):
+def ping(ip,time_interval=3,sleep_time=1):
     res = False
     respon=None
     try:
@@ -113,6 +113,7 @@ def ping(ip,time_interval=3):
         res = True
     except:
         print(f"{ip} ping failed")
+        time.sleep(sleep_time)
     if respon:
         respon.close()
     return res
