@@ -15,10 +15,6 @@ def main_close(args):
     if args.can in ["Default","Robin","FII"]:
         from utils import send_tcp
         send_tcp("127.0.0.1",10001,"EXIT_CAN")
-        time.sleep(1)
-        usbcan = USBCAN(conf)
-        usbcan.run_usbcan(not_send=True)
-        usbcan.stop_usbcan()
         return
     elif args.can=="GF":
         conf["frame"]["type"]="canfd"
