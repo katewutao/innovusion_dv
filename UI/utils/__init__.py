@@ -295,7 +295,7 @@ class LidarTool(object):
             print(f"{ip} open ptp fail, process get_i_config")
             return
 
-    def extend_pcs_log_size(util_path,ip,size=200000):
+    def extend_pcs_log_size(util_path,ip,size=2000):
         lidar_port = 8002        
         save_restart_bash="restart_inno_pc_server.sh"
         command=f'sshpass -p 4920lidar scp -rp root@{ip}:/app/pointcloud/restart_inno_pc_server.sh "{save_restart_bash}"'
