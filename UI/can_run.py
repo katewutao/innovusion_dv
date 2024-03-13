@@ -58,7 +58,7 @@ class USBCAN():
         self.cantype = self.conf['frame']['type']
         self.baud_rate = self.conf['frame']['Baud rate']
 
-    def run_usbcan(self, hostname=None, r=None, not_send=False):
+    def run_usbcan(self, hostname=None, r=None, wait = False):
         self.usbcan = usbcanfd.USBCANFD(**self.conf)
         if not self.usbcan.open_device():
             return
@@ -71,8 +71,6 @@ class USBCAN():
         self.usbcan.init_CAN(self.rx_ch,self.baud_rate)
         self.usbcan.start_CAN(self.tx_ch)
         self.usbcan.start_CAN(self.rx_ch)
-        if not_send:
-            return True
         if self.cantype == 'canfd':
             th1 = threading.Thread(target=self.usbcan.receive_frame_FD, args=(self.rx_ch, hostname, r))
             th2 = threading.Thread(target=self.usbcan.transmit_frame_FD, args=(self.tx_ch,))
@@ -84,9 +82,10 @@ class USBCAN():
             return False
         th1.start()
         th2.start()
-        th1.join()
-        th2.join()
-        self.stop_usbcan()
+        if wait:
+            th1.join()
+            th2.join()
+            self.stop_usbcan()
         return True
 
 
@@ -174,13 +173,14 @@ def main(args):
         return
     
     usbcan = USBCAN(conf)
-    usbcan.run_usbcan()
-    
-        
+    if conf["frame"]["send_count"]==-1:
+        usbcan.run_usbcan()
+        tcp_server(conf)
+        usbcan.stop_usbcan()
+    else:
+        usbcan.run_usbcan(wait=True)
     # Block
-    # tcp_server(conf)
-
-    # usbcan.stop_usbcan()
+        
     
 
 if __name__ == "__main__":

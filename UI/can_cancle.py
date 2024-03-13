@@ -13,7 +13,8 @@ from can_run import *
 def main_close(args):
     conf = load_conf('config/CANFD_Config.json')
     if args.can in ["Default","Robin","FII"]:
-        os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
+        from utils import send_tcp
+        send_tcp("127.0.0.1",10001,"EXIT_CAN")
         time.sleep(1)
         usbcan = USBCAN(conf)
         usbcan.run_usbcan(not_send=True)
@@ -43,17 +44,13 @@ def main_close(args):
         return
     
     usbcan = USBCAN(conf)
-    usbcan.run_usbcan()
+    usbcan.run_usbcan(wait=True)
     if args.can=="switch":
         conf["frame"]["payload"]="0001"*4
         time.sleep(2)
         usbcan = USBCAN(conf)
-        usbcan.run_usbcan()
+        usbcan.run_usbcan(wait=True)
     
-    # Block
-    # tcp_server(conf)
-
-    # usbcan.stop_usbcan()
     
 
 if __name__ == "__main__":
