@@ -14,15 +14,9 @@ def main_close(args):
     conf = load_conf('config/CANFD_Config.json')
     if args.can in ["Default","Robin","FII"]:
         os.system("ps -ef|grep can_run.py|grep -v grep|awk -F ' ' '{print $2}'|xargs kill -9")
-        conf["frame"]["type"]="can"
-        conf["frame"]["frame_ID"]="701"
-        conf["frame"]["payload_len"]=8
-        conf["frame"]["payload"]="01"*8
-        conf["frame"]["send_count"]=1
-        conf['frame']['Baud rate']=250
-        conf["device"]["tx_ch"]=1
+        time.sleep(1)
         usbcan = USBCAN(conf)
-        usbcan.run_usbcan()
+        usbcan.run_usbcan(not_send=True)
         usbcan.stop_usbcan()
         return
     elif args.can=="GF":
