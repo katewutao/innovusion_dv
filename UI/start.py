@@ -1093,7 +1093,7 @@ class TestMain(QThread):
                         if down_sdk(ip) or down_count>10:
                             break
                         down_count+=1
-                    LidarTool.extend_pcs_log_size(self.util_path,ip,50000)
+                    LidarTool.extend_pcs_log_size(self.util_path,ip,2000)
                     LidarTool.open_broadcast(self.util_path,ip,9600+idx)
                     LidarTool.get_promission(ip,float(self.timeout))
                     LidarTool.set_network(ip,ip)
