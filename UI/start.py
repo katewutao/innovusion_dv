@@ -1111,6 +1111,7 @@ class TestMain(QThread):
             self.power_monitor.start()
             set_power_status(None,power_on=False)
             os.system(f'python3 can_cancle.py -c {self.can_mode}')
+            time.sleep(30) # in order to make sure lidar set can mode success
             i=1
             for time_one in self.times:
                 self.sigout_schedule.emit(i,len(self.times))
