@@ -59,6 +59,9 @@ sudo apt install qt5-default qttools5-dev-tools
 
 crtl+H 显示文件夹内隐藏文件,复制文件夹时需要和.git文件夹一起
 git log 查看代码更新内容以及日期
+如果pip3 install出错,可以运行当前路径下的脚本 python3 pip_config.py
+
+
 
 
 404  Not Found [IP: 202.141.160.110 80]  :    sudo add-apt-repository ppa:chris-lea/node.js
