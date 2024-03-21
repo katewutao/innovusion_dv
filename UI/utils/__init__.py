@@ -344,9 +344,9 @@ class LidarTool(object):
         cfg = send_tcp("get_i_config pcsenv",ip,lidar_port,max_length=4096)
         for udp_port_name in udp_port_names:
             if not re.search(f"{udp_port_name}.*{udp_port}",cfg):
-                print(f"{ip} open broadcast fail")
+                print(f"{ip} open broadcast {udp_port} fail")
                 return
-        print(f"{ip} open broadcast success")
+        print(f"{ip} open broadcast {udp_port} success")
         return
         
     def reboot_lidar(ip):
