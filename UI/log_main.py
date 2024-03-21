@@ -77,6 +77,8 @@ def get_fault_count(df_dict_res):
                 if fault_name not in df_fault_count.index:
                     df_fault_count.loc[fault_name] = [0]*df_fault_count.shape[1]
                 df_fault_count.loc[fault_name,ip] += 1
+    if df_fault_count.shape[1]>0:
+        df_fault_count.reindex(columns = sorted(df_fault_count.columns))
     return df_fault_count
     
 
