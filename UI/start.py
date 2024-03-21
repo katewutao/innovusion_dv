@@ -1498,7 +1498,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     
     @handle_exceptions
     def test_main(self):
-        
+        os.environ["test_finished"] = "False"
         if self.txt_off_counter.text().strip()=="":  #setReadOnly(True)
             print(f"please input power off empty data number")
             return        
@@ -1544,7 +1544,13 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             print("power on")
             set_power_status(None,power_on=True)
         for idx,ip in enumerate(self.ip_list):
-            ping_sure(ip,3)
+            while True:
+                if ping(ip,3):
+                    break   
+                else:
+                    print(f"ping {ip} failed in recover network")
+                if os.getenv("test_finished") == "True":
+                    return
             LidarTool.open_broadcast(util_path,ip,8010)
         if self.cb_lidar_mode.currentText()!="No Power":
             print("power off")
@@ -1598,6 +1604,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     @handle_exceptions
     def test_stop(self):
         self.btn_stop.setEnabled(False)
+        os.environ["test_finished"] = "True"
         if hasattr(self,"test"):
             self.test.stop()
         if hasattr(self,"timer"):
