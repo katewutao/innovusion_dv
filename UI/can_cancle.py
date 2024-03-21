@@ -26,7 +26,7 @@ def main_close(args):
         conf["frame"]["type"]="can"
         conf["frame"]["frame_ID"]="701"
         conf["frame"]["payload_len"]=8
-        conf["frame"]["payload"]="01"*8
+        conf["frame"]["payload"]="11"*8
         conf["frame"]["send_count"]=1
         conf['frame']['Baud rate']=250
         conf["device"]["tx_ch"]=1
@@ -42,7 +42,7 @@ def main_close(args):
     usbcan = USBCAN(conf)
     usbcan.run_usbcan(wait=True)
     if args.can=="switch":
-        conf["frame"]["payload"]="0001"*4
+        conf["frame"]["payload"]="10"*8
         time.sleep(2)
         usbcan = USBCAN(conf)
         usbcan.run_usbcan(wait=True)
