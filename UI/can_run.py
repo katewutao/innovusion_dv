@@ -160,7 +160,7 @@ def main(args):
         conf["frame"]["type"]="can"
         conf["frame"]["frame_ID"]="701"
         conf["frame"]["payload_len"]=8
-        conf["frame"]["payload"]="0100"*4
+        conf["frame"]["payload"]="01"*8
         conf["frame"]["send_count"]=1
         conf['frame']['Baud rate']=250
         conf["device"]["tx_ch"]=1
