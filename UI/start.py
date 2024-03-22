@@ -1281,6 +1281,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def update_mac_adress(self):
         ip = self.txt_lidar_ip.text()
         mac_adress = self.txt_mac_adress.text()
+        new_ip = self.txt_lidar_ip_new.text()
         if not re.search("^\d+\.\d+\.\d+\.\d+$",ip):
             print(f"please input correct ip")
             return
@@ -1290,7 +1291,11 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         if not ping(ip,1):
             print(f"{ip} can't connect")
             return
-        LidarTool.update_mac_adress(ip,mac_adress) 
+        LidarTool.update_mac_adress(ip,mac_adress)
+        if not re.search("^\d+\.\d+\.\d+\.\d+$",new_ip):
+            print(f"new ip format error, not update")
+        else:
+            LidarTool.set_network(ip,new_ip)
     
     @handle_exceptions
     def clear_scroll_area(self,scroll_area):

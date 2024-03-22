@@ -254,15 +254,23 @@ class LidarTool(object):
             print(f"{ip} is not valid,set network fail")
             return
         ip_key = ret.group(1).replace(".","\.")
-        res = os.popen("ip addr show").read()
-        ret_ip_cfg = re.findall("inet\s+([0-9\./]+)",res)
         netmask = ""
-        for item in ret_ip_cfg:
-            ret = re.search(f"^{ip_key}.+/(\d+)",item)
-            if ret:
-                ffff_count = int(int(ret.group(1))/8)
-                netmask = ("255."*ffff_count)[:-1]+".0"*(4-ffff_count)
-                break
+        if "windows" not in platform.platform().lower():
+            res = os.popen("ip addr show").read()
+            ret_ip_cfg = re.findall("inet\s+([0-9\./]+)",res)
+            for item in ret_ip_cfg:
+                ret = re.search(f"^{ip_key}.+/(\d+)",item)
+                if ret:
+                    ffff_count = int(int(ret.group(1))/8)
+                    netmask = ("255."*ffff_count)[:-1]+".0"*(4-ffff_count)
+                    break
+        else:
+            res = os.popen("ipconfig").read()
+            ret_ip_cfg = re.findall("[I|i][P|p][V|v]4[\s\S]*?(\d+\.\d+\.\d+\.\d+)[\s\S]*?(\d+\.\d+\.\d+\.\d+)",res)
+            for item in ret_ip_cfg:
+                if re.search("^"+ip_key+"(\.\d{1,3}){1,2}",item[0]):
+                    netmask = item[1]
+                    break
         if netmask == "":
             print(f"{ip_key} not find in ip config,set network fail")
             return
@@ -274,10 +282,10 @@ class LidarTool(object):
         command = f'set_network {set_command}'
         s = send_tcp(command,ip,8001)
         if f"netmask={netmask}" not in s:
-            print(f"{ip} set network {netmask} fail")
+            print(f"{ip} set network {netmask}, new ip {new_ip} fail")
             return
         else:
-            print(f"{ip} set network {netmask} success")
+            print(f"{ip} set network {netmask}, new ip {new_ip} success")
             return
 
     def open_ptp(ip):
@@ -393,36 +401,5 @@ class LidarTool(object):
             print(f"{ip} update mac adress to {mac_adress} fail")
     
 if __name__=="__main__":
-    def rp_factor_phase_from_binary_stream(data, ch):
-        idx = 0
-        rp_factor = np.zeros(16)
-        num_str = ''
-        for character in data:
-            tmp = chr(character)
-            if tmp == '\t' or tmp == '\n':
-                rp_factor[idx] = float(num_str)
-                num_str = ''
-                idx = idx + 1
-                continue
-            num_str = num_str + tmp
-        rp_factor = np.reshape(rp_factor, (4, 4))
-        current_rp_factor = rp_factor[ch, 2]
-        return current_rp_factor
-
-    def read_rp_from_register(ch):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('172.168.1.10', 8001))
-        cmd_read_ripple_dist_rp_factor = 'ripple'
-        s.sendall(cmd_read_ripple_dist_rp_factor.encode())
-        data = s.recv(1024)
-        current_dist_rp_factor = rp_factor_phase_from_binary_stream(data, ch)
-        s.close()
-        return current_dist_rp_factor
-    t=time.time()   
-    print(read_rp_from_register(0),read_rp_from_register(1),read_rp_from_register(2),read_rp_from_register(3))
-    print(time.time()-t)
-    t=time.time()
-    res = send_tcp("ripple","172.168.1.10",8001)
-    print(re.findall("(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*).*\n",res))   
-    print(time.time()-t) 
+    LidarTool.set_network("172.168.1.10","172.168.1.11")
     
