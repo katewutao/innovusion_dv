@@ -67,7 +67,7 @@ def read_pcd(path):#return dataframe
             if isinstance(metadata[key],bool):
                 print(f"{key} not in pcd file!")
                 return df
-        buff_length=np.sum(metadata['SIZE'])*metadata['POINTS']
+        buff_length=(np.sum(metadata['SIZE'])*metadata['POINTS'])
         buff_length=buff_length.astype(np.uint64)
         dt_dict = {
                 'names': metadata['FIELDS'],
@@ -98,57 +98,21 @@ def read_pcd(path):#return dataframe
         return pd.DataFrame([],columns=metadata['FIELDS'])
 
 
-
-
-def list2pcd(data, file_name,type=1,header=None): #ascii pcd
-    data=np.array(data)
-    files = open(file_name, 'w', newline='\n')
-    if header==None:
-        if type==3:
-            header = '''# .PCD v.7 - Point Cloud Data file format
-FIELDS x y z
-SIZE 4 4 4
-TYPE F F F
-COUNT 1 1 1
-POINTS '''+str(len(data))+'''\nDATA ascii\n'''
-        elif type==4:
-            header='''# .PCD v.7 - Point Cloud Data file format
-FIELDS x y z label
-SIZE 4 4 4 4
-TYPE F F F U
-COUNT 1 1 1 1
-POINTS '''+str(len(data))+'''\nDATA ascii\n'''
-        elif type==11:
-            header='''# .PCD v.7 - Point Cloud Data file format
-FIELDS x y z timestamp intensity flags is_2nd_return scan_id scan_idx frame_id channel
-SIZE 4 4 4 4 4 4 4 4 4 4 4
-TYPE F F F F U U U U U U U
-COUNT 1 1 1 1 1 1 1 1 1 1 1
-POINTS '''+str(len(data))+'''\nDATA ascii\n'''
-    else:
-        ret1=re.search("(WIDTH\s*\d+)",header)
-        if ret1:
-            header=header.replace(ret1.group(1),f"WIDTH {len(data)}")
-        ret2=re.search("(POINTS\s*\d+)",header)
-        if ret2:
-            header=header.replace(ret2.group(1),f"POINTS {len(data)}")
-        header=header.strip("\n")+"\n"
-    header=header.replace("binary","ascii")
-    files.write(header)
-    ret=re.search("TYPE\s(.+)",header)
-    data_type=ret.group(1).split(" ")
-    data=np.array(data)
-    fmt=""
-    for j in range(len(data[0])):
-        if data_type[j]=="F":
-            fmt+="%f "
-        else:
-            fmt+="%d "
-    np.savetxt(files, data, fmt=fmt[:-1], delimiter=' ',newline='\n')
-    files.close()
     
 
-def df2pcd(df, file_name, binary=True):
+def df2pcd(df, file_name, binary=False):
+    if not isinstance(df,pd.DataFrame):
+        if not isinstance(df[0],list) and not isinstance(df[0],np.ndarray):
+            print(f"input data shape ({len(data)})")
+            return
+        if len(df[0]) == 3:
+            columns = ["x","y","z"]
+        elif len(df[0]) == 4:
+            columns = ["x","y","z","label"]
+        else:
+            print(f"input data shape ({len(data)},{len(data[0])})")
+            return
+        df = pd.DataFrame(df,columns=columns)
     count = []
     type_dict={
         "int":"I",
@@ -157,13 +121,13 @@ def df2pcd(df, file_name, binary=True):
     }
     sizes=[]
     types=[]
-    filed = []
+    fields = []
     for col in df.columns:
         if str(df[col].dtype)=="object":
             if df[col].astype(str).str.match("^\d+\.?\d*$").all():
                 sizes.append(8)
                 types.append("F")
-                filed.append(col)
+                fields.append(col)
                 count.append("1")
             else:
                 continue
@@ -174,21 +138,33 @@ def df2pcd(df, file_name, binary=True):
                 return
             sizes.append(int(max(int(ret.group(2))/8,2)))  
             types.append(type_dict[ret.group(1)])
-            filed.append(col)
+            fields.append(col)
             count.append("1")
-    df = df[filed]
+    df = df[fields]
     header=f'''# .PCD v.7 - Point Cloud Data file format
-FIELDS {" ".join(filed)}
+FIELDS {" ".join(fields)}
 SIZE {" ".join(map(str,sizes))}
 TYPE {" ".join(types)}
 COUNT {" ".join(count)}
 POINTS {df.shape[0]}
 DATA ascii\n'''
     if not binary:
-        list2pcd(df.to_numpy(),file_name,header=header)
+        data = df.to_numpy()
+        header=header.replace("binary","ascii")
+        with open(file_name,"w") as f:
+            f.write(header)
+            ret=re.search("TYPE\s(.+)",header)
+            data_type=ret.group(1).split(" ")
+            fmt=""
+            for j in range(len(data[0])):
+                if data_type[j]=="F":
+                    fmt+="%f "
+                else:
+                    fmt+="%d "
+            np.savetxt(f, data, fmt=fmt[:-1], delimiter=' ',newline='\n')
     else:
         dt=np.dtype({
-            'names': filed,
+            'names': fields,
             'formats': [f"{types[i].lower()}{sizes[i]}" for i in range(len(types))],
         })
         ndarray_data=df.to_records(index=False).astype(dt)
@@ -279,7 +255,7 @@ def read_bag(path):
 
 def binary2ascii(pcd_path,save_path):
     df=read_pcd(pcd_path)
-    list2pcd(df.to_numpy(),save_path,header=load_pcd_header(pcd_path).replace("binary","ascii"))
+    df2pcd(df,save_path,False)
 
 
 def calc_frame(path):
