@@ -1054,7 +1054,7 @@ class TestMain(QThread):
             self.current_monitor.sigout_plot_data.connect(self.send_current_info)
             self.current_monitor.start()
             print(f"start add current monitor success")
-        self.analyse_command = f'python3 log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
+        self.analyse_command = f'python3 utils/log_main.py -f "{os.path.join(self.save_folder,"client_log")}" -c -o "{os.path.join(self.save_folder,"fault_result")}"'
         print(self.analyse_command)
         print(f"start analyse log")
         self.cmd_anlyze_log = subprocess.Popen(self.analyse_command,shell=True)

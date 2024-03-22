@@ -5,15 +5,17 @@
 #  * @modify date 2023-10-31 13:34:58
 #  * @desc [analyze_log]
 #  */
-from utils import *
+from __init__ import *
 import re
 import pandas as pd
 import argparse
 import os
-from utils.excel_format import ExcelFormat
 import time
 import platform
 import builtins
+
+os.system(f'python utils/log_one_subprocess.py -h')
+
 
 builtins.print_origin=print
 def print_res(*args, **kwargs):
@@ -122,10 +124,10 @@ def main(args):
         xlsx_path = os.path.join(save_folder,f"{idx}.xlsx")
         excel_list.append(xlsx_path)
         if args.client:
-            commands.append(f'{python_version} one_subprocess.py -cp "{log_path}" -sp "{xlsx_path}"')
+            commands.append(f'{python_version} utils/log_one_subprocess.py -cp "{log_path}" -sp "{xlsx_path}"')
         else:
             rm_file_list.append([os.path.join(log_path,fw_file_name),os.path.join(log_path,pcs_file_name)])
-            commands.append(f'python one_subprocess.py -fp "{rm_file_list[-1][0]}" -pp "{rm_file_list[-1][1]}" -sp "{excel_list[-1]}"')
+            commands.append(f'{python_version} utils/log_one_subprocess.py -fp "{rm_file_list[-1][0]}" -pp "{rm_file_list[-1][1]}" -sp "{excel_list[-1]}"')
         print(commands[-1])
     commands = commands[args.start_idx:]
     multi_cmd(commands,args.max_thread_counter,command_path)
