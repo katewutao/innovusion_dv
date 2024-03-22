@@ -367,9 +367,30 @@ class LidarTool(object):
             print(f"{ip} set pcs {open} success")
         else:
             print(f"{ip} set pcs {open} fail")
-            
-            
     
+    def update_mac_adress(ip,mac_adress):
+        ret = re.findall("[\d+A-F]{2}",mac_adress)
+        if len(ret)!=6:
+            print(f"{mac_adress} is not valid mac address")
+            return
+        commands=[
+        f'flash_wr 0x02 0x0C',
+        f'flash_wr 0x1c 0x{ret[5]}',
+        f'flash_wr 0x1d 0x{ret[4]}',
+        f'flash_wr 0x1e 0x{ret[3]}',
+        f'flash_wr 0x1f 0x{ret[2]}',
+        f'flash_wr 0x20 0x{ret[1]}',
+        f'flash_wr 0x21 0x{ret[0]}',]
+        success_flag = True
+        for command in commands:
+            res = send_tcp(command,ip,8002)
+            if "Done" not in res:
+                success_flag = False
+            print(command,"    ",res.strip("\n"))
+        if success_flag:
+            print(f"{ip} update mac adress to {mac_adress} success")
+        else: 
+            print(f"{ip} update mac adress to {mac_adress} fail")
     
 if __name__=="__main__":
     def rp_factor_phase_from_binary_stream(data, ch):

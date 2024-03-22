@@ -1204,7 +1204,7 @@ class EmittingStream(QtCore.QObject):
 
         
 class MainCode(QMainWindow,userpage.Ui_MainWindow):
-    
+    @handle_exceptions
     def __init__(self):
         QMainWindow.__init__(self)
         userpage.Ui_MainWindow.__init__(self)
@@ -1226,6 +1226,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.btn_start.clicked.connect(self.test_main)
         self.btn_cancle_can.clicked.connect(self.cancle_can_mode)
         self.btn_stop.clicked.connect(self.test_stop)
+        self.btn_tool_start.clicked.connect(self.update_mac_adress)
         self.init_select_item()
     
         self.cb_can_mode.setEnabled(False)
@@ -1239,20 +1240,23 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         
         self.scrollArea_list=[]      
     
-        self.actionlidar_status.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_lidar,self.lb_lidar,["Lidar status","Lidar pointcloud"]))
-        self.actionlidar_pointcloud.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_lidar,self.lb_lidar,["Lidar status","Lidar pointcloud"]))
-        self.actionFault.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_current,self.lb_current,["Fault","Current"]))
-        self.actionCurrent.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_current,self.lb_current,["Fault","Current"]))
+        self.action_lidar_status.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_lidar,self.lb_lidar,"Lidar status"))
+        self.action_lidar_pointcloud.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_lidar,self.lb_lidar,"Lidar pointcloud"))
+        self.action_Fault.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_current,self.lb_current,"Fault Status"))
+        self.action_Current.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_current,self.lb_current,"Current Status"))
+        self.action_Mac_Adress.triggered.connect(self.stackedWidget_currentChanged(2,self.stackedWidget_current,self.lb_current,"Update Mac Address"))
         
+        self.action_Fault.trigger()
+        self.action_lidar_status.trigger()
         
         sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
 
     
-    def stackedWidget_currentChanged(self,idx,stacked_object,lb_object,list_name):
+    def stackedWidget_currentChanged(self,idx,stacked_object,lb_object,label_name):
         def changed_idx():
             stacked_object.setCurrentIndex(idx)
-            lb_object.setText(list_name[idx])
+            lb_object.setText(label_name)
         return changed_idx
     
     def write(self, info):
@@ -1272,6 +1276,21 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.txt_log.moveCursor(self.cursor.End) 
         QtWidgets.QApplication.processEvents()
         self.log_rows+=1
+    
+    @handle_exceptions
+    def update_mac_adress(self):
+        ip = self.txt_lidar_ip.text()
+        mac_adress = self.txt_mac_adress.text()
+        if not re.search("^\d+\.\d+\.\d+\.\d+$",ip):
+            print(f"please input correct ip")
+            return
+        if not re.search("^([A-Fa-f0-9]{2}[:\s]{1}){5}[A-Fa-f0-9]{2}$",mac_adress):
+            print(f"please input correct mac adress")
+            return
+        if not ping(ip,1):
+            print(f"{ip} can't connect")
+            return
+        LidarTool.update_mac_adress(ip,mac_adress) 
     
     @handle_exceptions
     def clear_scroll_area(self,scroll_area):
