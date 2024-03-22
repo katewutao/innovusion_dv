@@ -14,8 +14,6 @@ import time
 import platform
 import builtins
 
-os.system(f'python utils/log_one_subprocess.py -h')
-
 
 builtins.print_origin=print
 def print_res(*args, **kwargs):
