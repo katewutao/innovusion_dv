@@ -15,6 +15,7 @@ def main_close(args):
     if args.can in ["Default","Robin","FII"]:
         from utils import send_tcp
         send_tcp("EXIT_CAN","127.0.0.1",10001)
+        os.system("ps -ef|grep can_run.py|grep -v grep|awk '{print $2}'|xargs kill -9")
         return
     elif args.can=="GF":
         conf["frame"]["type"]="canfd"
