@@ -104,25 +104,10 @@ def time_limited(timeout):
     return decorator
 
 
-
-def ping(ip,time_interval=3,sleep_time=1):
-    res = False
-    respon=None
-    try:
-        respon=requests.get(f"http://{ip}",timeout=time_interval)
-        res = True
-    except:
-        print(f"{ip} ping failed")
-        time.sleep(sleep_time)
-    if respon:
-        respon.close()
-    return res
-    
-
 def downlog(ip,log_path,time_path,wait_time=8):
     save_path=os.path.join(log_path,"log",ip.replace('.','_'),time_path)
     os.makedirs(save_path)
-    if not ping(ip,1):
+    if not LidarTool.ping(ip,1):
         print(f"{ip} is not connect, download log failed") 
         return
     command1=f"exec sshpass -p 4920lidar scp -rp root@{ip}:/tmp '{save_path}'"
@@ -170,41 +155,41 @@ def init_power():
     return False
 
 def set_power_status(power_voltage,power_on=True):
-        import power
-        while True:
-            try:
-                pow=power.Power()
-                if power_on:
-                    pow.power_on()
-                else:
-                    pow.power_off()
+    import power
+    while True:
+        try:
+            pow=power.Power()
+            if power_on:
+                pow.power_on()
+            else:
+                pow.power_off()
+            break
+        except:
+            if power_on:
+                print(f"power on failed")
+            else:
+                print(f"power off failed")
+            time.sleep(2)
+    if isinstance(power_voltage,type(None)):
+        return
+    last_timestamp = time.time()
+    while True:
+        try:
+            print(f"start set voltage")
+            pow=power.Power()
+            print(f"init power")
+            pow.set_voltage(power_voltage)
+            print(f"set {power_voltage}V")
+            voltage=pow.PowerStatus()[0]
+            print(f"voltage is {voltage}")
+            if abs(voltage-power_voltage)<0.3:
                 break
-            except:
-                if power_on:
-                    print(f"power on failed")
-                else:
-                    print(f"power off failed")
-                time.sleep(2)
-        if isinstance(power_voltage,type(None)):
-            return
-        last_timestamp = time.time()
-        while True:
-            try:
-                print(f"start set voltage")
-                pow=power.Power()
-                print(f"init power")
-                pow.set_voltage(power_voltage)
-                print(f"set {power_voltage}V")
-                voltage=pow.PowerStatus()[0]
-                print(f"voltage is {voltage}")
-                if abs(voltage-power_voltage)<0.3:
-                    break
-            except:
-                current_timestamp=time.time()
-                if current_timestamp-last_timestamp>3:
-                    last_timestamp=current_timestamp
-                    print(f"set power voltage failed, {power_voltage}V")
-                time.sleep(2)
+        except:
+            current_timestamp=time.time()
+            if current_timestamp-last_timestamp>3:
+                last_timestamp=current_timestamp
+                print(f"set power voltage failed, {power_voltage}V")
+            time.sleep(2)
     
 def ping_sure(ip,interval_time):
     while True:
@@ -252,25 +237,6 @@ def get_circle_time(dict_config):
     return times
 
 
-
-def set_lidar_mode(ip,lidar_type,can_mode):
-    if can_mode=="Robin":
-        boot_name="lidar_boot_from"
-    else:
-        boot_name="dsp_boot_from"
-    command=f'echo "{boot_name} {lidar_type}" | nc -nv {ip} 8001 -w1'
-    cmd=subprocess.Popen(command,shell=True,stderr=subprocess.PIPE,stdout=subprocess.PIPE,universal_newlines=True)
-    res=cmd.communicate()
-    if re.search(f"boot from.+{lidar_type}",res[0]):
-        print(f"{ip} set {lidar_type} mode success")
-        if can_mode=="Robin":
-            LidarTool.reboot_lidar(ip)
-        return True
-    else:
-        print(f"{ip} set {lidar_type} mode fail")
-        return False
-
-
 def cancle_can(ip_list,can_mode="Default"):
     set_power_status(None,True)
     print(f"start set lidar power mode")
@@ -278,7 +244,7 @@ def cancle_can(ip_list,can_mode="Default"):
     for ip in ip_list:
         ping_sure(ip,3)
         while True:
-            if set_lidar_mode(ip,"power",can_mode):
+            if LidarTool.set_lidar_mode(ip,"power",can_mode):
                 break
     os.system(f"python3 can_cancle.py -c {can_mode}")
     print(f"all lidar cancle can mode success")
@@ -476,7 +442,7 @@ class DSP_info_thread(QThread):#TODO
         if not os.path.exists(self.record_file):
             csv_write(self.record_file,["timestamp"]+list(self.read_keys.keys()))
         while True:
-            if ping(self.ip,3):
+            if LidarTool.ping(self.ip,3):
                 break
             if self.isInterruptionRequested():
                 return
@@ -540,7 +506,7 @@ class one_lidar_record_thread(QThread):
     @handle_exceptions
     def run(self):
         while True:
-            if ping(self.ip,3):
+            if LidarTool.ping(self.ip,3):
                 break
             if self.isInterruptionRequested():
                 return
@@ -715,7 +681,7 @@ class MonitorFault(QThread):
             print(f"file {util_path} not exists!")
             return None
         while True:
-            if ping(self.ip,3):
+            if LidarTool.ping(self.ip,3):
                 break
             if self.isInterruptionRequested():
                 return
@@ -835,7 +801,7 @@ class PointCloud(QThread):
     @handle_exceptions
     def run(self):
         while True:
-            if ping(self.ip,3):
+            if LidarTool.ping(self.ip,3):
                 break
             if self.isInterruptionRequested():
                 return
@@ -1100,12 +1066,13 @@ class TestMain(QThread):
                     LidarTool.open_ptp(ip)
                     if self.lidar_mode=="CAN":
                         while True:
-                            if set_lidar_mode(ip,"can",self.can_mode):
+                            if LidarTool.set_lidar_mode(ip,"can",self.can_mode):
                                 break
+                    else:
+                        LidarTool.reboot_lidar(ip)
                     break
                 except Exception as e:
                     print(e)
-            LidarTool.reboot_lidar(ip) 
         if self.lidar_mode!="No Power":
             self.power_monitor=Power_monitor()
             self.power_monitor.start()
@@ -1182,7 +1149,7 @@ class TestMain(QThread):
             time_path=get_time()
             print(f"start download log")
             for ip in self.ip_list:
-                if ping(ip,0.5):
+                if LidarTool.ping(ip,0.5):
                     thread=threading.Thread(target=downlog,args=(ip,self.save_folder,time_path,))
                     thread.start()
                     threads.append(thread)
@@ -1282,21 +1249,24 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         ip = self.txt_lidar_ip.text()
         mac_adress = self.txt_mac_adress.text()
         new_ip = self.txt_lidar_ip_new.text()
-        if not re.search("^\d+\.\d+\.\d+\.\d+$",ip):
+        ret_ip = re.search("^\d+\.\d+\.\d+\.\d+$",ip)
+        ret_mac = re.search("^([A-Fa-f0-9]{2}[:\s]{1}){5}[A-Fa-f0-9]{2}$",mac_adress)
+        ret_new_ip = re.search("^\d+\.\d+\.\d+\.\d+$",new_ip)
+        if not ret_ip:
             print(f"please input correct ip")
             return
-        if not re.search("^([A-Fa-f0-9]{2}[:\s]{1}){5}[A-Fa-f0-9]{2}$",mac_adress):
-            print(f"please input correct mac adress")
-            return
-        if not ping(ip,1):
+        if not LidarTool.ping(ip,1):
             print(f"{ip} can't connect")
             return
-        LidarTool.update_mac_adress(ip,mac_adress)
-        if not re.search("^\d+\.\d+\.\d+\.\d+$",new_ip):
-            print(f"new ip format error, not update")
+        if not ret_mac:
+            print(f"please input correct mac adress, now not update mac adress")
+        else:
+            LidarTool.update_mac_adress(ip,mac_adress)
+        if not ret_new_ip:
+            print(f"please input correct new ip, now not update ip adress")
         else:
             LidarTool.set_network(ip,new_ip)
-    
+                
     @handle_exceptions
     def clear_scroll_area(self,scroll_area):
         if scroll_area.widget()==None:
@@ -1569,7 +1539,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
             set_power_status(None,power_on=True)
         for idx,ip in enumerate(self.ip_list):
             while True:
-                if ping(ip,3):
+                if LidarTool.ping(ip,3):
                     break   
                 else:
                     print(f"ping {ip} failed in recover network")

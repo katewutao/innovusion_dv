@@ -182,7 +182,7 @@ def get_current_date():
 
 
 
-def send_tcp(command,ip,port=8001,wait=False,max_length=1024):
+def send_tcp(command, ip, port=8001, wait=False, max_length=1024):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     command = command.strip("\n")+"\n"
     if wait:
@@ -220,6 +220,19 @@ def send_tcp(command,ip,port=8001,wait=False,max_length=1024):
 class LidarTool(object):
     def __init__(self):
         pass
+    
+    def ping(ip,time_interval=3,sleep_time=1):
+        res = False
+        respon=None
+        try:
+            respon=requests.get(f"http://{ip}",timeout=time_interval)
+            res = True
+        except:
+            print(f"{ip} ping failed")
+            time.sleep(sleep_time)
+        if respon:
+            respon.close()
+        return res
     
     def get_promission(ip,time_out):
         print(f"{ip} get premission")
@@ -364,7 +377,6 @@ class LidarTool(object):
             print(f"{ip} reboot fail")
         else:
             print(f"{ip} reboot success")
-        time.sleep(10)
         
     def set_pcs(ip,open=True):
         if open:
@@ -394,12 +406,26 @@ class LidarTool(object):
             res = send_tcp(command,ip,8002)
             if "Done" not in res:
                 success_flag = False
-            print(command,"    ",res.strip("\n"))
+                print(command,"    ",res.strip("\n"))
         if success_flag:
             print(f"{ip} update mac adress to {mac_adress} success")
         else: 
             print(f"{ip} update mac adress to {mac_adress} fail")
+            
+    def set_lidar_mode(ip, lidar_type, can_mode = "Default"):
+        if can_mode == "Robin":
+            boot_name = "lidar_boot_from"
+        else:
+            boot_name = "dsp_boot_from"
+        res = send_tcp(f"{boot_name} {lidar_type}", ip, 8001, True)
+        if re.search(f"boot from.+{lidar_type}", res):
+            print(f"{ip} set {lidar_type} mode success")
+            LidarTool.reboot_lidar(ip)
+            return True
+        else:
+            print(f"{ip} set {lidar_type} mode fail")
+            return False
     
 if __name__=="__main__":
-    LidarTool.set_network("172.168.1.10","172.168.1.11")
+    LidarTool.set_lidar_mode("172.168.1.10","power")
     
