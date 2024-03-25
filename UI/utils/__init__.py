@@ -182,11 +182,11 @@ def get_current_date():
 
 
 
-def send_tcp(command, ip, port=8001, wait=False, max_length=1024):
+def send_tcp(command, ip, port=8001, wait=False, max_length=1024, wait_time=3):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     command = command.strip("\n")+"\n"
     if wait:
-        sock.settimeout(5)
+        sock.settimeout(wait_time)
     res = ""
     try:
         sock.connect((ip, port))
@@ -205,7 +205,7 @@ def send_tcp(command, ip, port=8001, wait=False, max_length=1024):
                 break
             if first_recv:
                 first_recv = False
-                sock.settimeout(3)
+                sock.settimeout(wait_time)
             res += response
             if response=="":
                 break

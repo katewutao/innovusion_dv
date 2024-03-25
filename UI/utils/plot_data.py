@@ -56,7 +56,7 @@ class Current_monitor(QThread):
                 csv_write(self.save_dict[ip],["time","current(mA)"])
     
     @handle_exceptions
-    def run(self):
+    def run_bk(self): # using http get voltage
         url_command = f"http://192.168.1.2/REALDATA.HTM?:COMPORT:WEBORGUNIT=UNIT{self.relay_channel}"
         while True:
             t = time.time()
@@ -91,6 +91,48 @@ class Current_monitor(QThread):
             sleep_time = self.sleep_time - (time.time() - t)
             if sleep_time > 0:
                 time.sleep(sleep_time)
+                
+                
+    @handle_exceptions
+    def run(self): #using tcp command
+        last_resistor = 0
+        voltage_command = f":MEMory:TAREAL? UNIT{self.relay_channel}"
+        while True:
+            t = time.time()
+            if os.getenv("resistor"):
+                resistor = float(os.getenv("resistor"))
+            else:
+                resistor = 0.1
+            if last_resistor != resistor:
+                voltage_range = "20E-3" if resistor < 10 else "20E0"
+                for ch in range(1,16):
+                    if self.isInterruptionRequested():
+                        return
+                    command = f":UNIT:RANGe CH{self.relay_channel}_{ch},{voltage_range}"
+                    send_tcp(command,"192.168.1.2","8802",wait=True,wait_time=0.5)
+            last_resistor = resistor
+            if self.isInterruptionRequested():
+                return
+            vol_str = send_tcp(voltage_command,"192.168.1.2","8802",wait=True,wait_time=0.5)
+            res = re.findall("(-?\d+-\d+)",vol_str)
+            date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
+            if len(res) >= len(self.ip_list):
+                for idx,ip in enumerate(self.ip_list):
+                    voltage = float(res[idx])
+                    if resistor >= 10:
+                        voltage *= 1000
+                    current = voltage/resistor
+                    self.plot_data_dict[ip].append(current)
+                    csv_write(self.save_dict[ip],[date_time,current])
+                    if len(self.plot_data_dict[ip]) > self.plot_length:
+                        self.plot_data_dict[ip] = self.plot_data_dict[ip][-self.plot_length:]
+                    self.sigout_plot_data.emit(self.plot_data_dict[ip],ip)
+            else:
+                print(f"current monitor data error: return length {len(res)}")
+            sleep_time = self.sleep_time - (time.time() - t)
+            if sleep_time > 0:
+                time.sleep(sleep_time)          
+                
 
     @handle_exceptions
     def stop(self):
