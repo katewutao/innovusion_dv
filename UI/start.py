@@ -1100,6 +1100,7 @@ class TestMain(QThread):
             cmd.wait()
             self.sigout_test_finish.emit(self.util_path)
         else:
+            time.sleep(10) # in order to make sure lidar set can mode success
             time_path=get_time()
             self.run_monitor(self.save_folder,time_path)
             while True:
