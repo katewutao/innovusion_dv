@@ -193,7 +193,7 @@ def set_power_status(power_voltage,power_on=True):
     
 def ping_sure(ip,interval_time):
     while True:
-        if ping(ip,interval_time):
+        if LidarTool.ping(ip,interval_time):
             break
         else:
             print(f"{ip} is not connect")
