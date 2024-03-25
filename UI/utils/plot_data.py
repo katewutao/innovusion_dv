@@ -109,11 +109,11 @@ class Current_monitor(QThread):
                     if self.isInterruptionRequested():
                         return
                     command = f":UNIT:RANGe CH{self.relay_channel}_{ch},{voltage_range}"
-                    send_tcp(command,"192.168.1.2","8802",wait=True,wait_time=0.5)
+                    send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.5)
             last_resistor = resistor
             if self.isInterruptionRequested():
                 return
-            vol_str = send_tcp(voltage_command,"192.168.1.2","8802",wait=True,wait_time=0.5)
+            vol_str = send_tcp(voltage_command,"192.168.1.2",8802,wait=True,wait_time=0.5)
             res = re.findall("(-?\d+-\d+)",vol_str)
             date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
             if len(res) >= len(self.ip_list):
