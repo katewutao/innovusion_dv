@@ -599,10 +599,7 @@ class MonitorFault(QThread):
     
     def download_fw_pcs(self):
         print(f"{self.ip} download fw and pcs")
-        command_fw=f"http://{self.ip}:8675/download?downloadType=log&downloadName=lidar&currBoot=true&downloadFull=true"
-        command_pcs=f"http://{self.ip}:8675/download?downloadType=log&downloadName=sdk&currBoot=true&downloadFull=true"
-        res_fw = download_file(command_fw,None,3)
-        res_pcs = download_file(command_pcs,None,3)
+        res_fw,res_pcs = LidarTool.download_pcs_fw(self.ip)
         if res_fw == "":
             print(f"{self.ip} download fw failed")
             return ""

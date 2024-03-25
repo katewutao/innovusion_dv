@@ -425,6 +425,13 @@ class LidarTool(object):
         else:
             print(f"{ip} set {lidar_type} mode fail")
             return False
+        
+    def download_pcs_fw(ip):
+        command_fw=f"http://{ip}:8675/download?downloadType=log&downloadName=lidar&currBoot=true&downloadFull=true"
+        command_pcs=f"http://{ip}:8675/download?downloadType=log&downloadName=sdk&currBoot=true&downloadFull=true"
+        res_fw = download_file(command_fw,None,3)
+        res_pcs = download_file(command_pcs,None,3)    
+        return res_fw,res_pcs
     
 if __name__=="__main__":
     LidarTool.set_lidar_mode("172.168.1.10","power")
