@@ -850,11 +850,12 @@ class TestMain(QThread):
     sigout_power=pyqtSignal(bool)
     
     
-    def __init__(self,can_mode,relay_channel,ip_list,record_folder,record_header,times,record_func,record_interval,off_counter,timeout,lidar_mode,pointcloud_func,pointcloud_header):
+    def __init__(self,can_mode,relay_unit,relay_channels,ip_list,record_folder,record_header,times,record_func,record_interval,off_counter,timeout,lidar_mode,pointcloud_func,pointcloud_header):
         super(TestMain,self).__init__()
         self.record_interval=record_interval
         self.lidar_mode=lidar_mode
-        self.relay_channel = relay_channel
+        self.relay_unit = relay_unit
+        self.relay_channels = relay_channels
         self.save_folder=record_folder
         self.ip_list=ip_list
         self.timeout=timeout
@@ -1013,7 +1014,7 @@ class TestMain(QThread):
             os.makedirs(self.save_folder)
         if os.getenv("current")=="True":
             os.environ["resistor"] = "0.1"
-            self.current_monitor = Current_monitor(self.ip_list,self.relay_channel,float(self.record_interval),self.save_folder,3)
+            self.current_monitor = Current_monitor(self.ip_list,self.relay_unit,self.relay_channels,float(self.record_interval),self.save_folder,3)
             self.current_monitor.sigout_plot_data.connect(self.send_current_info)
             self.current_monitor.start()
             print(f"start add current monitor success")
@@ -1472,10 +1473,14 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
     def read_config(self):
         if hasattr(self,"test_config"):
             self.ip_list=self.test_config["lidar_ip"]
-            if "channel" in self.test_config.keys():
-                self.relay_channel = self.test_config["channel"]
+            if "relay unit" in self.test_config.keys():
+                self.relay_unit = self.test_config["relay unit"]
             else:
-                self.relay_channel = 1
+                self.relay_unit = 1
+            if "relay channel" in self.test_config.keys():
+                self.relay_channels = self.test_config["relay channel"]
+            else:
+                self.relay_channels = range(1,16)
             self.init_plot_widget()
             self.times=get_circle_time(self.test_config["time_dict"])
             self.init_table(len(self.ip_list),self.record_header.split(","),self.pointcloud_header)
@@ -1510,7 +1515,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         os.environ["dsp"]=str(self.dsp.isChecked())
         os.environ["pointcloud"]=str(self.cb_pointcloud.isChecked())
         os.environ["current"]=str(self.cb_current.isChecked())
-        self.test=TestMain(self.cb_can_mode.currentText(),self.relay_channel,self.ip_list,self.save_folder,self.record_header,self.times,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText(),self.pointcloud_func,self.pointcloud_header)
+        self.test=TestMain(self.cb_can_mode.currentText(),self.relay_unit,self.relay_channels,self.ip_list,self.save_folder,self.record_header,self.times,self.record_func,self.txt_record_interval.text(),self.txt_off_counter.text(),self.txt_timeout.text(),self.cb_lidar_mode.currentText(),self.pointcloud_func,self.pointcloud_header)
         self.test.sigout_test_finish.connect(self.test_finish)
         self.test.sigout_lidar_info.connect(set_tbw_value(self.tbw_data))
         self.test.sigout_pointcloud.connect(set_tbw_value(self.tbw_pointcloud))

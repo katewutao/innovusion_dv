@@ -37,10 +37,11 @@ class Current_monitor(QThread):
     sigout_plot_data = pyqtSignal(list,str)
     
     @handle_exceptions
-    def __init__(self,ip_list,relay_channel,sleep_time,save_foler,timeout):
+    def __init__(self,ip_list,relay_unit,relay_channels,sleep_time,save_foler,timeout):
         super(Current_monitor,self).__init__()
         self.ip_list = ip_list
-        self.relay_channel = relay_channel
+        self.relay_unit = relay_unit
+        self.relay_channels = relay_channels
         self.sleep_time = sleep_time
         self.save_foler = os.path.join(save_foler,"current")
         self.timeout = timeout
@@ -57,7 +58,7 @@ class Current_monitor(QThread):
     
     @handle_exceptions
     def run_bk(self): # using http get voltage
-        url_command = f"http://192.168.1.2/REALDATA.HTM?:COMPORT:WEBORGUNIT=UNIT{self.relay_channel}"
+        url_command = f"http://192.168.1.2/REALDATA.HTM?:COMPORT:WEBORGUNIT=UNIT{self.relay_unit}"
         while True:
             t = time.time()
             if os.getenv("resistor"):
@@ -97,7 +98,18 @@ class Current_monitor(QThread):
     def run(self): #using tcp command
         last_resistor = 0
         resistor_threshold = 10 #distinct voltage unit(V/mV)
-        voltage_command = f":MEMory:TAREAL? UNIT{self.relay_channel}"
+        voltage_command = f":MEMory:TAREAL? UNIT{self.relay_unit}"
+        if len(self.ip_list) != len(self.relay_channels):
+            print("ip_list and relay_channels length not match,please check the config file")
+            return
+        print("set relay status to display")
+        for ch in range(1,16):
+            if ch in self.relay_channels:
+                disp_status = "ON"
+            else:
+                disp_status = "OFF"
+            command = f":UNIT:STORe  CH{self.relay_unit}_{ch},{disp_status}"
+            send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
         while True:
             t = time.time()
             if os.getenv("resistor"):
@@ -107,16 +119,16 @@ class Current_monitor(QThread):
             if last_resistor != resistor:
                 voltage_range = "20E-3" if resistor < resistor_threshold else "20E0"
                 print(f"start set voltage range to {voltage_range}V")
-                for ch in range(1,16):
+                for ch in self.relay_channels:
                     if self.isInterruptionRequested():
                         return
-                    command = f":UNIT:RANGe CH{self.relay_channel}_{ch},{voltage_range}"
-                    send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.5)
+                    command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
+                    send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
                 print(f"set voltage range to {voltage_range}V success")
             last_resistor = resistor
             if self.isInterruptionRequested():
                 return
-            vol_str = send_tcp(voltage_command,"192.168.1.2",8802,wait=True,wait_time=0.5)
+            vol_str = send_tcp(voltage_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
             res = re.findall("(-?\d+\.?\d*)",vol_str)
             date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
             if len(res) >= len(self.ip_list):
