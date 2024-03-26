@@ -46,6 +46,8 @@ class Current_monitor(QThread):
         self.save_foler = os.path.join(save_foler,"current")
         self.timeout = timeout
         self.plot_length = 100
+        self.command_start = ":STARt"
+        self.command_stop = ":STOP"
         if not os.path.exists(self.save_foler):
             os.makedirs(self.save_foler)
         self.save_dict = {}
@@ -98,6 +100,8 @@ class Current_monitor(QThread):
     def run(self): #using tcp command
         last_resistor = 0
         resistor_threshold = 10 #distinct voltage unit(V/mV)
+        for _ in range(2):
+            send_tcp(self.command_start,"192.168.1.2",8802,wait=True,wait_time=0.3)
         voltage_command = f":MEMory:TAREAL? UNIT{self.relay_unit}"
         if len(self.ip_list) != len(self.relay_channels):
             print("ip_list and relay_channels length not match,please check the config file")
@@ -160,6 +164,8 @@ class Current_monitor(QThread):
             if time.time()-t>3:
                 self.terminate()
                 break
+        for _ in range(2):
+            send_tcp(self.command_stop,"192.168.1.2",8802,wait=True,wait_time=0.3)
         print(f"current thread finish success")
 
 
