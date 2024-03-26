@@ -96,6 +96,7 @@ class Current_monitor(QThread):
     @handle_exceptions
     def run(self): #using tcp command
         last_resistor = 0
+        resistor_threshold = 10 #distinct voltage unit(V/mV)
         voltage_command = f":MEMory:TAREAL? UNIT{self.relay_channel}"
         while True:
             t = time.time()
@@ -104,7 +105,7 @@ class Current_monitor(QThread):
             else:
                 resistor = 0.1
             if last_resistor != resistor:
-                voltage_range = "20E-3" if resistor < 10 else "20E0"
+                voltage_range = "20E-3" if resistor < resistor_threshold else "20E0"
                 for ch in range(1,16):
                     if self.isInterruptionRequested():
                         return
@@ -119,7 +120,7 @@ class Current_monitor(QThread):
             if len(res) >= len(self.ip_list):
                 for idx,ip in enumerate(self.ip_list):
                     voltage = float(res[idx])
-                    if resistor >= 10:
+                    if resistor >= resistor_threshold:
                         voltage *= 1000
                     current = voltage/resistor
                     self.plot_data_dict[ip].append(current)
