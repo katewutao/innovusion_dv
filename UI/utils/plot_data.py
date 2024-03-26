@@ -134,6 +134,7 @@ class Current_monitor(QThread):
             if len(res) >= len(self.ip_list):
                 for idx,ip in enumerate(self.ip_list):
                     voltage = float(res[idx])
+                    voltage /= 1000
                     if resistor >= resistor_threshold:
                         voltage *= 1000
                     current = voltage/resistor
