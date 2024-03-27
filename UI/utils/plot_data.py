@@ -72,7 +72,7 @@ class Current_monitor(QThread):
     @handle_exceptions
     def change_relay_range(self,resistor,resistor_threshold=10): 
         self.change_record_status("stop")
-        voltage_range = "20.0E-03" if resistor < resistor_threshold else "20.0E+00"
+        voltage_range = "1.0E+00" if resistor < resistor_threshold else "20.0E+00"
         print(f"start set voltage range to {voltage_range}V")
         for ch in self.relay_channels:
             if self.isInterruptionRequested():
