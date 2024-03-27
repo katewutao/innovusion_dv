@@ -78,7 +78,8 @@ class Current_monitor(QThread):
             if self.isInterruptionRequested():
                 return
             command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
-            send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
+            for _ in range(3):
+                send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.5)
         self.change_record_status("start")
         for ch in self.relay_channels:
             query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
