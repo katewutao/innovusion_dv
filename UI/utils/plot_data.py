@@ -60,11 +60,11 @@ class Current_monitor(QThread):
                 
     @handle_exceptions
     def change_record_status(self, status = "start", sleep_time = 1):
-        for _ in range(5):
+        for _ in range(2):
             if status == "start":
-                send_tcp(self.command_start,"192.168.1.2",8802,wait=True,wait_time=0.3)
+                send_tcp(self.command_start,"192.168.1.2",8802,wait=True,wait_time=1)
             else:
-                send_tcp(self.command_stop,"192.168.1.2",8802,wait=True,wait_time=0.3)
+                send_tcp(self.command_stop,"192.168.1.2",8802,wait=True,wait_time=1)
         if sleep_time > 0:
             time.sleep(sleep_time)
     
@@ -79,14 +79,14 @@ class Current_monitor(QThread):
                 return
             command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
             send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
-            time.sleep(1)
+        self.change_record_status("start")
+        for ch in self.relay_channels:
             query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
             query_res = send_tcp(query_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
             if voltage_range not in query_res:
                 print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V failed, res: {query_res}")
             else:
                 print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V success")
-        self.change_record_status("start")
     
     
     @handle_exceptions
