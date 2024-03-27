@@ -1209,7 +1209,7 @@ class MainCode(QMainWindow,userpage.Ui_MainWindow):
         self.action_lidar_status.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_lidar,self.lb_lidar,"Lidar status"))
         self.action_lidar_pointcloud.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_lidar,self.lb_lidar,"Lidar pointcloud"))
         self.action_Fault.triggered.connect(self.stackedWidget_currentChanged(0,self.stackedWidget_current,self.lb_current,"Fault Status"))
-        self.action_Current.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_current,self.lb_current,"Current Status"))
+        self.action_Current.triggered.connect(self.stackedWidget_currentChanged(1,self.stackedWidget_current,self.lb_current,"Current Status(mA)"))
         self.action_Mac_Adress.triggered.connect(self.stackedWidget_currentChanged(2,self.stackedWidget_current,self.lb_current,"Update Mac Address"))
         
         self.action_Fault.trigger()
