@@ -95,7 +95,7 @@ class Current_monitor(QThread):
         last_resistor = 0
         resistor_threshold = 10 #distinct voltage unit(V/mV)
         self.change_record_status("start")
-        voltage_command = f":MEMory:TAREAL? UNIT{self.relay_unit}"
+        voltage_command = f":MEMory:TVREAl? UNIT{self.relay_unit}"
         if len(self.ip_list) != len(self.relay_channels):
             print("ip_list and relay_channels length not match,please check the config file")
             return
@@ -119,14 +119,12 @@ class Current_monitor(QThread):
             if self.isInterruptionRequested():
                 return
             vol_str = send_tcp(voltage_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
-            res = re.findall("(-?\d+\.?\d*)",vol_str)
+            res = re.findall("([+-]?\d+\.?\d*(?:E[+-]?\d*)?)",vol_str)
             date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
             if len(res) >= len(self.ip_list):
                 for idx,ip in enumerate(self.ip_list):
-                    voltage = float(res[idx])
-                    voltage /= 1000
-                    if resistor >= resistor_threshold:
-                        voltage *= 1000
+                    voltage = float(res[idx]) #unit is V, so need to convert to mV
+                    voltage *= 1000 
                     current = voltage/resistor
                     self.plot_data_dict[ip].append(current)
                     csv_write(self.save_dict[ip],[date_time,current])
