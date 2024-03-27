@@ -57,13 +57,16 @@ class Current_monitor(QThread):
             self.save_dict[ip] = os.path.join(self.save_foler,f"{ip}.csv")
             if not os.path.exists(self.save_dict[ip]):
                 csv_write(self.save_dict[ip],["time","current(mA)"])
+                
     @handle_exceptions
-    def change_record_status(self, status = "start"):
+    def change_record_status(self, status = "start", sleep_time = 3):
         for _ in range(2):
             if status == "start":
                 send_tcp(self.command_start,"192.168.1.2",8802,wait=True,wait_time=0.3)
             else:
                 send_tcp(self.command_stop,"192.168.1.2",8802,wait=True,wait_time=0.3)
+        if sleep_time > 0:
+            time.sleep(sleep_time)
     
     @handle_exceptions
     def run(self): #using tcp command
@@ -90,7 +93,7 @@ class Current_monitor(QThread):
                 resistor = 0.1
             if last_resistor != resistor:
                 self.change_record_status("stop")
-                voltage_range = "20.0E-3" if resistor < resistor_threshold else "20.0E+00"
+                voltage_range = "20.0E-03" if resistor < resistor_threshold else "20.0E+00"
                 print(f"start set voltage range to {voltage_range}V")
                 for ch in self.relay_channels:
                     if self.isInterruptionRequested():
@@ -139,7 +142,7 @@ class Current_monitor(QThread):
             if time.time()-t>3:
                 self.terminate()
                 break
-        self.change_record_status("stop")
+        self.change_record_status("stop",0)
         print(f"current thread finish success")
 
 
