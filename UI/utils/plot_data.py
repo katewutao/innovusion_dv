@@ -192,8 +192,8 @@ class Plot_Widget(QWidget):
             if self.data.shape[0]>max_data_shape:
                 self.data=self.data[-max_data_shape:]
             painter.setFont(font)
-            painter.drawText(self.font_heigth, self.height() - self.space_heigth, str(round(self.data.min(),2)))
-            painter.drawText(self.font_heigth, font.pointSize() + self.space_heigth, str(round(self.data.max(),2)))
+            painter.drawText(self.font_heigth, self.height() - self.space_heigth, str(round(self.data.min(),4)))
+            painter.drawText(self.font_heigth, font.pointSize() + self.space_heigth, str(round(self.data.max(),4)))
             painter.setPen(pen)
             self.convert_data()
             for i in range(self.data.shape[0]-1):
