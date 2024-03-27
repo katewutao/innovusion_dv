@@ -68,10 +68,29 @@ class Current_monitor(QThread):
         if sleep_time > 0:
             time.sleep(sleep_time)
     
+    
+    @handle_exceptions
+    def change_relay_range(self,resistor,resistor_threshold=10): #distinct voltage unit(V/mV)
+        self.change_record_status("stop")
+        voltage_range = "20.0E-03" if resistor < resistor_threshold else "20.0E+00"
+        print(f"start set voltage range to {voltage_range}V")
+        for ch in self.relay_channels:
+            if self.isInterruptionRequested():
+                return
+            command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
+            send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
+            query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
+            query_res = send_tcp(query_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
+            if voltage_range not in query_res:
+                print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V failed, res: {query_res}")
+            else:
+                print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V success")
+        self.change_record_status("start")
+    
+    
     @handle_exceptions
     def run(self): #using tcp command
         last_resistor = 0
-        resistor_threshold = 10 #distinct voltage unit(V/mV)
         self.change_record_status("start")
         voltage_command = f":MEMory:TAREAL? UNIT{self.relay_unit}"
         if len(self.ip_list) != len(self.relay_channels):
@@ -92,22 +111,7 @@ class Current_monitor(QThread):
             else:
                 resistor = 0.1
             if last_resistor != resistor:
-                self.change_record_status("stop")
-                voltage_range = "20.0E-03" if resistor < resistor_threshold else "20.0E+00"
-                print(f"start set voltage range to {voltage_range}V")
-                for ch in self.relay_channels:
-                    if self.isInterruptionRequested():
-                        return
-                    command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
-                    send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
-                    time.sleep(1)
-                    query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
-                    query_res = send_tcp(query_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
-                    if voltage_range not in query_res:
-                        print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V failed, res: {query_res}")
-                    else:
-                        print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V success")
-                self.change_record_status("start")
+                self.change_relay_range(resistor,10)
             last_resistor = resistor
             if self.isInterruptionRequested():
                 return
