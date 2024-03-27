@@ -57,51 +57,19 @@ class Current_monitor(QThread):
             self.save_dict[ip] = os.path.join(self.save_foler,f"{ip}.csv")
             if not os.path.exists(self.save_dict[ip]):
                 csv_write(self.save_dict[ip],["time","current(mA)"])
-    
     @handle_exceptions
-    def run_bk(self): # using http get voltage
-        url_command = f"http://192.168.1.2/REALDATA.HTM?:COMPORT:WEBORGUNIT=UNIT{self.relay_unit}"
-        while True:
-            t = time.time()
-            if os.getenv("resistor"):
-                resistor = float(os.getenv("resistor"))
+    def change_record_status(self, status = "start"):
+        for _ in range(2):
+            if status == "start":
+                send_tcp(self.command_start,"192.168.1.2",8802,wait=True,wait_time=0.3)
             else:
-                resistor = 0.1
-            if self.isInterruptionRequested():
-                break
-            try:
-                respon = requests.get(url_command, timeout = self.timeout)
-                text = respon.text
-            except Exception as e:
-                print("can't connect to current monitor, please check the connection and try again")
-                time.sleep(5)
-                continue
-            res = re.findall("<nobr>(\d+-\d+).*?(-?\d+\.\d*)\s*?(mV|V)",text)
-            date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
-            if len(res) >= len(self.ip_list):
-                for idx,ip in enumerate(self.ip_list):
-                    voltage = float(res[idx][1])
-                    if res[idx][2] == "V":
-                        voltage *= 1000
-                    current = voltage/resistor
-                    self.plot_data_dict[ip].append(current)
-                    csv_write(self.save_dict[ip],[date_time,current])
-                    if len(self.plot_data_dict[ip]) > self.plot_length:
-                        self.plot_data_dict[ip] = self.plot_data_dict[ip][-self.plot_length:]
-                    self.sigout_plot_data.emit(self.plot_data_dict[ip],ip)
-            else:
-                print(f"current monitor data error: return length {len(res)}")
-            sleep_time = self.sleep_time - (time.time() - t)
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-                
-                
+                send_tcp(self.command_stop,"192.168.1.2",8802,wait=True,wait_time=0.3)
+    
     @handle_exceptions
     def run(self): #using tcp command
         last_resistor = 0
         resistor_threshold = 10 #distinct voltage unit(V/mV)
-        for _ in range(2):
-            send_tcp(self.command_start,"192.168.1.2",8802,wait=True,wait_time=0.3)
+        self.change_record_status("start")
         voltage_command = f":MEMory:TAREAL? UNIT{self.relay_unit}"
         if len(self.ip_list) != len(self.relay_channels):
             print("ip_list and relay_channels length not match,please check the config file")
@@ -121,6 +89,7 @@ class Current_monitor(QThread):
             else:
                 resistor = 0.1
             if last_resistor != resistor:
+                self.change_record_status("stop")
                 voltage_range = "20.0E-3" if resistor < resistor_threshold else "20.0E+00"
                 print(f"start set voltage range to {voltage_range}V")
                 for ch in self.relay_channels:
@@ -134,6 +103,7 @@ class Current_monitor(QThread):
                         print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V failed, res: {query_res}")
                     else:
                         print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V success")
+                self.change_record_status("start")
             last_resistor = resistor
             if self.isInterruptionRequested():
                 return
@@ -169,8 +139,7 @@ class Current_monitor(QThread):
             if time.time()-t>3:
                 self.terminate()
                 break
-        for _ in range(2):
-            send_tcp(self.command_stop,"192.168.1.2",8802,wait=True,wait_time=0.3)
+        self.change_record_status("stop")
         print(f"current thread finish success")
 
 
