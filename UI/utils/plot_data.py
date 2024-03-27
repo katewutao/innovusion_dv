@@ -59,8 +59,8 @@ class Current_monitor(QThread):
                 csv_write(self.save_dict[ip],["time","current(mA)"])
                 
     @handle_exceptions
-    def change_record_status(self, status = "start", sleep_time = 3):
-        for _ in range(2):
+    def change_record_status(self, status = "start", sleep_time = 1):
+        for _ in range(5):
             if status == "start":
                 send_tcp(self.command_start,"192.168.1.2",8802,wait=True,wait_time=0.3)
             else:
@@ -83,7 +83,7 @@ class Current_monitor(QThread):
                 disp_status = "ON"
             else:
                 disp_status = "OFF"
-            command = f":UNIT:STORe  CH{self.relay_unit}_{ch},{disp_status}"
+            command = f":UNIT:STORe CH{self.relay_unit}_{ch},{disp_status}"
             send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
         while True:
             t = time.time()
@@ -100,6 +100,7 @@ class Current_monitor(QThread):
                         return
                     command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
                     send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
+                    time.sleep(1)
                     query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
                     query_res = send_tcp(query_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
                     if voltage_range not in query_res:
