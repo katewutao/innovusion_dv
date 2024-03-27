@@ -64,15 +64,15 @@ class Current_monitor(QThread):
             command = self.command_start
         else:
             command = self.command_stop
-        for _ in range(2):
-            send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=1)
+        for _ in range(4):
+            send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.5)
         if sleep_time > 0:
             time.sleep(sleep_time)
     
     
     @handle_exceptions
     def change_relay_range(self,resistor,resistor_threshold=10): 
-        self.change_record_status("stop")
+        self.change_record_status("stop", 10)
         voltage_range = "1.0E+00" if resistor < resistor_threshold else "20.0E+00"
         print(f"start set voltage range to {voltage_range}V")
         for ch in self.relay_channels:
@@ -80,7 +80,7 @@ class Current_monitor(QThread):
                 return
             command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
             send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.5)
-        self.change_record_status("start")
+        self.change_record_status("start",1)
         for ch in self.relay_channels:
             query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
             query_res = send_tcp(query_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
