@@ -121,14 +121,19 @@ class Current_monitor(QThread):
             else:
                 resistor = 0.1
             if last_resistor != resistor:
-                voltage_range = "20E-3" if resistor < resistor_threshold else "20E0"
+                voltage_range = "20.0E-3" if resistor < resistor_threshold else "20.0E+00"
                 print(f"start set voltage range to {voltage_range}V")
                 for ch in self.relay_channels:
                     if self.isInterruptionRequested():
                         return
                     command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
                     send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.3)
-                print(f"set voltage range to {voltage_range}V success")
+                    query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
+                    query_res = send_tcp(query_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
+                    if voltage_range not in query_res:
+                        print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V failed, res: {query_res}")
+                    else:
+                        print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V success")
             last_resistor = resistor
             if self.isInterruptionRequested():
                 return
