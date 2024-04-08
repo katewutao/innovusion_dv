@@ -12,7 +12,7 @@ from can_run import *
 
 def main_close(args):
     conf = load_conf('config/CANFD_Config.json')
-    if args.can in ["Default","Robin","FII"]:
+    if args.can in ["Default","Robin","FII","FII_Lite"]:
         from utils import send_tcp
         send_tcp("EXIT_CAN","127.0.0.1",10001)
         os.system("ps -ef|grep can_run.py|grep -v grep|awk '{print $2}'|xargs kill -9")

@@ -150,7 +150,7 @@ def main(args):
         conf["frame"]["payload"]="000011"
         conf["frame"]["payload_len"]=3
         conf["frame"]["send_count"]=5
-    elif args.can=="Robin":
+    elif args.can in ["Robin","FII_Lite"]:
         conf["frame"]["type"]="can"
         conf["frame"]["frame_ID"]="505"
         conf["frame"]["payload_len"]=8
