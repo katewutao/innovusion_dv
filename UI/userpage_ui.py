@@ -390,7 +390,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.stackedWidget_lidar.setCurrentIndex(1)
-        self.stackedWidget_current.setCurrentIndex(3)
+        self.stackedWidget_current.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

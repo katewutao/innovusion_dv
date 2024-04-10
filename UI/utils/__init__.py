@@ -182,12 +182,12 @@ def get_current_date():
 
 
 
-def send_tcp(command, ip, port=8001, wait=False, max_length=1024, wait_time=3):
+def send_tcp(command, ip, port=8001, wait=False, max_length=1024, wait_time=3, encoding="utf-8"):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     command = command.strip("\n")+"\n"
     if wait:
         sock.settimeout(wait_time)
-    res = ""
+    res = "" if encoding == "utf-8" else b""
     try:
         sock.connect((ip, port))
     except:
@@ -200,14 +200,14 @@ def send_tcp(command, ip, port=8001, wait=False, max_length=1024, wait_time=3):
         first_recv = True
         while True:
             try:
-                response = sock.recv(max_length).decode()
+                response = sock.recv(max_length).decode() if encoding == "utf-8" else sock.recv(max_length)
             except:
                 break
             if first_recv:
                 first_recv = False
                 sock.settimeout(wait_time)
             res += response
-            if response=="":
+            if (encoding == "utf-8" and response == "") or (encoding != "utf-8" and response == b""):
                 break
     else:
         try:
@@ -427,12 +427,32 @@ class LidarTool(object):
             return False
         
     def download_pcs_fw(ip):
-        command_fw=f"http://{ip}:8675/download?downloadType=log&downloadName=lidar&currBoot=true&downloadFull=true"
-        command_pcs=f"http://{ip}:8675/download?downloadType=log&downloadName=sdk&currBoot=true&downloadFull=true"
+        command_fw = f"http://{ip}:8675/download?downloadType=log&downloadName=lidar&currBoot=true&downloadFull=true"
+        command_pcs = f"http://{ip}:8675/download?downloadType=log&downloadName=sdk&currBoot=true&downloadFull=true"
         res_fw = download_file(command_fw,None,3)
         res_pcs = download_file(command_pcs,None,3)    
         return res_fw,res_pcs
     
-if __name__=="__main__":
-    LidarTool.set_lidar_mode("172.168.1.10","power")
+    def download_yaml(ip,save_path):
+        offset = 4
+        res = send_tcp("download_cal_file 0",ip,8001,wait=True,max_length=4096,wait_time=1,encoding="gbk")
+        if len(res) < offset:
+            print(f"{ip} download yaml fail, command return error")
+            return
+        lens = np.frombuffer(res[:offset],dtype=">u4")[0]
+        if offset+lens >= len(res):
+            print(f"{ip} download yaml fail, yaml length error")
+            return
+        res = res[offset:offset+lens]
+        with open(save_path,"wb") as f:
+            f.write(res)
+        print(f"{ip} download yaml success, save to {save_path}")
     
+    def full_load(ip, status=True):
+        # TODO
+        print(f"{ip} set full load to {status}")
+        pass
+    
+if __name__=="__main__":
+    # LidarTool.set_lidar_mode("172.168.1.10","power")
+    LidarTool.download_yaml("172.168.1.10","1.yaml")

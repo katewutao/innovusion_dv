@@ -360,58 +360,6 @@
       </property>
      </item>
     </widget>
-    <widget class="QCheckBox" name="relay">
-     <property name="geometry">
-      <rect>
-       <x>750</x>
-       <y>70</y>
-       <width>61</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Relay</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="dsp">
-     <property name="geometry">
-      <rect>
-       <x>700</x>
-       <y>70</y>
-       <width>51</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Dsp</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_pointcloud">
-     <property name="geometry">
-      <rect>
-       <x>700</x>
-       <y>50</y>
-       <width>101</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Pointcloud</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_current">
-     <property name="geometry">
-      <rect>
-       <x>810</x>
-       <y>70</y>
-       <width>71</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Current</string>
-     </property>
-    </widget>
    </widget>
    <widget class="QPushButton" name="btn_cancle_can">
     <property name="geometry">
@@ -919,6 +867,73 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="page">
+     <widget class="QCheckBox" name="dsp">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>50</y>
+        <width>101</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Dsp</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="relay">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>110</y>
+        <width>101</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Relay</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_current">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>140</y>
+        <width>101</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Current</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_pointcloud">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>20</y>
+        <width>101</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Pointcloud</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_full_load">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>80</y>
+        <width>101</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Full Load</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <zorder>frame</zorder>
    <zorder>txt_log</zorder>
@@ -975,9 +990,16 @@
     </property>
     <addaction name="action_Mac_Adress"/>
    </widget>
+   <widget class="QMenu" name="menuFunction">
+    <property name="title">
+     <string>Function</string>
+    </property>
+    <addaction name="action_test_function"/>
+   </widget>
    <addaction name="menulidar_info"/>
    <addaction name="menuCurrent_Fault"/>
    <addaction name="menuTool"/>
+   <addaction name="menuFunction"/>
   </widget>
   <action name="action_record_start">
    <property name="text">
@@ -1018,6 +1040,11 @@
   <action name="action_Mac_Adress">
    <property name="text">
     <string>Mac Adress</string>
+   </property>
+  </action>
+  <action name="action_test_function">
+   <property name="text">
+    <string>Test function</string>
    </property>
   </action>
  </widget>
