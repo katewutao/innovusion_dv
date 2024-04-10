@@ -433,9 +433,10 @@ class LidarTool(object):
         res_pcs = download_file(command_pcs,None,3)    
         return res_fw,res_pcs
     
-    def download_yaml(ip,save_path):
+    def download_yaml(ip,save_path,public = True):
         offset = 4
-        res = send_tcp("download_cal_file 0",ip,8001,wait=True,max_length=4096,wait_time=1,encoding="gbk")
+        command = "download_cal_file 0" if public else "download_cal_file 1"
+        res = send_tcp(command,ip,8001,wait=True,max_length=4096,wait_time=1,encoding="gbk")
         if len(res) < offset:
             print(f"{ip} download yaml fail, command return error")
             return
@@ -455,4 +456,5 @@ class LidarTool(object):
     
 if __name__=="__main__":
     # LidarTool.set_lidar_mode("172.168.1.10","power")
-    LidarTool.download_yaml("172.168.1.10","1.yaml")
+    LidarTool.download_yaml("172.168.1.10","pub.yaml")
+    LidarTool.download_yaml("172.168.1.10","int.yaml",False)
