@@ -65,7 +65,7 @@ class Current_monitor(QThread):
         else:
             command = self.command_stop
         for _ in range(4):
-            send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.5)
+            send_tcp(command,"192.168.1.2",8802,wait_time=0.5)
         if sleep_time > 0:
             time.sleep(sleep_time)
     
@@ -79,11 +79,11 @@ class Current_monitor(QThread):
             if self.isInterruptionRequested():
                 return
             command = f":UNIT:RANGe CH{self.relay_unit}_{ch},{voltage_range}"
-            send_tcp(command,"192.168.1.2",8802,wait=True,wait_time=0.5)
+            send_tcp(command,"192.168.1.2",8802,wait_time=0.5)
         self.change_record_status("start",1)
         for ch in self.relay_channels:
             query_command = f":UNIT:RANGe? CH{self.relay_unit}_{ch}"
-            query_res = send_tcp(query_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
+            query_res = send_tcp(query_command,"192.168.1.2",8802,wait_time=0.3)
             if voltage_range not in query_res:
                 print(f"set CH{self.relay_unit}_{ch} voltage range to {voltage_range}V failed, res: {query_res}")
             else:
@@ -118,7 +118,7 @@ class Current_monitor(QThread):
             last_resistor = resistor
             if self.isInterruptionRequested():
                 return
-            vol_str = send_tcp(voltage_command,"192.168.1.2",8802,wait=True,wait_time=0.3)
+            vol_str = send_tcp(voltage_command,"192.168.1.2",8802,wait_time=0.3)
             res = re.findall("([+-]?\d+\.?\d*(?:E[+-]?\d*)?)",vol_str)
             date_time = f" {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
             if len(res) >= len(self.ip_list):

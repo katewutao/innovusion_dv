@@ -8,6 +8,7 @@ import time
 import requests,socket
 import pandas as pd
 import numpy as np
+import hashlib
 from sklearn.decomposition import PCA
 
 
@@ -182,12 +183,15 @@ def get_current_date():
 
 
 
-def send_tcp(command, ip, port=8001, wait=False, max_length=1024, wait_time=3, encoding="utf-8"):
+def send_tcp(command, ip, port=8001, max_length=1024, wait_time=3, bytes_recv=False, add_end=True):
+    command = command.strip("\n").encode() if isinstance(command,str) else command
+    if add_end:
+        command += b"\n"
+    command_lens = len(command)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    command = command.strip("\n")+"\n"
-    if wait:
-        sock.settimeout(wait_time)
-    res = "" if encoding == "utf-8" else b""
+    max_send_len = 1024
+    sock.settimeout(wait_time)
+    res = b"" if bytes_recv else ""
     try:
         sock.connect((ip, port))
     except:
@@ -195,25 +199,22 @@ def send_tcp(command, ip, port=8001, wait=False, max_length=1024, wait_time=3, e
         sock.close()
         time.sleep(3)
         return res
-    sock.sendall(command.encode())
-    if wait:
-        first_recv = True
-        while True:
-            try:
-                response = sock.recv(max_length).decode() if encoding == "utf-8" else sock.recv(max_length)
-            except:
-                break
-            if first_recv:
-                first_recv = False
-                sock.settimeout(wait_time)
-            res += response
-            if (encoding == "utf-8" and response == "") or (encoding != "utf-8" and response == b""):
-                break
+    if command_lens <= max_send_len:
+        sock.sendall(command)
     else:
+        current_len = 0
+        while current_len < command_lens:
+            next_len = min(current_len + max_send_len,command_lens)
+            sock.send(command[current_len:next_len])
+            current_len = next_len
+    while True:
         try:
-            res = sock.recv(max_length).decode()
+            response = sock.recv(max_length) if bytes_recv else sock.recv(max_length).decode()
         except:
-            pass
+            break
+        res += response
+        if len(response) == 0:
+            break
     sock.close()
     return res
 
@@ -436,7 +437,7 @@ class LidarTool(object):
     def download_yaml(ip,save_path,public = True):
         offset = 4
         command = "download_cal_file 0" if public else "download_cal_file 1"
-        res = send_tcp(command,ip,8001,wait=True,max_length=4096,wait_time=1,encoding="gbk")
+        res = send_tcp(command,ip,8001,max_length=4096,wait_time=1,bytes_recv=True)
         if len(res) < offset:
             print(f"{ip} download yaml fail, command return error")
             return
@@ -448,7 +449,23 @@ class LidarTool(object):
         with open(save_path,"wb") as f:
             f.write(res)
         print(f"{ip} download yaml success, save to {save_path}")
-    
+        
+    def upload_yaml(ip, yaml_path, public = True):
+        with open(yaml_path,encoding="utf-8") as f:
+            yaml_data = f.read()
+        yaml_data = yaml_data.encode()
+        md5 = hashlib.md5(yaml_data).hexdigest()
+        lens = np.array([len(yaml_data)],dtype=">u4").tobytes()
+        yaml_data = lens + yaml_data
+        yaml_data += md5.encode()
+        command = b"upload_cal_file 0\n" if public else b"upload_cal_file 1\n"
+        command += yaml_data
+        res = send_tcp(command,ip,8002,max_length=1024,wait_time=3,bytes_recv=True,add_end=False)
+        if len(res)>=4 and lens == res[:4]:
+            print(f"{ip} upload yaml success")
+        else:
+            print(f"{ip} upload yaml fail")
+        
     def full_load(ip, status=True):
         # TODO
         print(f"{ip} set full load to {status}")
@@ -456,5 +473,12 @@ class LidarTool(object):
     
 if __name__=="__main__":
     # LidarTool.set_lidar_mode("172.168.1.10","power")
-    LidarTool.download_yaml("172.168.1.10","pub.yaml")
-    LidarTool.download_yaml("172.168.1.10","int.yaml",False)
+    # LidarTool.download_yaml("172.168.1.10","pub.yaml")
+    import yaml 
+    cfg = yaml.safe_load(open("pub.yaml"))
+    cfg["threshold_h"] = 5
+    with open("pub_test.yaml","w") as f:
+        yaml.dump(cfg,f,encoding="utf-8",allow_unicode=True,sort_keys=False)
+    t = time.time()
+    LidarTool.upload_yaml("172.168.1.10","pub_test.yaml")
+    print(time.time()-t)
