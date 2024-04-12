@@ -446,9 +446,43 @@ class LidarTool(object):
             print(f"{ip} download yaml fail, yaml length error")
             return
         res = res[offset:offset+lens]
+        if isinstance(save_path,str):
+            with open(save_path,"wb") as f:
+                f.write(res)
+            print(f"{ip} download yaml success, save to {save_path}")
+        return res
+        
+    def capture_raw(ip,save_path,size): #MB
+        size = (size-1) * 1024 * 1024
+        recv_every = 2048
+        raw_head = b"INNODATA1000"
+        yaml = LidarTool.download_yaml(ip,None)
+        size_yaml = 1024 * 1024 - len(raw_head) - 4
+        write_size = np.array([size_yaml],dtype=">u4").tobytes()
+        yaml = raw_head + write_size + yaml
+        yaml += b"\x00"*(1024*1024-len(yaml))
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        try:
+            sock.connect((ip, 8002))
+        except:
+            print(f"connect {ip} {8002} fail")
+            sock.close()
+            time.sleep(3)
+            return
         with open(save_path,"wb") as f:
-            f.write(res)
-        print(f"{ip} download yaml success, save to {save_path}")
+            f.write(yaml)
+            sock.sendall("start\n".encode())
+            recv_size = 0
+            t = time.time()
+            while recv_size < size:
+                response = sock.recv(recv_every)
+                f.write(response)
+                recv_size += recv_every
+        sock.close()
+        print(f"{ip} capture raw success, save to {save_path}, cost time {time.time()-t}s")
+        
+        
         
     def upload_yaml(ip, yaml_path, public = True):
         with open(yaml_path,encoding="utf-8") as f:
@@ -474,11 +508,4 @@ class LidarTool(object):
 if __name__=="__main__":
     # LidarTool.set_lidar_mode("172.168.1.10","power")
     # LidarTool.download_yaml("172.168.1.10","pub.yaml")
-    import yaml 
-    cfg = yaml.safe_load(open("pub.yaml"))
-    cfg["threshold_h"] = 5
-    with open("pub_test.yaml","w") as f:
-        yaml.dump(cfg,f,encoding="utf-8",allow_unicode=True,sort_keys=False)
-    t = time.time()
-    LidarTool.upload_yaml("172.168.1.10","pub_test.yaml")
-    print(time.time()-t)
+    LidarTool.capture_raw("172.168.1.10","1.inno_raw",10)
