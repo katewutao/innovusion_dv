@@ -54,5 +54,7 @@ if __name__ == "__main__":
     import argparse
     parse=argparse.ArgumentParser()
     parse.add_argument("--can","-c",type=str,default="Default",help="CAN type")
+    parse.add_argument("--can-log","-cl",type=str,default="USBCAN.log",help="CAN type")
     args=parse.parse_args()
+    logger = python_logging.my_log(args.can_log, 'w')
     main_close(args)

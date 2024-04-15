@@ -904,6 +904,7 @@ class TestMain(QThread):
         self.can_mode = can_mode
         self.pointcloud_func = pointcloud_func
         self.pointcloud_header = pointcloud_header
+        self.save_can_log = os.path.join(self.save_folder, "USBCAN.log")
 
     def send_lidar_info(self, list1, row_idx):
         self.sigout_lidar_info.emit(list1, row_idx)
@@ -997,11 +998,11 @@ class TestMain(QThread):
         print(f"start monitor {sleep_time}s")
         time_path = get_time()
         if os.getenv("relay") == "True":
-            os.system("python3 can_run.py -c switch")
+            os.system(f'python3 can_run.py -c "switch" -cl "{self.save_can_log}"')
             os.environ["resistor"] = "0.1"
         if self.lidar_mode == "CAN":
             self.cmd_can = subprocess.Popen(
-                f'exec python3 can_run.py -c {self.can_mode}', shell=True)
+                f'exec python3 can_run.py -c "{self.can_mode}" -cl "{self.save_can_log}"', shell=True)
         self.power_monitor.resume()
         if sleep_time > 2:
             self.run_monitor(log_path, time_path)
@@ -1022,10 +1023,10 @@ class TestMain(QThread):
         if self.lidar_mode == "CAN":
             self.cmd_can.kill()
             self.kill_cmd_can = subprocess.Popen(
-                f'exec python3 can_cancle.py -c {self.can_mode}', shell=True)
+                f'exec python3 can_cancle.py -c "{self.can_mode}" -cl "{self.save_can_log}"', shell=True)
             self.kill_cmd_can.wait()
             if os.getenv("relay") == "True":
-                os.system("python3 can_cancle.py -c switch")
+                os.system(f'python3 can_cancle.py -c "switch" -cl "{self.save_can_log}"')
                 os.environ["resistor"] = "7500"
         else:
             self.power_monitor.pause()
@@ -1098,11 +1099,11 @@ class TestMain(QThread):
             set_power_status(None, power_on=True)
         if self.lidar_mode == "CAN":
             if os.getenv("relay") == "True":
-                os.system("python3 can_run.py -c switch")
+                os.system(f'python3 can_run.py -c "switch" -cl "{self.save_can_log}"')
                 os.environ["resistor"] = "0.1"
             os.system("python3 lib/set_usbcanfd_env.py demo")
             subprocess.Popen(
-                f'exec python3 can_run.py -c {self.can_mode}', shell=True)
+                f'exec python3 can_run.py -c "{self.can_mode}" -cl "{self.save_can_log}"', shell=True)
         for idx, ip in enumerate(self.ip_list):
             ping_sure(ip, 3)
             while True:
@@ -1132,7 +1133,7 @@ class TestMain(QThread):
             self.power_monitor = Power_monitor()
             self.power_monitor.start()
             set_power_status(None, power_on=False)
-            os.system(f'python3 can_cancle.py -c {self.can_mode}')
+            os.system(f'python3 can_cancle.py -c "{self.can_mode}" -cl "{self.save_can_log}"')
             time.sleep(30)  # in order to make sure lidar set can mode success
             i = 1
             for time_one in self.times:
@@ -1145,7 +1146,7 @@ class TestMain(QThread):
                 self.current_monitor.stop()
             if self.lidar_mode == "CAN":
                 if os.getenv("relay") == "True":
-                    os.system("python3 can_run.py -c switch")
+                    os.system(f'python3 can_run.py -c "switch" -cl "{self.save_can_log}"')
                     os.environ["resistor"] = "0.1"
                 cancle_can(self.ip_list, self.can_mode)
             set_power_status(None, power_on=False)
@@ -1199,7 +1200,7 @@ class TestMain(QThread):
                 break
         kill_client()
         if self.lidar_mode == "CAN":
-            os.system(f'exec python3 can_cancle.py -c {self.can_mode}')
+            os.system(f'exec python3 can_cancle.py -c "{self.can_mode}" -cl "{self.save_can_log}"')
         elif self.lidar_mode == "No Power":
             threads = []
             time_path = get_time()
