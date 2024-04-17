@@ -15,7 +15,7 @@ def my_log(name, mode, encoding='utf-8'):
     s_formatter = logging.Formatter(fmt="[%(asctime)s.%(msecs)03d] [%(levelname)s] %(filename)s, %(lineno)s, %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
 
     # 创建一个文件处理器，文件写入日志
-    fh = logging.FileHandler(filename="./{}_log.txt".format(time.strftime("%Y_%m_%d %H_%M_%S",time.localtime())),encoding="utf8", mode='a')
+    # fh = logging.FileHandler(filename="./{}_log.txt".format(time.strftime("%Y_%m_%d %H_%M_%S",time.localtime())),encoding="utf8", mode='a')
     fh = logging.FileHandler(filename=name, encoding=encoding, mode=mode)
     # 创建一个文件格式器f_formatter
     f_formatter = logging.Formatter(fmt="[%(asctime)s.%(msecs)03d] [%(levelname)s] %(filename)s, %(lineno)s, %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
